@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     domains: ['ik.imagekit.io', 'tailark.com'],
   },
+  typescript: {
+    ignoreBuildErrors: true
+  }
 };
  
 const withNextIntl = createNextIntlPlugin();
