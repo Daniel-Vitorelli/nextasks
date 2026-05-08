@@ -1,0 +1,128 @@
+{
+  "home": {
+    "meta": {
+      "title": "NexTasks",
+      "description": "Website for managing habits and tasks."
+    },
+    "hero": {
+      "login": "Login",
+      "signUp": "Sign Up",
+      "about": "About",
+      "benefits": "Benefits",
+      "features": "Features",
+      "getStarted": "Get Started",
+      "title": "Transform your goals into consistent habits with intelligence.",
+      "subTitle": "An intelligent platform for managing habits, tasks, and goals, with AI, gamification, and complete tracking of your progress."
+    },
+    "about": {
+      "title": "About the Platform",
+      "p1": "Maintaining consistent habits and organizing routines is a challenge for many people. The lack of personalization and continuous motivation in current tools makes it difficult to track goals and achieve personal development.",
+      "p2": "Our platform was created to solve this problem. It combines habit management, task control, goal setting, and artificial intelligence in a single environment. This allows you to plan your routine, track your progress, and build discipline in a practical and efficient way.",
+      "p3": "With intelligent features and social interaction, the system transforms personal goals into daily actions, promoting continuous and measurable growth."
+    },
+    "benefits": {
+      "title": "Main Benefits",
+      "subTitle": "Organize your routine, stay focused, and progress consistently. The platform is designed to simplify habit and goal management, offering smart tools that help you transform planning into real results.",
+      "benefits1": "Increase your productivity with organized routines.",
+      "benefits2": "Develop discipline and consistency in your habits.",
+      "benefits3": "Track your progress with clear graphs.",
+      "benefits4": "Receive smart suggestions to improve your performance.",
+      "benefits5": "Stay motivated with gamification and achievements.",
+      "benefits6": "Compare your progress with friends and challenges.",
+      "benefits7": "Gain a complete overview of your personal goals.",
+      "benefits8": "Receive smart reminders so you don't miss your tasks."
+    },
+    "features": {
+      "title": "Main Features",
+      "description": "Discover the features that make your routine more organized, intelligent, and motivating.",
+      "feature1": {
+        "title": "Routine",
+        "description": "Build your schedule your way, fully customizable"
+      },
+      "feature2": {
+        "title": "Habits",
+        "description": "Track your habits and stay consistent every day."
+      },
+      "feature3": {
+        "title": "Goals",
+        "description": "Set clear goals and monitor your progress."
+      },
+      "feature4": {
+        "title": "Tasks",
+        "description": "Organize tasks to make the most of your free time."
+      },
+      "feature5": {
+        "title": "Progress",
+        "description": "Visualize your performance in a simple way."
+      },
+      "feature6": {
+        "title": "Reminders",
+        "description": "Get smart alerts so you never miss a task."
+      },
+      "feature7": {
+        "title": "AI",
+        "description": "Receive intelligent suggestions to improve your routine."
+      },
+      "feature8": {
+        "title": "Points",
+        "description": "Earn rewards as you stay consistent."
+      },
+      "feature9": {
+        "title": "Friends",
+        "description": "Connect with others and share your progress."
+      },
+      "feature10": {
+        "title": "Challenges",
+        "description": "Compare results and boost your motivation."
+      },
+      "feature11": {
+        "title": "Ranking",
+        "description": "Track your position and grow with healthy competition."
+      },
+      "feature12": {
+        "title": "Achievements",
+        "description": "Unlock badges and celebrate your progress."
+      }
+    },
+    "callToAction": {
+      "title": "Start your evolution today",
+      "description": "Build better habits, organize your routine, and achieve your goals with consistency.",
+      "getStarted": "Get Started",
+      "login": "Login"
+    },
+    "footer": {
+      "rights": "© 2026 NexTasks, All rights reserved",
+      "about": "About",
+      "benefits": "Benefits",
+      "features": "Features"
+    }
+  },
+  "sign-up": {
+    "title": "Create a NexTasks Account",
+    "description": "Welcome! Create an account to get started",
+    "name": "Name",
+    "exemple": "exemple@email.com",
+    "invalidEmail": "Invalid Email",
+    "password": "Password",
+    "confirmPassword": "Confirm your Password",
+    "notMatch": "The passwords do not match",
+    "characters": "Must be at least 8 characters",
+    "signIn": "Sign In",
+    "continue": "Or continue With",
+    "haveAccount": "Have an account ?",
+    "alreadyExists": "User already exists. Use another email."
+  },
+  "login": {
+    "title": "Sign In to NexTasks",
+    "description": "Welcome back! Sign in to continue",
+    "exemple": "exemple@email.com",
+    "invalidEmail": "Invalid Email",
+    "password": "Password",
+    "characters": "Must be at least 8 characters",
+    "forget": "Forgot your Password ?",
+    "signIn": "Sign In",
+    "continue": "Or continue With",
+    "dontAccount": "Don't have an account ?",
+    "create": "Create account"
+  }
+}

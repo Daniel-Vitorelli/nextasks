@@ -1,0 +1,128 @@
+{
+  "home": {
+    "meta": {
+      "title": "NexTasks",
+      "description": "Site para gerenciamento de hábitos e tarefas."
+    },
+    "hero": {
+      "login": "Entre",
+      "signUp": "Se-Inscreva",
+      "about": "Sobre",
+      "benefits": "Benefícios",
+      "features": "Recursos",
+      "getStarted": "Começar Agora",
+      "title": "Transforme suas metas em hábitos consistentes com inteligência",
+      "subTitle": "Uma plataforma inteligente para gerenciar hábitos, tarefas e objetivos, com IA, gamificação e acompanhamento completo da sua evolução."
+    },
+    "about": {
+      "title": "Sobre a Plataforma",
+      "p1": "Manter hábitos e organizar a rotina de forma consistente é um desafio para muitas pessoas. A falta de personalização e motivação contínua nas ferramentas atuais acaba dificultando o acompanhamento de metas e o desenvolvimento pessoal.",
+      "p2": "Nossa plataforma foi criada para resolver esse problema. Ela combina gerenciamento de hábitos, controle de tarefas, definição de metas e inteligência artificial em um único ambiente. Assim, você consegue planejar sua rotina, acompanhar sua evolução e construir disciplina de forma prática e eficiente.",
+      "p3": "Com recursos inteligentes e interação social, o sistema transforma objetivos pessoais em ações diárias, promovendo crescimento contínuo e mensurável."
+    },
+    "benefits": {
+      "title": "Principais Benefícios",
+      "subTitle": "Organize sua rotina, mantenha o foco e evolua de forma consistente. A plataforma foi projetada para simplificar o gerenciamento de hábitos e metas, oferecendo ferramentas inteligentes que ajudam você a transformar planejamento em resultados reais.",
+      "benefits1": "Aumente sua produtividade com rotinas organizadas.",
+      "benefits2": "Desenvolva disciplina e constância nos seus hábitos.",
+      "benefits3": "Acompanhe sua evolução com gráficos claros.",
+      "benefits4": "Receba sugestões inteligentes para melhorar seu desempenho.",
+      "benefits5": "Mantenha-se motivado com gamificação e conquistas.",
+      "benefits6": "Compare seu progresso com amigos e desafios.",
+      "benefits7": "Tenha uma visão completa das suas metas pessoais.",
+      "benefits8": "Receba lembretes inteligentes para não perder suas tarefas."
+    },
+    "features": {
+      "title": "Principais Recursos",
+      "description": "Conheça os recursos que tornam sua rotina mais organizada, inteligente e motivadora.",
+      "feature1": {
+        "title": "Rotina",
+        "description": "Monte sua agenda do seu jeito, com total personalização."
+      },
+      "feature2": {
+        "title": "Hábitos",
+        "description": "Cadastre hábitos e acompanhe sua constância diariamente."
+      },
+      "feature3": {
+        "title": "Metas",
+        "description": "Defina objetivos claros e acompanhe sua evolução."
+      },
+      "feature4": {
+        "title": "Tarefas",
+        "description": "Organize atividades para aproveitar melhor seu tempo livre."
+      },
+      "feature5": {
+        "title": "Progresso",
+        "description": "Veja seu desempenho de forma simples e visual."
+      },
+      "feature6": {
+        "title": "Lembretes",
+        "description": "Receba avisos inteligentes para não esquecer suas ações."
+      },
+      "feature7": {
+        "title": "IA",
+        "description": "Conte com sugestões inteligentes para melhorar sua rotina."
+      },
+      "feature8": {
+        "title": "Pontos",
+        "description": "Ganhe recompensas conforme mantém sua disciplina."
+      },
+      "feature9": {
+        "title": "Amigos",
+        "description": "Conecte-se com outras pessoas e compartilhe sua evolução."
+      },
+      "feature10": {
+        "title": "Desafios",
+        "description": "Compare resultados e aumente sua motivação."
+      },
+      "feature11": {
+        "title": "Ranking",
+        "description": "Acompanhe sua posição e evolua com competitividade saudável."
+      },
+      "feature12": {
+        "title": "Conquistas",
+        "description": "Desbloqueie medalhas e celebre cada avanço."
+      }
+    },
+    "callToAction": {
+      "title": "Comece sua evolução hoje",
+      "description": "Crie hábitos melhores, organize sua rotina e alcance seus objetivos com mais consistência.",
+      "getStarted": "Começar Agora",
+      "login": "Entre"
+    },
+    "footer": {
+      "rights": "© 2026 NexTasks, Todos os direitos reservados",
+      "about": "Sobre",
+      "benefits": "Benefícios",
+      "features": "Recursos"
+    }
+  },
+  "sign-up": {
+    "title": "Crie uma conta no NexTasks",
+    "description": "Bem-vindo(a)! Crie uma conta para começar.",
+    "name": "Nome",
+    "exemple": "exemplo@email.com",
+    "invalidEmail": "Email invalido",
+    "password": "Senha",
+    "confirmPassword": "Confirme sua Senha",
+    "notMatch": "As senhas não coincidem",
+    "characters": "Deve ter no mínimo 8 caracteres",
+    "signIn": "Entre",
+    "continue": "Ou continue Com",
+    "haveAccount": "Tem uma conta ?",
+    "alreadyExists": "O usuário já existe. Use outro endereço de e-mail."
+  },
+  "login": {
+    "title": "Entre no NexTasks",
+    "description": "Bem-vindo(a) de volta! Entre para continuar.",
+    "exemple": "exemplo@email.com",
+    "invalidEmail": "Email invalido",
+    "password": "Senha",
+    "characters": "Deve ter no mínimo 8 caracteres",
+    "forget": "Esqueceu a senha ?",
+    "signIn": "Entre",
+    "continue": "Ou continue Com",
+    "dontAccount": "Não tem uma conta ?",
+    "create": "Crie uma conta"
+  }
+}
