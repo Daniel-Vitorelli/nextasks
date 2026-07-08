@@ -20,7 +20,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { createLoginSchema } from "@/schemas/login-schema";
 import GoogleSvg from "@/components/svg/GoogleSvg";
 import MicrosoftSvg from "@/components/svg/MicrosoftSvg";
-import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const t = useTranslations("login");
@@ -39,20 +38,20 @@ export default function LoginPage() {
   });
 
   const login = async (data: z.infer<typeof loginSchema>) => {
-    const {} = await authClient.signIn.email({
-      email: data.email,
-      password: data.pwd,
-      callbackURL: "/dashboard"
-    }, {
-      onError: (ctx) => {
-        if(ctx.error.code === "INVALID_EMAIL_OR_PASSWORD"){
-          setError("email", {
-            message: ctx.error.message
-          })
-          resetField("pwd")
-        }
-      }
-    })
+    // const {} = await authClient.signIn.email({
+    //   email: data.email,
+    //   password: data.pwd,
+    //   callbackURL: "/dashboard"
+    // }, {
+    //   onError: (ctx) => {
+    //     if(ctx.error.code === "INVALID_EMAIL_OR_PASSWORD"){
+    //       setError("email", {
+    //         message: ctx.error.message
+    //       })
+    //       resetField("pwd")
+    //     }
+    //   }
+    // })
   };
 
   const showError = (field: keyof z.infer<typeof loginSchema>) => {

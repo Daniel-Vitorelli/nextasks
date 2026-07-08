@@ -20,7 +20,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { createSignUpSchema } from "@/schemas/sign-up-schema";
 import GoogleSvg from "@/components/svg/GoogleSvg";
 import MicrosoftSvg from "@/components/svg/MicrosoftSvg";
-import { authClient } from "@/lib/auth-client";
 
 export default function SignUpPage() {
   const t = useTranslations("sign-up");
@@ -39,23 +38,23 @@ export default function SignUpPage() {
   });
 
   const signUp = async (data: z.infer<typeof signUpSchema>) => {
-    const {} = await authClient.signUp.email(
-      {
-        email: data.email,
-        name: data.name,
-        password: data.pwd,
-        callbackURL: "/dashboard"
-      },
-      {
-        onError: (ctx) => {
-          if (ctx.error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
-            setError("email", {
-              message: t("alreadyExists"),
-            });
-          }
-        },
-      },
-    );
+    // const {} = await authClient.signUp.email(
+    //   {
+    //     email: data.email,
+    //     name: data.name,
+    //     password: data.pwd,
+    //     callbackURL: "/dashboard"
+    //   },
+    //   {
+    //     onError: (ctx) => {
+    //       if (ctx.error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+    //         setError("email", {
+    //           message: t("alreadyExists"),
+    //         });
+    //       }
+    //     },
+    //   },
+    // );
   };
 
   const showError = (field: keyof z.infer<typeof signUpSchema>) => {
