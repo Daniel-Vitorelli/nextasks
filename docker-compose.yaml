@@ -1,0 +1,7 @@
+services:
+  next:
+    build: ./frontend
+    container_name: next_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
