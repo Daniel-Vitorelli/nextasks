@@ -1,13 +1,4 @@
 services:
-  next:
-    build: ./frontend
-    container_name: next_app
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    networks:
-      - app_network
-
   mysql:
     image: mysql:8.4
     container_name: mysql
@@ -19,6 +10,25 @@ services:
       MYSQL_PASSWORD: app123
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app_network
+
+  next:
+    build: ./frontend
+    container_name: next_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: sh -c "npx prisma db push && npm start"
     networks:
       - app_network
 
@@ -38,7 +48,7 @@ services:
 
 volumes:
   mysql_data:
-  
+
 networks:
   app_network:
     driver: bridge
