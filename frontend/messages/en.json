@@ -108,8 +108,8 @@
     "notMatch": "The passwords do not match",
     "characters": "Must be at least 8 characters",
     "signIn": "Sign In",
-    "continue": "Or continue With",
-    "haveAccount": "Have an account ?",
+    "continue": "Or continue with",
+    "haveAccount": "Have an account?",
     "alreadyExists": "User already exists. Use another email."
   },
   "login": {
@@ -119,10 +119,10 @@
     "invalidEmail": "Invalid Email",
     "password": "Password",
     "characters": "Must be at least 8 characters",
-    "forget": "Forgot your Password ?",
+    "forget": "Forgot your Password?",
     "signIn": "Sign In",
-    "continue": "Or continue With",
-    "dontAccount": "Don't have an account ?",
+    "continue": "Or continue with",
+    "dontAccount": "Don't have an account?",
     "create": "Create account"
   }
 }

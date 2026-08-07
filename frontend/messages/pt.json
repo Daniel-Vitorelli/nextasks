@@ -108,8 +108,8 @@
     "notMatch": "As senhas não coincidem",
     "characters": "Deve ter no mínimo 8 caracteres",
     "signIn": "Entre",
-    "continue": "Ou continue Com",
-    "haveAccount": "Tem uma conta ?",
+    "continue": "Ou continue com",
+    "haveAccount": "Tem uma conta?",
     "alreadyExists": "O usuário já existe. Use outro endereço de e-mail."
   },
   "login": {
@@ -119,10 +119,10 @@
     "invalidEmail": "Email invalido",
     "password": "Senha",
     "characters": "Deve ter no mínimo 8 caracteres",
-    "forget": "Esqueceu a senha ?",
+    "forget": "Esqueceu a senha?",
     "signIn": "Entre",
-    "continue": "Ou continue Com",
-    "dontAccount": "Não tem uma conta ?",
+    "continue": "Ou continue com",
+    "dontAccount": "Não tem uma conta?",
     "create": "Crie uma conta"
   }
 }
