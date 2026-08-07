@@ -44,11 +44,11 @@ export default function SignUpPage() {
         email: data.email,
         name: data.name,
         password: data.pwd,
-        callbackURL: "/dashboard",
+        callbackURL: "/app/home",
       },
       {
         onSuccess: () => {
-          window.location.href = "/dashboard";
+          window.location.href = "/app/home";
         },
         onError: (ctx) => {
           if (ctx.error.code === "USER_ALREADY_EXISTS") {

@@ -43,7 +43,7 @@ export default function LoginPage() {
       {
         email: data.email,
         password: data.pwd,
-        callbackURL: "/dashboard",
+        callbackURL: "/app/home",
       },
       {
         onError: (ctx) => {

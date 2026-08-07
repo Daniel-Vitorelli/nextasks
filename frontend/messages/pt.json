@@ -97,6 +97,15 @@
       "features": "Recursos"
     }
   },
+  "app": {
+    "dock": {
+      "dashboard": "Painel",
+      "social": "Social",
+      "home": "Início",
+      "ai": "IA",
+      "config": "Configurações"
+    }
+  },
   "sign-up": {
     "title": "Crie uma conta no NexTasks",
     "description": "Bem-vindo(a)! Crie uma conta para começar.",

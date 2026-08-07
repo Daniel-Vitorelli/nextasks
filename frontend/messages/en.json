@@ -97,6 +97,15 @@
       "features": "Features"
     }
   },
+  "app": {
+    "dock": {
+      "dashboard": "Dashboard",
+      "social": "Social",
+      "home": "Home",
+      "ai": "AI",
+      "config": "Config"
+    }
+  },
   "sign-up": {
     "title": "Create a NexTasks Account",
     "description": "Welcome! Create an account to get started",
