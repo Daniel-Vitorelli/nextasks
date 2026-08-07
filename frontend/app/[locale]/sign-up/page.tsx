@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { createSignUpSchema } from "@/schemas/sign-up-schema";
+import { authClient } from "@/lib/auth-client";
 import GoogleSvg from "@/components/svg/GoogleSvg";
 import MicrosoftSvg from "@/components/svg/MicrosoftSvg";
 
@@ -38,23 +39,26 @@ export default function SignUpPage() {
   });
 
   const signUp = async (data: z.infer<typeof signUpSchema>) => {
-    // const {} = await authClient.signUp.email(
-    //   {
-    //     email: data.email,
-    //     name: data.name,
-    //     password: data.pwd,
-    //     callbackURL: "/dashboard"
-    //   },
-    //   {
-    //     onError: (ctx) => {
-    //       if (ctx.error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
-    //         setError("email", {
-    //           message: t("alreadyExists"),
-    //         });
-    //       }
-    //     },
-    //   },
-    // );
+    await authClient.signUp.email(
+      {
+        email: data.email,
+        name: data.name,
+        password: data.pwd,
+        callbackURL: "/dashboard",
+      },
+      {
+        onSuccess: () => {
+          window.location.href = "/dashboard";
+        },
+        onError: (ctx) => {
+          if (ctx.error.code === "USER_ALREADY_EXISTS") {
+            setError("email", {
+              message: t("alreadyExists"),
+            });
+          }
+        },
+      },
+    );
   };
 
   const showError = (field: keyof z.infer<typeof signUpSchema>) => {
