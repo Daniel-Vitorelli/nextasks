@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { CalendarClock, CalendarRange, Pencil, Trash2 } from "lucide-react";
+import { CalendarClock, CalendarDays, CalendarRange, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,11 +13,17 @@ import type { Routine } from "@/lib/routines";
 
 interface RoutineCardProps {
   routine: Routine;
+  onOpen: (routine: Routine) => void;
   onEdit: (routine: Routine) => void;
   onDelete: (routine: Routine) => void;
 }
 
-export function RoutineCard({ routine, onEdit, onDelete }: RoutineCardProps) {
+export function RoutineCard({
+  routine,
+  onOpen,
+  onEdit,
+  onDelete,
+}: RoutineCardProps) {
   const t = useTranslations("dashboard.routines");
 
   const durationLabel =
@@ -27,8 +33,26 @@ export function RoutineCard({ routine, onEdit, onDelete }: RoutineCardProps) {
         })
       : t("dialog.indefinite");
 
+  const handleOpen = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onOpen(routine);
+  };
+
+  const handleEdit = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onEdit(routine);
+  };
+
+  const handleDelete = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onDelete(routine);
+  };
+
   return (
-    <li className="border-border/60 flex flex-col gap-2 rounded-xl border bg-card p-4">
+    <li
+      onClick={() => onOpen(routine)}
+      className="border-border/60 flex cursor-pointer flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/25"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-medium">{routine.name}</h3>
         <div className="flex items-center gap-1">
@@ -37,7 +61,22 @@ export function RoutineCard({ routine, onEdit, onDelete }: RoutineCardProps) {
               <Button
                 size="icon-sm"
                 variant="ghost"
-                onClick={() => onEdit(routine)}
+                onClick={handleOpen}
+                aria-label={t("actions.calendar")}
+              >
+                <CalendarDays />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t("actions.calendar")}</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                onClick={handleEdit}
                 aria-label={t("actions.edit")}
               >
                 <Pencil />
@@ -52,7 +91,7 @@ export function RoutineCard({ routine, onEdit, onDelete }: RoutineCardProps) {
               <Button
                 size="icon-sm"
                 variant="ghost"
-                onClick={() => onDelete(routine)}
+                onClick={handleDelete}
                 aria-label={t("actions.delete")}
               >
                 <Trash2 className="text-destructive" />

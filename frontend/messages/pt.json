@@ -144,7 +144,8 @@
       },
       "actions": {
         "edit": "Editar",
-        "delete": "Excluir"
+        "delete": "Excluir",
+        "calendar": "Abrir calendário"
       },
       "showAll": "Ver todas ({count})",
       "showLess": "Ver menos",
@@ -153,6 +154,21 @@
         "description": "Tem certeza que deseja excluir \"{name}\"? Essa ação não pode ser desfeita.",
         "cancel": "Cancelar",
         "confirm": "Excluir"
+      },
+      "calendar": {
+        "newBlock": "Novo bloco",
+        "close": "Fechar",
+        "duplicate": "Duplicar",
+        "title": "Título",
+        "startTime": "Início",
+        "endTime": "Fim",
+        "allDay": "Dia inteiro",
+        "color": "Cor",
+        "delete": "Excluir",
+        "titleRequired": "Informe um título",
+        "timeRequired": "Informe um horário",
+        "invalidTime": "Horário inválido (ex.: 3 PM ou 15:00)",
+        "endBeforeStart": "O fim deve ser depois do início"
       }
     }
   },

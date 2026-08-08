@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { RoutineCard } from "@/components/dashboard/routines/routine-card";
+import { RoutineCalendarDialog } from "@/components/dashboard/routines/routine-calendar-dialog";
 import { RoutineDialog } from "@/components/dashboard/routines/routine-dialog";
 import type { Routine, RoutineFormValues } from "@/lib/routines";
 
@@ -30,6 +31,7 @@ export function RoutinesSection() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Routine | null>(null);
+  const [openRoutine, setOpenRoutine] = useState<Routine | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
@@ -138,6 +140,16 @@ export function RoutinesSection() {
         onSave={handleSave}
       />
 
+      <RoutineCalendarDialog
+        routine={openRoutine}
+        open={!!openRoutine}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpenRoutine(null);
+          }
+        }}
+      />
+
       {isLoading ? (
         <LoadingState />
       ) : routines.length === 0 ? (
@@ -149,6 +161,7 @@ export function RoutinesSection() {
               <RoutineCard
                 key={routine.id}
                 routine={routine}
+                onOpen={setOpenRoutine}
                 onEdit={openEditDialog}
                 onDelete={setDeleteTarget}
               />

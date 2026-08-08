@@ -26,7 +26,12 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - Campos: nome, descrição, frequência (diária/semanal) e duração (indeterminada ou com data final).
   - Formulário validado com **Zod + React Hook Form** (erros por campo), no mesmo padrão das páginas de login.
   - Listagem limitada a 4 itens com "ver todas / ver menos".
-- **i18n** — Português e Inglês via `next-intl` (`frontend/messages/{pt,en}.json`).
+- **Calendário de blocos de tempo** (`/app/dashboard`, clicando no ícone de calendário de uma rotina):
+  - Visão semanal com blocos de tempo (eventos) por dia e por hora, navegação entre semanas e scroll horizontal.
+  - Duplo clique numa célula cria um bloco; blocos podem ser **arrastados** (mover), **redimensionados** (dobrar borda) e **movidos entre dias** (all-day).
+  - Popover de edição inline (título, horário, cor, modo dia inteiro), menu de contexto (cor/excluir) e menu "..." por bloco (duplicar/excluir).
+  - Formulário dos blocos validado com **Zod + react-hook-form**, commit no blur (Enter/ESC), com mensagens traduzidas em pt/en.
+- **i18n** — Português e Inglês via `next-intl` (`frontend/messages/{pt,en}.json`), incluindo os nomes dos dias da semana (date-fns com locale).
 
 ## Pré-requisitos
 
@@ -174,13 +179,17 @@ A app roda em http://localhost:3000.
 | POST    | `/api/routines`     | Cria uma rotina                        |
 | PATCH   | `/api/routines/:id` | Atualiza uma rotina                    |
 | DELETE  | `/api/routines/:id` | Exclui uma rotina                      |
+| GET     | `/api/routines/:id/time-blocks` | Lista os blocos de tempo de uma rotina |
+| POST    | `/api/routines/:id/time-blocks` | Cria um bloco de tempo           |
+| PATCH   | `/api/routines/:id/time-blocks/:blockId` | Atualiza um bloco de tempo |
+| DELETE  | `/api/routines/:id/time-blocks/:blockId` | Exclui um bloco de tempo   |
 | POST    | `/api/auth/[...all]` | Endpoints de autenticação (better-auth) |
 
-Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/routines.ts`).
+Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/time-blocks.ts`).
 
 ## Modelo de dados
 
-O esquema fica em `frontend/prisma/schema.prisma`. Além dos modelos do better-auth (`User`, `Session`, `Account`, `Verification`), existe:
+O esquema fica em `frontend/prisma/schema.prisma`. Além dos modelos do better-auth (`User`, `Session`, `Account`, `Verification`), existem:
 
 ```prisma
 model Routine {
@@ -194,8 +203,24 @@ model Routine {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeBlocks  TimeBlock[]
 
   @@index([userId])
+}
+
+model TimeBlock {
+  id        String   @id @default(cuid())
+  routineId String
+  title     String
+  start     DateTime
+  end       DateTime
+  isAllDay  Boolean  @default(false)
+  color     String   @default("blue") // red | orange | yellow | green | blue | purple | gray
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  routine   Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  @@index([routineId])
 }
 ```
 

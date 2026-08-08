@@ -144,7 +144,8 @@
       },
       "actions": {
         "edit": "Edit",
-        "delete": "Delete"
+        "delete": "Delete",
+        "calendar": "Open calendar"
       },
       "showAll": "View all ({count})",
       "showLess": "Show less",
@@ -153,6 +154,21 @@
         "description": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
         "cancel": "Cancel",
         "confirm": "Delete"
+      },
+      "calendar": {
+        "newBlock": "New block",
+        "close": "Close",
+        "duplicate": "Duplicate",
+        "title": "Title",
+        "startTime": "Start time",
+        "endTime": "End time",
+        "allDay": "All-day",
+        "color": "Color",
+        "delete": "Delete",
+        "titleRequired": "Enter a title",
+        "timeRequired": "Enter a time",
+        "invalidTime": "Invalid time (e.g., 3 PM or 15:00)",
+        "endBeforeStart": "End time must be after start time"
       }
     }
   },

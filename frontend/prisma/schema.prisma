@@ -26,18 +26,34 @@ model User {
 }
 
 model Routine {
-  id          String    @id @default(cuid())
+  id          String      @id @default(cuid())
   userId      String
   name        String
-  description String?   @db.Text
-  frequency   String    @default("daily")
-  duration    String    @default("indefinite")
+  description String?     @db.Text
+  frequency   String      @default("daily")
+  duration    String      @default("indefinite")
   endDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeBlocks  TimeBlock[]
 
   @@index([userId])
+}
+
+model TimeBlock {
+  id          String   @id @default(cuid())
+  routineId   String
+  title       String
+  start       DateTime
+  end         DateTime
+  isAllDay    Boolean  @default(false)
+  color       String   @default("blue")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  routine     Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  @@index([routineId])
 }
 
 model Session {
