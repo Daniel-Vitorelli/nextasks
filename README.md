@@ -17,6 +17,17 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
 
 > **Aviso:** os dados de banco ficam em um volume (`mysql_data`). Eles sobrevivem a `docker compose down` e só são apagados com `docker compose down -v`. Credenciais de banco no `docker-compose.yaml` são de desenvolvimento.
 
+## Funcionalidades
+
+- **Autenticação** — e-mail e senha com `better-auth`, nas páginas `/sign-up` e `/login`.
+- **Área autenticada** (`/[locale]/app/*`) — nav em dock (Painel, Social, Home, IA, Configurações) e proteção de rota via sessão.
+- **Painel de rotinas** (`/app/dashboard`):
+  - Criação, edição e exclusão de rotinas (exclusão com dialog de confirmação).
+  - Campos: nome, descrição, frequência (diária/semanal) e duração (indeterminada ou com data final).
+  - Formulário validado com **Zod + React Hook Form** (erros por campo), no mesmo padrão das páginas de login.
+  - Listagem limitada a 4 itens com "ver todas / ver menos".
+- **i18n** — Português e Inglês via `next-intl` (`frontend/messages/{pt,en}.json`).
+
 ## Pré-requisitos
 
 - [Docker](https://www.docker.com/products/docker-desktop/) (Docker Engine + Compose) instalado e rodando.
@@ -154,6 +165,41 @@ npm run dev
 ```
 
 A app roda em http://localhost:3000.
+
+## Rotas da API (Next.js App Router)
+
+| Método  | Rota                | Descrição                              |
+|---------|---------------------|----------------------------------------|
+| GET     | `/api/routines`     | Lista as rotinas do usuário autenticado |
+| POST    | `/api/routines`     | Cria uma rotina                        |
+| PATCH   | `/api/routines/:id` | Atualiza uma rotina                    |
+| DELETE  | `/api/routines/:id` | Exclui uma rotina                      |
+| POST    | `/api/auth/[...all]` | Endpoints de autenticação (better-auth) |
+
+Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/routines.ts`).
+
+## Modelo de dados
+
+O esquema fica em `frontend/prisma/schema.prisma`. Além dos modelos do better-auth (`User`, `Session`, `Account`, `Verification`), existe:
+
+```prisma
+model Routine {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  description String?   @db.Text
+  frequency   String    @default("daily")     // daily | weekly
+  duration    String    @default("indefinite") // indefinite | until
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+```
+
+Tabelas são criadas/atualizadas automaticamente via `prisma db push` no start do container.
 
 ## Problemas comuns
 

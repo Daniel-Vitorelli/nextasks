@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NexTasks — Frontend
 
-## Getting Started
+Aplicação Next.js 16 (App Router) com autenticação, painel de rotinas e i18n. O backend de dados é o MySQL/MariaDB (ver `README.md` na raiz).
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 16** (App Router, Route Handlers)
+- **Tailwind CSS 4** + componentes **shadcn/ui** (em `components/ui`)
+- **better-auth** (autenticação e sessão)
+- **Prisma 7** com cliente gerado (tabela do banco em `prisma/schema.prisma`)
+- **next-intl** (pt-BR e en) — mensagens em `messages/{pt,en}.json`
+- **react-hook-form** + **zod** para formulários (mesmo padrão nas páginas de login e no dialog de rotinas)
+
+## Estrutura
+
+```
+app/[locale]                # páginas por localidade (`login`, `sign-up`, `[app]/...`)
+app/api/routines            # route handlers das rotinas (GET, POST, PATCH, DELETE)
+app/api/auth                # handler do better-auth
+components/dashboard/routines/
+  routines-section.tsx      # contêiner: carrega lista, ver mais/ver menos, exclusão
+  routine-dialog.tsx        # dialog criar/editar (form com react-hook-form + zod)
+  routine-card.tsx          # card de uma rotina (badges, editar/excluir com tooltip)
+components/ui               # primitivos shadcn (button, dialog, alert-dialog, radio-group, ...)
+lib/                        # prisma, auth, session, validação compartilhada (routines.ts)
+prisma/schema.prisma        # modelo Routine + usuários do better-auth
+schemas/                    # schemas zod (login, sign-up, routine)
+messages/                   # traduções pt/en
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run dev     # dev server (http://localhost:3000)
+npm run build   # gera build de produção
+npm run lint    # eslint
+npx tsc --noEmit # typecheck
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Banco e schema
 
-## Learn More
+Após alterar `prisma/schema.prisma`:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx prisma generate   # regenera o client (frontend/generated/prisma)
+npx prisma db push    # aplica o schema no banco
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Traduções
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+As strings ficam em `messages/pt.json` e `messages/en.json`. Novas chaves devem ser adicionadas nos dois arquivos antes de usar `useTranslations` (senão o next-intl falha no typecheck).
