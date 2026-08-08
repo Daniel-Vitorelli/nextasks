@@ -106,6 +106,56 @@
       "config": "Configurações"
     }
   },
+  "dashboard": {
+    "eyebrow": "Painel",
+    "greeting": "Olá, {name}",
+    "fallbackName": "bem-vindo(a)",
+    "subtitle": "Organize sua rotina e acompanhe sua evolução.",
+    "routines": {
+      "title": "Rotinas",
+      "description": "Crie e gerencie suas rotinas diárias.",
+      "create": "Nova rotina",
+      "empty": {
+        "title": "Nenhuma rotina ainda",
+        "description": "Crie sua primeira rotina para começar."
+      },
+      "dialog": {
+        "title": "Criar nova rotina",
+        "description": "Escolha a frequência e a duração da sua rotina.",
+        "editTitle": "Editar rotina",
+        "editDescription": "Atualize os dados da sua rotina.",
+        "nameLabel": "Nome",
+        "namePlaceholder": "Ex.: Manhã produtiva",
+        "nameRequired": "Digite um nome para a rotina.",
+        "descriptionLabel": "Descrição",
+        "descriptionPlaceholder": "Ex.: Alongamento, leitura e estudo.",
+        "frequencyLabel": "Frequência",
+        "daily": "Diária",
+        "weekly": "Semanal",
+        "durationLabel": "Duração",
+        "indefinite": "Tempo indeterminado",
+        "until": "Definir prazo",
+        "untilWithDate": "Até {date}",
+        "endDateLabel": "Data final",
+        "endDateRequired": "Escolha uma data final.",
+        "cancel": "Cancelar",
+        "submit": "Criar",
+        "submitEdit": "Salvar"
+      },
+      "actions": {
+        "edit": "Editar",
+        "delete": "Excluir"
+      },
+      "showAll": "Ver todas ({count})",
+      "showLess": "Ver menos",
+      "deleteDialog": {
+        "title": "Excluir rotina",
+        "description": "Tem certeza que deseja excluir \"{name}\"? Essa ação não pode ser desfeita.",
+        "cancel": "Cancelar",
+        "confirm": "Excluir"
+      }
+    }
+  },
   "sign-up": {
     "title": "Crie uma conta no NexTasks",
     "description": "Bem-vindo(a)! Crie uma conta para começar.",

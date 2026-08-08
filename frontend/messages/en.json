@@ -106,6 +106,56 @@
       "config": "Config"
     }
   },
+  "dashboard": {
+    "eyebrow": "Dashboard",
+    "greeting": "Hello, {name}",
+    "fallbackName": "welcome",
+    "subtitle": "Organize your routine and track your progress.",
+    "routines": {
+      "title": "Routines",
+      "description": "Create and manage your daily routines.",
+      "create": "New routine",
+      "empty": {
+        "title": "No routines yet",
+        "description": "Create your first routine to get started."
+      },
+      "dialog": {
+        "title": "Create a new routine",
+        "description": "Choose the frequency and duration of your routine.",
+        "editTitle": "Edit routine",
+        "editDescription": "Update the details of your routine.",
+        "nameLabel": "Name",
+        "namePlaceholder": "E.g. Productive morning",
+        "nameRequired": "Give your routine a name.",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "E.g. Stretching, reading and studying.",
+        "frequencyLabel": "Frequency",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "durationLabel": "Duration",
+        "indefinite": "Indefinite",
+        "until": "Set deadline",
+        "untilWithDate": "Until {date}",
+        "endDateLabel": "End date",
+        "endDateRequired": "Choose an end date.",
+        "cancel": "Cancel",
+        "submit": "Create",
+        "submitEdit": "Save"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "showAll": "View all ({count})",
+      "showLess": "Show less",
+      "deleteDialog": {
+        "title": "Delete routine",
+        "description": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
+    }
+  },
   "sign-up": {
     "title": "Create a NexTasks Account",
     "description": "Welcome! Create an account to get started",
