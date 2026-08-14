@@ -1,38 +1,27 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getUser } from "@/lib/session";
-
-const unauthorized = () =>
-  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-const notFound = () =>
-  NextResponse.json({ error: "Routine not found" }, { status: 404 });
-
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
+import { notFound, requireUser, type RouteContext } from "@/lib/api";
 
 /**
  * Marks a routine as active/inactive. Only one routine can be active per
  * user at a time: activating one deactivates all the others in the same
  * transaction.
  */
-export async function POST(request: Request, { params }: RouteContext) {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+export async function POST(
+  request: Request,
+  { params }: RouteContext<{ id: string }>,
+) {
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const { id } = await params;
 
   const existing = await prisma.routine.findFirst({
     where: { id, userId: user.id },
   });
-
   if (!existing) {
-    return notFound();
+    return notFound("Routine not found");
   }
 
   const body = (await request.json()) as { isActive?: unknown };

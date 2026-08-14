@@ -1,29 +1,19 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getUser } from "@/lib/session";
-
-const unauthorized = () =>
-  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-const notFound = () =>
-  NextResponse.json({ error: "Routine not found" }, { status: 404 });
-
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
+import { notFound, requireUser, type RouteContext } from "@/lib/api";
 
 /**
  * Duplicates a routine (including all of its time blocks) as a fresh,
  * inactive copy. The copy name may be overridden by the client so it can be
  * localized (e.g. "Routine (copy)" / "Rotina (cópia)").
  */
-export async function POST(request: Request, { params }: RouteContext) {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+export async function POST(
+  request: Request,
+  { params }: RouteContext<{ id: string }>,
+) {
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const { id } = await params;
 
@@ -31,9 +21,8 @@ export async function POST(request: Request, { params }: RouteContext) {
     where: { id, userId: user.id },
     include: { timeBlocks: true },
   });
-
   if (!source) {
-    return notFound();
+    return notFound("Routine not found");
   }
 
   let requestedName: unknown;

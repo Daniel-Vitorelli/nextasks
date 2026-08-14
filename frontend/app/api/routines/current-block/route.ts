@@ -1,27 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getUser } from "@/lib/session";
 import {
   localMinutesOfDay,
   localWeekday,
   periodForFrequency,
 } from "@/lib/completions";
-
-const unauthorized = () =>
-  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-function parseTzOffset(value: string | null): number {
-  const offset = Number.parseInt(value ?? "0", 10);
-  return Number.isFinite(offset) ? offset : 0;
-}
+import { asFrequency, parseTzOffset, requireUser } from "@/lib/api";
 
 export async function GET(request: Request) {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const url = new URL(request.url);
   const tzOffsetMinutes = parseTzOffset(url.searchParams.get("tzOffset"));
@@ -38,7 +27,7 @@ export async function GET(request: Request) {
   const todayWeekday = localWeekday(now, tzOffsetMinutes);
   const nowMinutes = localMinutesOfDay(now, tzOffsetMinutes);
   const period = periodForFrequency(
-    routine.frequency as "daily" | "weekly",
+    asFrequency(routine.frequency),
     now,
     tzOffsetMinutes,
   );
@@ -63,7 +52,8 @@ export async function GET(request: Request) {
 
   // Rotina diaria vale todos os dias; semanal so no dia da semana do bloco.
   const appliesToday = (start: Date) =>
-    routine.frequency === "daily" || localWeekday(start, tzOffsetMinutes) === todayWeekday;
+    routine.frequency === "daily" ||
+    localWeekday(start, tzOffsetMinutes) === todayWeekday;
 
   const isTimedBlockActive = (block: (typeof timeBlocks)[number]) => {
     const start = localMinutesOfDay(block.start, tzOffsetMinutes);

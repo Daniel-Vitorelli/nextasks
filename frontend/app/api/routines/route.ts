@@ -2,17 +2,11 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { parseRoutineInput } from "@/lib/routines";
-import { getUser } from "@/lib/session";
-
-const unauthorized = () =>
-  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+import { requireUser } from "@/lib/api";
 
 export async function GET() {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const routines = await prisma.routine.findMany({
     where: { userId: user.id },
@@ -23,11 +17,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const result = parseRoutineInput(await request.json());
 

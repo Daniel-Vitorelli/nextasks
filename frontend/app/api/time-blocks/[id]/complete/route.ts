@@ -1,30 +1,22 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getUser } from "@/lib/session";
 import { periodForFrequency } from "@/lib/completions";
+import {
+  asFrequency,
+  badRequest,
+  notFound,
+  parseTzOffset,
+  requireUser,
+  type RouteContext,
+} from "@/lib/api";
 
-const unauthorized = () =>
-  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-const notFound = () =>
-  NextResponse.json({ error: "Time block not found" }, { status: 404 });
-
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
-
-function parseTzOffset(value: string | null): number {
-  const offset = Number.parseInt(value ?? "0", 10);
-  return Number.isFinite(offset) ? offset : 0;
-}
-
-export async function POST(request: Request, { params }: RouteContext) {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+export async function POST(
+  request: Request,
+  { params }: RouteContext<{ id: string }>,
+) {
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const { id } = await params;
   const url = new URL(request.url);
@@ -34,48 +26,35 @@ export async function POST(request: Request, { params }: RouteContext) {
     where: { id, routine: { userId: user.id } },
     include: { routine: true },
   });
-
   if (!timeBlock) {
-    return notFound();
+    return notFound("Time block not found");
   }
 
   const body = (await request.json().catch(() => ({}))) as { value?: unknown };
 
   if (typeof body.value !== "string") {
-    return NextResponse.json(
-      { error: "Value is required" },
-      { status: 400 },
-    );
+    return badRequest("Value is required");
   }
 
   let validValue: string;
 
   if (timeBlock.confirmation === "checklist") {
     if (body.value !== "true" && body.value !== "false") {
-      return NextResponse.json(
-        { error: "Invalid value for checklist confirmation" },
-        { status: 400 },
-      );
+      return badRequest("Invalid value for checklist confirmation");
     }
     validValue = body.value;
   } else if (timeBlock.confirmation === "score") {
     const score = Number.parseInt(body.value, 10);
     if (Number.isNaN(score) || score < 1 || score > 10) {
-      return NextResponse.json(
-        { error: "Invalid value for score confirmation" },
-        { status: 400 },
-      );
+      return badRequest("Invalid value for score confirmation");
     }
     validValue = String(score);
   } else {
-    return NextResponse.json(
-      { error: "Block has no confirmation mode" },
-      { status: 400 },
-    );
+    return badRequest("Block has no confirmation mode");
   }
 
   const period = periodForFrequency(
-    timeBlock.routine.frequency as "daily" | "weekly",
+    asFrequency(timeBlock.routine.frequency),
     new Date(),
     tzOffsetMinutes,
   );

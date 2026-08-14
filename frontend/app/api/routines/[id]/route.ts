@@ -2,13 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { parseRoutineInput } from "@/lib/routines";
-import { getUser } from "@/lib/session";
-
-const unauthorized = () =>
-  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-const notFound = () =>
-  NextResponse.json({ error: "Routine not found" }, { status: 404 });
+import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/api";
 
 async function getOwnedRoutine(id: string, userId: string) {
   return prisma.routine.findFirst({
@@ -16,29 +10,23 @@ async function getOwnedRoutine(id: string, userId: string) {
   });
 }
 
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
-
-export async function PATCH(request: Request, { params }: RouteContext) {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+export async function PATCH(
+  request: Request,
+  { params }: RouteContext<{ id: string }>,
+) {
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const { id } = await params;
 
   const existing = await getOwnedRoutine(id, user.id);
-
   if (!existing) {
-    return notFound();
+    return notFound("Routine not found");
   }
 
   const result = parseRoutineInput(await request.json());
-
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return badRequest(result.error);
   }
 
   const routine = await prisma.routine.update({
@@ -49,19 +37,18 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   return NextResponse.json(routine);
 }
 
-export async function DELETE(_request: Request, { params }: RouteContext) {
-  const user = await getUser();
-
-  if (!user) {
-    return unauthorized();
-  }
+export async function DELETE(
+  _request: Request,
+  { params }: RouteContext<{ id: string }>,
+) {
+  const { user, response } = await requireUser();
+  if (response) return response;
 
   const { id } = await params;
 
   const existing = await getOwnedRoutine(id, user.id);
-
   if (!existing) {
-    return notFound();
+    return notFound("Routine not found");
   }
 
   await prisma.routine.delete({ where: { id } });
