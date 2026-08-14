@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import type { Routine, RoutineFormValues } from "@/types/domain";
 import { createRoutineSchema } from "@/schemas/routine-schema";
+import { useFieldErrors } from "@/hooks/use-field-errors";
 
 interface RoutineDialogProps {
   open: boolean;
@@ -106,9 +107,11 @@ function RoutineForm({ routine, onSave, onClose }: RoutineFormProps) {
 
   const duration = watch("duration");
 
-  const showError = (field: keyof RoutineFormValues) => {
-    return !!errors[field] && (touchedFields[field] || isSubmitted);
-  };
+  const showError = useFieldErrors<keyof RoutineFormValues>(
+    errors,
+    touchedFields,
+    isSubmitted,
+  );
 
   const onSubmit = handleSubmit(async (data) => {
     try {

@@ -11,6 +11,7 @@ import {
   type TimeBlockFormValues,
 } from "@/schemas/time-block-schema";
 import type { CalendarEvent } from "@/types/calendar";
+import { useFieldErrors } from "@/hooks/use-field-errors";
 import { formatTimeDisplay } from "./calendar-event-time";
 
 function toDefaultFormValues(event: CalendarEvent): TimeBlockFormValues {
@@ -54,9 +55,11 @@ export function useEventDetailForm(
     Partial<Record<keyof TimeBlockFormValues, boolean>>
   >({});
 
-  const showError = (field: keyof TimeBlockFormValues) => {
-    return !!errors[field] && (blurredFields[field] || isSubmitted);
-  };
+  const showError = useFieldErrors<keyof TimeBlockFormValues>(
+    errors,
+    blurredFields,
+    isSubmitted,
+  );
 
   const { title, description, start, end } = event;
 
