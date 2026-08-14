@@ -104,6 +104,19 @@
       "home": "Início",
       "ai": "IA",
       "config": "Configurações"
+    },
+    "home": {
+      "eyebrow": "Início",
+      "greeting": "Olá, {name}",
+      "fallbackName": "bem-vindo(a)",
+      "currentBlock": {
+        "label": "Agora",
+        "allDay": "Dia inteiro",
+        "emptyTitle": "Nenhuma atividade no momento",
+        "emptyDescription": "Seu próximo bloco aparecerá aqui automaticamente.",
+        "noRoutineTitle": "Nenhuma rotina ativa",
+        "noRoutineDescription": "Ative uma rotina no painel para ver sua programação atual."
+      }
     }
   },
   "dashboard": {

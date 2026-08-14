@@ -104,6 +104,19 @@
       "home": "Home",
       "ai": "AI",
       "config": "Config"
+    },
+    "home": {
+      "eyebrow": "Home",
+      "greeting": "Hello, {name}",
+      "fallbackName": "welcome",
+      "currentBlock": {
+        "label": "Now",
+        "allDay": "All day",
+        "emptyTitle": "Nothing happening right now",
+        "emptyDescription": "Your next block will show up here automatically.",
+        "noRoutineTitle": "No active routine",
+        "noRoutineDescription": "Activate a routine in the dashboard to see your current schedule."
+      }
     }
   },
   "dashboard": {

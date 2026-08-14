@@ -21,7 +21,7 @@ import { RoutineCalendarDialog } from "@/components/dashboard/routines/routine-c
 import { RoutineDialog } from "@/components/dashboard/routines/routine-dialog";
 import type { Routine, RoutineFormValues } from "@/lib/routines";
 
-const INITIAL_VISIBLE = 4;
+const INITIAL_VISIBLE = 2;
 
 export function RoutinesSection() {
   const t = useTranslations("dashboard.routines");
