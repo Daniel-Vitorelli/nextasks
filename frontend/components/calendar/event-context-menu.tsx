@@ -60,7 +60,7 @@ export function EventContextMenu({
   const menuRef = React.useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = React.useState(position);
   const [ready, setReady] = React.useState(false);
-  const currentColor = event.color ?? "blue";
+  const currentColor = event.color ?? "green";
 
   React.useLayoutEffect(() => {
     const menu = menuRef.current;

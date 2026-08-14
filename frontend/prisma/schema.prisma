@@ -51,7 +51,7 @@ model TimeBlock {
   start        DateTime
   end          DateTime
   isAllDay     Boolean  @default(false)
-  color        String   @default("blue")
+  color        String   @default("green")
   confirmation String   @default("none") // none | checklist | score
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

@@ -98,7 +98,7 @@ export function CalendarEventItem({
   className,
 }: CalendarEventItemProps) {
   const { event, segmentPosition = "full" } = positionedEvent;
-  const color = event.color ?? "blue";
+  const color = event.color ?? "green";
   const styles = eventColorStyles[color];
   const eventIsPast = isPastProp ?? isPast(event.end);
   const { view, boundaryRight, headerBottom } = useCalendarPopoverBoundary();

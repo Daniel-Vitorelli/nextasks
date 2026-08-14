@@ -40,7 +40,7 @@ export function EventDetailPanel({
   headerActions,
 }: EventDetailPanelProps) {
   const t = useTranslations("dashboard.routines.calendar");
-  const currentColor = event.color ?? "blue";
+  const currentColor = event.color ?? "green";
 
   const {
     register,

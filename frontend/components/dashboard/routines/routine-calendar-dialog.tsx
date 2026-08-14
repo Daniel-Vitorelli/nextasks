@@ -123,7 +123,7 @@ export function RoutineCalendarDialog({
           start,
           end,
           isAllDay: false,
-          color: "blue",
+          color: "green",
         }),
       });
 
@@ -151,7 +151,7 @@ export function RoutineCalendarDialog({
               start: event.start.toISOString(),
               end: event.end.toISOString(),
               isAllDay: event.isAllDay ?? false,
-              color: event.color ?? "blue",
+              color: event.color ?? "green",
               confirmation: event.confirmation ?? "none",
             }
           : block,
@@ -170,7 +170,7 @@ export function RoutineCalendarDialog({
             start: event.start,
             end: event.end,
             isAllDay: event.isAllDay ?? false,
-            color: event.color ?? "blue",
+            color: event.color ?? "green",
             confirmation: event.confirmation ?? "none",
           }),
         },
@@ -218,7 +218,7 @@ export function RoutineCalendarDialog({
           start: event.start,
           end: event.end,
           isAllDay: event.isAllDay ?? false,
-          color: event.color ?? "blue",
+          color: event.color ?? "green",
           confirmation: event.confirmation ?? "none",
         }),
       });

@@ -90,7 +90,7 @@ export function parseTimeBlockInput(value: unknown): TimeBlockPayload | null {
     start,
     end,
     isAllDay: body.isAllDay === true,
-    color: isEventColor(body.color) ? body.color : "blue",
+    color: isEventColor(body.color) ? body.color : "green",
     confirmation: isEventConfirmation(body.confirmation)
       ? body.confirmation
       : "none",
@@ -174,7 +174,7 @@ export function fromCalendarEvent(event: CalendarEvent): TimeBlockPatchPayload {
     start: event.start,
     end: event.end,
     isAllDay: event.isAllDay ?? false,
-    color: event.color ?? "blue",
+    color: event.color ?? "green",
     confirmation: event.confirmation ?? "none",
   };
 }

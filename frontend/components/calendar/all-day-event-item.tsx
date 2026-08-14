@@ -86,7 +86,7 @@ export function AllDayEventItem({
   titleOffsetPercent = 0,
   dragVariant,
 }: AllDayEventItemProps) {
-  const color = event.color ?? "blue";
+  const color = event.color ?? "green";
   const styles = eventColorStyles[color];
   const { view, boundaryRight, headerBottom } = useCalendarPopoverBoundary();
   const isDayView = view === "day";
