@@ -387,7 +387,7 @@ export function WeekView({
         {/* Scrollable grid area \u2014 also serves as the collision boundary for popovers */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-auto scrollbar-hide"
+          className="min-h-0 flex-1 overflow-auto scrollbar-hide"
         >
           <div
             className="relative flex"

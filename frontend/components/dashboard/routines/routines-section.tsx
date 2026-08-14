@@ -104,7 +104,17 @@ export function RoutinesSection() {
       }
 
       const copy = (await response.json()) as Routine;
-      setRoutines((current) => [copy, ...current]);
+      setRoutines((current) => {
+        // Insert the copy right after the active routine (or at the top),
+        // keeping the active one pinned first.
+        const activeIndex = current.findIndex((item) => item.isActive);
+        const insertAt = activeIndex === -1 ? 0 : activeIndex + 1;
+        return [
+          ...current.slice(0, insertAt),
+          copy,
+          ...current.slice(insertAt),
+        ];
+      });
     } catch (error) {
       console.error(error);
     }
@@ -124,15 +134,24 @@ export function RoutinesSection() {
 
       const saved = (await response.json()) as Routine;
 
-      setRoutines((current) =>
-        current.map((item) =>
+      setRoutines((current) => {
+        const updated = current.map((item) =>
           item.id === saved.id
             ? saved
             : saved.isActive && item.isActive
               ? { ...item, isActive: false }
               : item,
-        ),
-      );
+        );
+
+        // Keep the active routine pinned at the top of the list.
+        if (!saved.isActive) {
+          return updated;
+        }
+        return [
+          saved,
+          ...updated.filter((item) => item.id !== saved.id),
+        ];
+      });
     } catch (error) {
       console.error(error);
     }

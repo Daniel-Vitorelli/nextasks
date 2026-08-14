@@ -290,7 +290,7 @@ export function RoutineCalendarDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-dvh w-full max-w-none flex-col gap-0 p-0 sm:h-[85vh] sm:max-h-[85vh] sm:max-w-[1180px]"
+        className="flex h-dvh w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:h-[85vh] sm:max-h-[85vh] sm:max-w-[1180px]"
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5">
           <div className="flex min-w-0 items-center gap-3">

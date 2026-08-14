@@ -16,7 +16,7 @@ export async function GET() {
 
   const routines = await prisma.routine.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
   });
 
   return NextResponse.json(routines);
