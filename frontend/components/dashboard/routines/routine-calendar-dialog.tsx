@@ -11,12 +11,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { WeekView } from "@/components/calendar/week-view";
 import type { CalendarEvent, ViewType } from "@/types/calendar";
-import {
-  createBlockStub,
-  toCalendarEvent,
-} from "@/lib/time-blocks";
-import type { TimeBlock } from "@/types/domain";
 import type { Routine } from "@/types/domain";
+import { applyTimeOfDay, createBlockStub, toCalendarEvent } from "@/lib/time-blocks";
+import { useRoutineTimeBlocks } from "./use-routine-time-blocks";
 
 interface RoutineCalendarDialogProps {
   routine: Routine | null;
@@ -29,18 +26,6 @@ interface RoutineCalendarDialogProps {
  * forma genérica: em rotina diária o bloco sempre cai no mesmo horário do
  * dia; em rotina semanal ele cai no mesmo dia da semana (blocos repetidos).
  */
-function applyTimeOfDay(target: Date, source: Date): Date {
-  return new Date(
-    target.getFullYear(),
-    target.getMonth(),
-    target.getDate(),
-    source.getHours(),
-    source.getMinutes(),
-    source.getSeconds(),
-    source.getMilliseconds(),
-  );
-}
-
 export function RoutineCalendarDialog({
   routine,
   open,
@@ -53,39 +38,25 @@ export function RoutineCalendarDialog({
   const isWeekly = routine?.frequency === "weekly";
   const weekStart = startOfWeek(new Date());
 
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  /**
-   * For weekly routines only: the weekday (0-6) being viewed alone, or null
-   * to view the whole week. Weekly blocks are stored with real dates, and
-   * the weekday of each block determines which day it belongs to.
-   */
+  const {
+    timeBlocks,
+    isLoading,
+    selectedEventId,
+    loadBlocks,
+    createBlock,
+    updateBlock,
+    deleteBlock,
+    duplicateBlock,
+    setSelectedEventId,
+  } = useRoutineTimeBlocks(routine?.id ?? null);
+
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null);
 
   const dayViewDate =
     isWeekly && selectedWeekday !== null
       ? addDays(weekStart, selectedWeekday)
       : null;
-  const view: ViewType =
-    isWeekly && selectedWeekday === null ? "week" : "day";
-
-  const loadBlocks = async (routineId: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/routines/${routineId}/time-blocks`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load time blocks");
-      }
-
-      setTimeBlocks((await response.json()) as TimeBlock[]);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const view: ViewType = isWeekly && selectedWeekday === null ? "week" : "day";
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -108,134 +79,32 @@ export function RoutineCalendarDialog({
     return null;
   }
 
-  const createBlock = async (anchor: Date) => {
-    const { start, end } = createBlockStub(anchor);
-
-    try {
-      const response = await fetch(`/api/routines/${routine.id}/time-blocks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: t("calendar.newBlock"),
-          start,
-          end,
-          isAllDay: false,
-          color: "green",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create time block");
-      }
-
-      const saved = (await response.json()) as TimeBlock;
-      setTimeBlocks((current) => [...current, saved]);
-      setSelectedEventId(saved.id);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleEventChange = async (event: CalendarEvent) => {
-    const previous = timeBlocks;
-    setTimeBlocks((current) =>
-      current.map((block) =>
-        block.id === event.id
-          ? {
-              ...block,
-              title: event.title,
-              description: event.description ?? null,
-              start: event.start.toISOString(),
-              end: event.end.toISOString(),
-              isAllDay: event.isAllDay ?? false,
-              color: event.color ?? "green",
-              confirmation: event.confirmation ?? "none",
-            }
-          : block,
-      ),
+  const handleCreateAtCurrentTime = () => {
+    const now = new Date();
+    const anchorDate = dayViewDate ?? weekStart;
+    const anchor = new Date(
+      anchorDate.getFullYear(),
+      anchorDate.getMonth(),
+      anchorDate.getDate(),
+      now.getHours(),
     );
-
-    try {
-      const response = await fetch(
-        `/api/routines/${routine.id}/time-blocks/${event.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: event.title,
-            description: event.description ?? null,
-            start: event.start,
-            end: event.end,
-            isAllDay: event.isAllDay ?? false,
-            color: event.color ?? "green",
-            confirmation: event.confirmation ?? "none",
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to update time block");
-      }
-    } catch (error) {
-      console.error(error);
-      setTimeBlocks(previous);
-    }
-  };
-
-  const handleEventDelete = async (event: CalendarEvent) => {
-    const previous = timeBlocks;
-    setTimeBlocks((current) => current.filter((b) => b.id !== event.id));
-    if (selectedEventId === event.id) {
-      setSelectedEventId(null);
-    }
-
-    try {
-      const response = await fetch(
-        `/api/routines/${routine.id}/time-blocks/${event.id}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete time block");
-      }
-    } catch (error) {
-      console.error(error);
-      setTimeBlocks(previous);
-    }
-  };
-
-  const handleEventDuplicate = async (event: CalendarEvent) => {
-    try {
-      const response = await fetch(`/api/routines/${routine.id}/time-blocks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: event.title,
-          description: event.description ?? null,
-          start: event.start,
-          end: event.end,
-          isAllDay: event.isAllDay ?? false,
-          color: event.color ?? "green",
-          confirmation: event.confirmation ?? "none",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to duplicate time block");
-      }
-
-      const saved = (await response.json()) as TimeBlock;
-      setTimeBlocks((current) => [...current, saved]);
-      setSelectedEventId(saved.id);
-    } catch (error) {
-      console.error(error);
-    }
+    void createBlock({
+      title: t("calendar.newBlock"),
+      ...createBlockStub(anchor),
+      isAllDay: false,
+      color: "green",
+    });
   };
 
   const handleCellDoubleClick = (day: Date, hour: number) => {
     const anchor = new Date(day);
     anchor.setHours(hour, 0, 0, 0);
-    void createBlock(anchor);
+    void createBlock({
+      title: t("calendar.newBlock"),
+      ...createBlockStub(anchor),
+      isAllDay: false,
+      color: "green",
+    });
   };
 
   /** Mapeia blocos armazenados para o template genérico. */
@@ -270,18 +139,6 @@ export function RoutineCalendarDialog({
 
       return event;
     });
-
-  const handleCreateAtCurrentTime = () => {
-    const now = new Date();
-    const anchorDate = dayViewDate ?? weekStart;
-    const anchor = new Date(
-      anchorDate.getFullYear(),
-      anchorDate.getMonth(),
-      anchorDate.getDate(),
-      now.getHours(),
-    );
-    void createBlock(anchor);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -361,9 +218,9 @@ export function RoutineCalendarDialog({
               locale={dateLocale}
               generic
               onEventClick={(event) => setSelectedEventId(event.id)}
-              onEventChange={handleEventChange}
-              onEventDelete={handleEventDelete}
-              onEventDuplicate={handleEventDuplicate}
+              onEventChange={updateBlock}
+              onEventDelete={deleteBlock}
+              onEventDuplicate={duplicateBlock}
               onCellDoubleClick={handleCellDoubleClick}
               selectedEventId={selectedEventId ?? undefined}
               isSidebarOpen={false}

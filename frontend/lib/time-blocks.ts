@@ -226,3 +226,20 @@ export function applyTimeToDate(
   result.setHours(hours, minutes, 0, 0);
   return result;
 }
+
+/**
+ * Copies the time-of-day (including seconds/milliseconds) from `source`
+ * onto the date of `target`. Used to map stored block dates onto template
+ * days while keeping the original clock time.
+ */
+export function applyTimeOfDay(target: Date, source: Date): Date {
+  return new Date(
+    target.getFullYear(),
+    target.getMonth(),
+    target.getDate(),
+    source.getHours(),
+    source.getMinutes(),
+    source.getSeconds(),
+    source.getMilliseconds(),
+  );
+}
