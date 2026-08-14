@@ -3,7 +3,7 @@
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { isSameDay } from "date-fns";
-import { calculateAllDayEventRows } from "@/lib/event-utils";
+import { calculateAllDayEventRows } from "@/lib/calendar/all-day-layout";
 import { AllDayEventItem } from "./all-day-event-item";
 import type { WeekViewAllDayRowProps } from "./week-view-types";
 import {

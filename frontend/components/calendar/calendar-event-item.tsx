@@ -16,7 +16,7 @@ import type { CalendarEventItemProps } from "./week-view-types";
 import { EventContextMenu } from "./event-context-menu";
 import { eventColorStyles } from "./calendar-event-color";
 import { formatEventTimeRange } from "./calendar-event-time";
-
+import { EventVisual } from "./event-visual";
 
 function computeOverrideStyle(
   positionedEvent: CalendarEventItemProps["positionedEvent"],
@@ -194,6 +194,15 @@ export function CalendarEventItem({
       : (positionedEvent.height / 100) * 24 * hourHeight;
   const isCompact = heightInPixels < 40;
 
+  const chipRounding = cn(
+    hasTopRounding && "rounded-t-md",
+    hasBottomRounding && "rounded-b-md",
+  );
+  const chipBarRounding = cn(
+    hasTopRounding && "rounded-tl-md",
+    hasBottomRounding && "rounded-bl-md",
+  );
+
   if (dragVariant === "ghost") {
     return (
       <div
@@ -210,41 +219,39 @@ export function CalendarEventItem({
           zIndex: 15,
         }}
       >
-        <div className="absolute inset-0 rounded-sm bg-white dark:bg-[#191919]" />
-        <div className={cn("absolute inset-0 rounded-sm", styles.bg)} />
-        <div
-          className={cn(
-            "absolute left-0 top-0 bottom-0 w-[4px] rounded-l-md dark:bg-white dark:mix-blend-overlay",
-            styles.border,
-          )}
-        />
-        <div
-          className={cn(
-            "relative flex flex-col h-full pl-1 overflow-hidden",
-            isCompact && "flex-row items-center gap-1",
-          )}
+        <EventVisual
+          event={event}
+          rounding="rounded-sm"
+          barRounding="rounded-l-md"
         >
-          <span
+          <div
             className={cn(
-              "font-medium text-[0.625rem] leading-tight break-words",
-              styles.text,
-              "dark:text-white/80",
+              "relative flex flex-col h-full pl-1 overflow-hidden",
+              isCompact && "flex-row items-center gap-1",
             )}
           >
-            {event.title}
-          </span>
-          {!isCompact && (
             <span
               className={cn(
-                "text-[0.625rem] whitespace-nowrap",
+                "font-medium text-[0.625rem] leading-tight break-words",
                 styles.text,
-                "dark:text-white dark:mix-blend-overlay",
+                "dark:text-white/80",
               )}
             >
-              {formatEventTimeRange(event)}
+              {event.title}
             </span>
-          )}
-        </div>
+            {!isCompact && (
+              <span
+                className={cn(
+                  "text-[0.625rem] whitespace-nowrap",
+                  styles.text,
+                  "dark:text-white dark:mix-blend-overlay",
+                )}
+              >
+                {formatEventTimeRange(event)}
+              </span>
+            )}
+          </div>
+        </EventVisual>
       </div>
     );
   }
@@ -306,29 +313,27 @@ export function CalendarEventItem({
         )}
         style={draggingStyle}
       >
-        <div className="absolute inset-0 rounded-sm bg-white dark:bg-[#191919]" />
-        <div className={cn("absolute inset-0 rounded-sm", styles.bg)} />
-        <div
-          className={cn(
-            "absolute left-0 top-0 bottom-0 w-[4px] rounded-l-md dark:bg-white dark:mix-blend-overlay",
-            styles.border,
-          )}
-        />
-        <div
-          className={cn(
-            "relative flex flex-col h-full pl-1 overflow-hidden",
-            heightPx < 40 && "flex-row items-center gap-1",
-          )}
+        <EventVisual
+          event={event}
+          rounding="rounded-sm"
+          barRounding="rounded-l-md"
         >
-          <span className="font-medium text-[0.625rem] leading-tight break-words text-white dark:text-white flex items-center gap-0.5">
-            {event.title}
-          </span>
-          {heightPx >= 40 && (
-            <span className="text-[0.625rem] whitespace-nowrap text-white dark:text-white">
-              {formatEventTimeRange(displayEvent)}
+          <div
+            className={cn(
+              "relative flex flex-col h-full pl-1 overflow-hidden",
+              heightPx < 40 && "flex-row items-center gap-1",
+            )}
+          >
+            <span className="font-medium text-[0.625rem] leading-tight break-words text-white dark:text-white flex items-center gap-0.5">
+              {event.title}
             </span>
-          )}
-        </div>
+            {heightPx >= 40 && (
+              <span className="text-[0.625rem] whitespace-nowrap text-white dark:text-white">
+                {formatEventTimeRange(displayEvent)}
+              </span>
+            )}
+          </div>
+        </EventVisual>
       </div>
     );
   }
@@ -453,8 +458,7 @@ export function CalendarEventItem({
       onContextMenu={handleContextMenu}
       className={cn(
         "group absolute px-2 py-1 max-sm:px-1",
-        hasTopRounding && "rounded-t-md",
-        hasBottomRounding && "rounded-b-md",
+        chipRounding,
         "cursor-grab hover:z-10 focus:outline-none focus-visible:outline-none",
         "overflow-hidden select-none touch-none",
         isSelected && "z-20",
@@ -465,104 +469,80 @@ export function CalendarEventItem({
         zIndex: isSelected ? 20 : positionedEvent.column,
       }}
     >
-      {/* Solid background layer to prevent transparency bleed-through */}
-      <div
-        className={cn(
-          "absolute inset-0 bg-white dark:bg-[#191919]",
-          hasTopRounding && "rounded-t-md",
-          hasBottomRounding && "rounded-b-md",
-        )}
-      />
-
-      {/* Colored background layer - uses border color when selected */}
-      <div
-        className={cn(
-          "absolute inset-0",
-          hasTopRounding && "rounded-t-md",
-          hasBottomRounding && "rounded-b-md",
-          isSelected ? styles.border : styles.bg,
-          eventIsPast && !isSelected && "opacity-60",
-        )}
-      />
-
-      {/* Left border - hidden when selected (merges with bg) */}
-      {!isSelected && (
-        <div
-          className={cn(
-            "absolute left-0 top-0 bottom-0 w-[4px] dark:bg-white dark:mix-blend-overlay",
-            hasTopRounding && "rounded-tl-md",
-            hasBottomRounding && "rounded-bl-md",
-            styles.border,
-            eventIsPast && "opacity-60",
-          )}
-        />
-      )}
-
-      {/* Resize hint edges — highlighted when the pointer is over the
-          corresponding hotzone, so resizing feels discoverable */}
-      {showTopResize && (
-        <div
-          className={cn(
-            "absolute left-0 right-0 top-0 h-[3px] pointer-events-none transition-opacity duration-100",
-            hasTopRounding && "rounded-t-md",
-            styles.border,
-            "dark:bg-white dark:mix-blend-overlay",
-            resizeHover === "top"
-              ? "opacity-100"
-              : "opacity-0 group-hover:opacity-60",
-          )}
-        />
-      )}
-      {showBottomResize && (
-        <div
-          className={cn(
-            "absolute left-0 right-0 bottom-0 h-[3px] pointer-events-none transition-opacity duration-100",
-            hasBottomRounding && "rounded-b-md",
-            styles.border,
-            "dark:bg-white dark:mix-blend-overlay",
-            resizeHover === "bottom"
-              ? "opacity-100"
-              : "opacity-0 group-hover:opacity-60",
-          )}
-        />
-      )}
-      <div
-        className={cn(
-          "relative flex flex-col h-full pl-1 overflow-hidden",
-          isCompact && "flex-row items-center gap-1",
-        )}
+      <EventVisual
+        event={event}
+        rounding={chipRounding}
+        barRounding={chipBarRounding}
+        showLeftBar
+        isSelected={isSelected}
+        isPast={eventIsPast}
       >
-        <span
+        {/* Resize hint edges — highlighted when the pointer is over the
+            corresponding hotzone, so resizing feels discoverable */}
+        {showTopResize && (
+          <div
+            className={cn(
+              "absolute left-0 right-0 top-0 h-[3px] pointer-events-none transition-opacity duration-100",
+              hasTopRounding && "rounded-t-md",
+              styles.border,
+              "dark:bg-white dark:mix-blend-overlay",
+              resizeHover === "top"
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-60",
+            )}
+          />
+        )}
+        {showBottomResize && (
+          <div
+            className={cn(
+              "absolute left-0 right-0 bottom-0 h-[3px] pointer-events-none transition-opacity duration-100",
+              hasBottomRounding && "rounded-b-md",
+              styles.border,
+              "dark:bg-white dark:mix-blend-overlay",
+              resizeHover === "bottom"
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-60",
+            )}
+          />
+        )}
+        <div
           className={cn(
-            "font-medium text-[0.625rem] leading-tight break-words flex items-center gap-0.5",
-            isSelected
-              ? "text-white dark:text-white"
-              : cn(
-                  styles.text,
-                  "dark:text-white/80",
-                  eventIsPast && "opacity-60",
-                ),
+            "relative flex flex-col h-full pl-1 overflow-hidden",
+            isCompact && "flex-row items-center gap-1",
           )}
         >
-          {event.title}
-        </span>
-        {!isCompact && (
           <span
             className={cn(
-              "text-[0.625rem] whitespace-nowrap",
+              "font-medium text-[0.625rem] leading-tight break-words flex items-center gap-0.5",
               isSelected
                 ? "text-white dark:text-white"
                 : cn(
                     styles.text,
-                    "dark:text-white dark:mix-blend-overlay",
-                    eventIsPast && "opacity-60 dark:opacity-100",
+                    "dark:text-white/80",
+                    eventIsPast && "opacity-60",
                   ),
             )}
           >
-            {formatEventTimeRange(displayEvent)}
+            {event.title}
           </span>
-        )}
-      </div>
+          {!isCompact && (
+            <span
+              className={cn(
+                "text-[0.625rem] whitespace-nowrap",
+                isSelected
+                  ? "text-white dark:text-white"
+                  : cn(
+                      styles.text,
+                      "dark:text-white dark:mix-blend-overlay",
+                      eventIsPast && "opacity-60 dark:opacity-100",
+                    ),
+              )}
+            >
+              {formatEventTimeRange(displayEvent)}
+            </span>
+          )}
+        </div>
+      </EventVisual>
     </div>
   );
 
@@ -580,7 +560,7 @@ export function CalendarEventItem({
            * In day view the event spans the full grid width, so Radix can't
            * fit the popover beside the trigger. Place a zero-width anchor at
            * the RIGHT edge of the calendar boundary and use side="left" so
-           * the popover extends leftward \u2014 matching Notion Calendar.
+           * the popover extends leftward — matching Notion Calendar.
            *
            * The anchor is portaled to document.body to escape scroll
            * containers that apply CSS transforms (which break position:fixed

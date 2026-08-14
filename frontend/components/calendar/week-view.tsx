@@ -11,7 +11,7 @@ import {
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
-import { isMultiDayEvent } from "@/lib/event-utils";
+import { isMultiDayEvent } from "@/lib/calendar/positioning";
 import { useHorizontalScroll } from "@/hooks/use-horizontal-scroll";
 import { useEventDrag } from "@/hooks/use-event-drag";
 import { useEventResize } from "@/hooks/use-event-resize";

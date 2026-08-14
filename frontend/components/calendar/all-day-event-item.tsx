@@ -15,6 +15,7 @@ import type { CalendarEvent } from "@/types/calendar";
 import { EventContextMenu } from "./event-context-menu";
 import { eventColorStyles } from "./calendar-event-color";
 import { formatTimeDisplay } from "./calendar-event-time";
+import { EventVisual } from "./event-visual";
 
 /** Drag visual variant for all-day events */
 export type AllDayDragVariant = "ghost" | "placeholder" | "dragging";
@@ -55,7 +56,7 @@ export interface AllDayEventItemProps {
   /**
    * Percentage of the event's width that is hidden off-screen to the left.
    * Used in day view to offset the title into the visible area so multi-day
-   * events always show their title \u2014 \u201csticky title\u201d effect.
+   * events always show their title — "sticky title" effect.
    */
   titleOffsetPercent?: number;
   /** Visual variant during drag operations */
@@ -110,6 +111,11 @@ export function AllDayEventItem({
     onContextMenuOpenChange?.(false);
   }, [onContextMenuOpenChange]);
 
+  const spanRounding = cn(
+    spanStart && "rounded-l-md",
+    spanEnd && "rounded-r-md",
+  );
+
   // Ghost: faded version at original position during move
   if (dragVariant === "ghost") {
     return (
@@ -117,45 +123,27 @@ export function AllDayEventItem({
         className={cn(
           "relative h-6 px-2 py-0.5 pointer-events-none opacity-30",
           "overflow-hidden select-none flex items-center gap-1",
-          spanStart && "rounded-l-md",
-          spanEnd && "rounded-r-md",
+          spanRounding,
           className,
         )}
       >
-        <div
-          className={cn(
-            "absolute inset-0 bg-white dark:bg-[#191919]",
-            spanStart && "rounded-l-md",
-            spanEnd && "rounded-r-md",
-          )}
-        />
-        <div
-          className={cn(
-            "absolute inset-0",
-            styles.bg,
-            spanStart && "rounded-l-md",
-            spanEnd && "rounded-r-md",
-          )}
-        />
-        {spanStart && (
-          <div
-            className={cn(
-              "absolute left-0 top-0 bottom-0 w-[4px] dark:bg-white dark:mix-blend-overlay",
-              spanStart && "rounded-l-md",
-              styles.border,
-            )}
-          />
-        )}
-        <span
-          className={cn(
-            "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap",
-            spanStart && "pl-1",
-            styles.text,
-            "dark:text-white/80",
-          )}
+        <EventVisual
+          event={event}
+          rounding={spanRounding}
+          barRounding={spanStart ? "rounded-l-md" : undefined}
+          showLeftBar={spanStart}
         >
-          {event.title}
-        </span>
+          <span
+            className={cn(
+              "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap",
+              spanStart && "pl-1",
+              styles.text,
+              "dark:text-white/80",
+            )}
+          >
+            {event.title}
+          </span>
+        </EventVisual>
       </div>
     );
   }
@@ -184,23 +172,21 @@ export function AllDayEventItem({
           className,
         )}
       >
-        <div className="absolute inset-0 rounded-sm bg-white dark:bg-[#191919]" />
-        <div className={cn("absolute inset-0 rounded-sm", styles.bg)} />
-        <div
-          className={cn(
-            "absolute left-0 top-0 bottom-0 w-[4px] rounded-l-md dark:bg-white dark:mix-blend-overlay",
-            styles.border,
-          )}
-        />
-        <span
-          className={cn(
-            "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap pl-1",
-            styles.text,
-            "dark:text-white/80",
-          )}
+        <EventVisual
+          event={event}
+          rounding="rounded-sm"
+          barRounding="rounded-l-md"
         >
-          {event.title}
-        </span>
+          <span
+            className={cn(
+              "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap pl-1",
+              styles.text,
+              "dark:text-white/80",
+            )}
+          >
+            {event.title}
+          </span>
+        </EventVisual>
       </div>
     );
   }
@@ -322,8 +308,7 @@ export function AllDayEventItem({
         "relative h-6 px-2 py-0.5 cursor-grab",
         "hover:z-10 focus:outline-none focus-visible:outline-none",
         "overflow-hidden select-none touch-none flex items-center gap-1",
-        spanStart && "rounded-l-md",
-        spanEnd && "rounded-r-md",
+        spanRounding,
         isSelected && "z-20",
         className,
       )}
@@ -333,68 +318,46 @@ export function AllDayEventItem({
           : undefined
       }
     >
-      {/* Solid background layer to prevent transparency bleed-through */}
-      <div
-        className={cn(
-          "absolute inset-0 bg-white dark:bg-[#191919]",
-          spanStart && "rounded-l-md",
-          spanEnd && "rounded-r-md",
-        )}
-      />
-
-      {/* Colored background layer - uses border color when selected */}
-      <div
-        className={cn(
-          "absolute inset-0",
-          isSelected ? styles.border : styles.bg,
-          spanStart && "rounded-l-md",
-          spanEnd && "rounded-r-md",
-          eventIsPast && !isSelected && "opacity-60",
-        )}
-      />
-
-      {/* Left border - hidden when selected (merges with bg) */}
-      {spanStart && !isSelected && (
-        <div
-          className={cn(
-            "absolute left-0 top-0 bottom-0 w-[4px] dark:bg-white dark:mix-blend-overlay",
-            spanStart && "rounded-l-md",
-            styles.border,
-            eventIsPast && "opacity-60",
-          )}
-        />
-      )}
-      <span
-        className={cn(
-          "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap",
-          spanStart && "pl-1",
-          isSelected
-            ? "text-white dark:text-white"
-            : cn(
-                styles.text,
-                "dark:text-white/80",
-                eventIsPast && "opacity-60",
-              ),
-        )}
+      <EventVisual
+        event={event}
+        rounding={spanRounding}
+        barRounding={spanStart ? "rounded-l-md" : undefined}
+        showLeftBar={spanStart}
+        isSelected={isSelected}
+        isPast={eventIsPast}
       >
-        {event.title}
-      </span>
-      {hasStartTime && (
         <span
           className={cn(
-            "relative text-[0.625rem] leading-tight whitespace-nowrap shrink-0",
+            "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap",
+            spanStart && "pl-1",
             isSelected
               ? "text-white dark:text-white"
               : cn(
                   styles.text,
-                  "dark:text-white dark:mix-blend-overlay",
+                  "dark:text-white/80",
                   eventIsPast && "opacity-60",
                 ),
           )}
         >
-          {formatTimeDisplay(event.start)}
+          {event.title}
         </span>
-      )}
+        {hasStartTime && (
+          <span
+            className={cn(
+              "relative text-[0.625rem] leading-tight whitespace-nowrap shrink-0",
+              isSelected
+                ? "text-white dark:text-white"
+                : cn(
+                    styles.text,
+                    "dark:text-white dark:mix-blend-overlay",
+                    eventIsPast && "opacity-60",
+                  ),
+            )}
+          >
+            {formatTimeDisplay(event.start)}
+          </span>
+        )}
+      </EventVisual>
     </div>
   );
 
@@ -412,7 +375,7 @@ export function AllDayEventItem({
            * In day view, all-day events span the full width. Portal the
            * anchor to document.body (escaping transformed scroll containers)
            * and position it at the calendar boundary's right edge so the
-           * popover always appears at the visible right edge \u2014 even when the
+           * popover always appears at the visible right edge — even when the
            * event wrapper extends into off-screen buffer days.
            */}
           {isDayView &&

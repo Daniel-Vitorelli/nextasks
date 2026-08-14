@@ -3,7 +3,7 @@
 import * as React from "react";
 import { addDays, isPast, isSameDay, startOfDay } from "date-fns";
 
-import { calculatePositionedEvents } from "@/lib/event-utils";
+import { calculatePositionedEvents } from "@/lib/calendar/positioning";
 import { CalendarEventItem } from "./calendar-event-item";
 import type {
   CalendarEvent,

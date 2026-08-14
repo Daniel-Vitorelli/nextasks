@@ -3,7 +3,7 @@
 import React from "react";
 import { isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
-import { calculatePositionedEvents } from "@/lib/event-utils";
+import { calculatePositionedEvents } from "@/lib/calendar/positioning";
 import { DayEventsColumn } from "./day-events-column";
 import { WeekViewGridOverlays } from "./week-view-grid-overlays";
 import { useCalendarPopoverBoundary } from "./calendar-popover-context";
