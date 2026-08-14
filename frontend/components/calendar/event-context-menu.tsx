@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Check, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { CalendarEvent, EventColor } from "./week-view-types";
+import type { CalendarEvent, EventColor } from "@/types/calendar";
 import { EVENT_COLORS, colorSwatchClass } from "./calendar-event-color";
 
 interface EventContextMenuProps {

@@ -1,5 +1,5 @@
 import { differenceInMinutes, format } from "date-fns";
-import type { CalendarEvent } from "./week-view-types";
+import type { CalendarEvent } from "@/types/calendar";
 
 /**
  * Formats time showing only minutes if not on the hour

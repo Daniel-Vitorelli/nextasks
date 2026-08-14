@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { eventColorStyles } from "@/components/calendar/calendar-event-color";
-import type { TimeBlock } from "@/lib/time-blocks";
+import type { TimeBlock } from "@/types/domain";
 
 interface CurrentBlockCardProps {
   block: TimeBlock;

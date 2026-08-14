@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { EventDetailPopover } from "./event-detail-popover";
 import { useCalendarPopoverBoundary } from "./calendar-popover-context";
-import type { CalendarEvent } from "./week-view-types";
+import type { CalendarEvent } from "@/types/calendar";
 import { EventContextMenu } from "./event-context-menu";
 import { eventColorStyles } from "./calendar-event-color";
 import { formatTimeDisplay } from "./calendar-event-time";

@@ -1,7 +1,4 @@
-export interface Period {
-  start: Date;
-  end: Date;
-}
+import type { Period } from "@/types/domain";
 
 /**
  * Inicio do dia local (do usuario) como instante UTC.

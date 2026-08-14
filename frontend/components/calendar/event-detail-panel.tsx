@@ -17,7 +17,7 @@ import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import type { CalendarEvent, EventConfirmation } from "./week-view-types";
+import type { CalendarEvent, EventConfirmation } from "@/types/calendar";
 import { EVENT_COLORS, colorSwatchClass } from "./calendar-event-color";
 import { CONFIRMATION_OPTIONS } from "@/lib/time-blocks";
 import { formatTimeDisplay, formatDuration } from "./calendar-event-time";

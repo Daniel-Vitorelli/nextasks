@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AllDayResizeState,
   CalendarEvent,
-} from "@/components/calendar/week-view-types";
+} from "@/types/calendar";
 
 interface UseAllDayResizeOptions {
   days: Date[];

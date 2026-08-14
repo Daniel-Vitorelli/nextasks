@@ -1,49 +1,14 @@
-export const FREQUENCIES = ["daily", "weekly"] as const;
-export const DURATIONS = ["indefinite", "until"] as const;
+import type { Duration, Frequency, RoutinePayload } from "@/types/domain";
 
-export type Frequency = (typeof FREQUENCIES)[number];
-export type Duration = (typeof DURATIONS)[number];
-
-export interface Routine {
-  id: string;
-  name: string;
-  description: string | null;
-  frequency: Frequency;
-  duration: Duration;
-  endDate: string | null;
-  isActive: boolean;
-}
-
-export interface RoutineFormValues {
-  name: string;
-  description: string;
-  frequency: Frequency;
-  duration: Duration;
-  endDate: string;
-}
-
-interface RoutineInput {
-  name?: unknown;
-  description?: unknown;
-  frequency?: unknown;
-  duration?: unknown;
-  endDate?: unknown;
-}
-
-interface RoutinePayload {
-  name: string;
-  description: string | null;
-  frequency: Frequency;
-  duration: Duration;
-  endDate: Date | null;
-}
+export const FREQUENCIES: readonly Frequency[] = ["daily", "weekly"];
+export const DURATIONS: readonly Duration[] = ["indefinite", "until"];
 
 type ParseRoutineResult =
   | { ok: true; data: RoutinePayload }
   | { ok: false; error: string };
 
 export function parseRoutineInput(value: unknown): ParseRoutineResult {
-  const body = (value ?? {}) as RoutineInput;
+  const body = (value ?? {}) as Record<string, unknown>;
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name) {

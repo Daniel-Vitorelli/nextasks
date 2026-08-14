@@ -11,24 +11,7 @@ import type {
   PositionedEvent,
   ViewType,
   WeekDay,
-} from "./calendar-types";
-
-// Re-export all shared types for backward compatibility
-export type {
-  ViewType,
-  ViewSettings,
-  WeekDay,
-  HourSlot,
-  EventReminder,
-  CalendarEvent,
-  EventColor,
-  EventConfirmation,
-  PositionedEvent,
-  EventDragVariant,
-  EventDragState,
-  EventResizeState,
-  AllDayResizeState,
-} from "./calendar-types";
+} from "@/types/calendar";
 
 /**
  * Props for the main WeekView component
@@ -170,7 +153,7 @@ export interface WeekViewGridProps {
 }
 
 /**
- * Props for the WeekViewGrid component
+ * Props for the WeekViewTimeIndicator component
  */
 export interface WeekViewTimeIndicatorProps {
   /** Array of days in the current week view */

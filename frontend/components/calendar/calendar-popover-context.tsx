@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import type { ViewType } from "./week-view-types";
+import type { ViewType } from "@/types/calendar";
 
 /**
  * Context to provide the collision boundary element, header inset,

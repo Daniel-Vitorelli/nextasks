@@ -5,7 +5,8 @@ import { isPast, isSameDay } from "date-fns";
 
 import { AllDayEventItem } from "./all-day-event-item";
 import { useCalendarPopoverBoundary } from "./calendar-popover-context";
-import type { CalendarEvent, WeekViewAllDayRowProps } from "./week-view-types";
+import type { CalendarEvent } from "@/types/calendar";
+import type { WeekViewAllDayRowProps } from "./week-view-types";
 
 export const ALL_DAY_EVENT_HEIGHT = 24;
 export const ALL_DAY_ROW_GAP = 2;

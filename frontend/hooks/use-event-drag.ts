@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   CalendarEvent,
   EventDragState,
-} from "@/components/calendar/week-view-types";
+} from "@/types/calendar";
 
 interface UseEventDragOptions {
   hourHeight: number;

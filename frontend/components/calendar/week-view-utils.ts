@@ -5,7 +5,7 @@ import {
   getWeek,
   type Locale,
 } from "date-fns";
-import type { HourSlot, ViewType, WeekDay } from "./week-view-types";
+import type { HourSlot, ViewType, WeekDay } from "@/types/calendar";
 
 /** Minimum height of each hour row in pixels */
 export const MIN_HOUR_HEIGHT = 48;

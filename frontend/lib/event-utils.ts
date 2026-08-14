@@ -19,7 +19,7 @@ import type {
   CalendarEvent,
   PositionedEvent,
   WeekDay,
-} from "@/components/calendar/week-view-types";
+} from "@/types/calendar";
 
 /** Returns true when a timed event spans across midnight into a different day. */
 export function isMultiDayEvent(event: CalendarEvent): boolean {

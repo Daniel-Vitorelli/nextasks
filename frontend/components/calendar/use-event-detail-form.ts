@@ -10,7 +10,7 @@ import {
   createTimeBlockSchema,
   type TimeBlockFormValues,
 } from "@/schemas/time-block-schema";
-import type { CalendarEvent } from "./week-view-types";
+import type { CalendarEvent } from "@/types/calendar";
 import { formatTimeDisplay } from "./calendar-event-time";
 
 function toDefaultFormValues(event: CalendarEvent): TimeBlockFormValues {

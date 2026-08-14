@@ -17,7 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Routine } from "@/lib/routines";
+import type { Routine } from "@/types/domain";
 
 interface RoutineCardProps {
   routine: Routine;

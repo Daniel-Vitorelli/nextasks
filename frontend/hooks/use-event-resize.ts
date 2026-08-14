@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   CalendarEvent,
   EventResizeState,
-} from "@/components/calendar/week-view-types";
+} from "@/types/calendar";
 
 interface UseEventResizeOptions {
   hourHeight: number;

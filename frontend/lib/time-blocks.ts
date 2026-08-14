@@ -1,8 +1,12 @@
+import type { CalendarEvent, EventColor, EventConfirmation } from "@/types/calendar";
 import type {
-  CalendarEvent,
-  EventColor,
-  EventConfirmation,
-} from "@/components/calendar/week-view-types";
+  ParsedTime,
+  TimeBlock,
+  TimeBlockInput,
+  TimeBlockPatch,
+  TimeBlockPatchPayload,
+  TimeBlockPayload,
+} from "@/types/domain";
 
 export const EVENT_COLORS: EventColor[] = [
   "red",
@@ -21,48 +25,6 @@ export const CONFIRMATION_OPTIONS: {
   { value: "checklist" },
   { value: "score" },
 ];
-
-export interface TimeBlock {
-  id: string;
-  routineId: string;
-  title: string;
-  description: string | null;
-  start: string;
-  end: string;
-  isAllDay: boolean;
-  color: EventColor;
-  confirmation: EventConfirmation;
-}
-
-export interface TimeBlockInput {
-  title?: unknown;
-  description?: unknown;
-  start?: unknown;
-  end?: unknown;
-  isAllDay?: unknown;
-  color?: unknown;
-  confirmation?: unknown;
-}
-
-export interface TimeBlockPayload {
-  title: string;
-  description: string | null;
-  start: Date;
-  end: Date;
-  isAllDay: boolean;
-  color: EventColor;
-  confirmation: EventConfirmation;
-}
-
-export interface TimeBlockPatch {
-  title?: string;
-  description?: string | null;
-  start?: Date;
-  end?: Date;
-  isAllDay?: boolean;
-  color?: EventColor;
-  confirmation?: EventConfirmation;
-}
 
 export function parseTimeBlockInput(value: unknown): TimeBlockPayload | null {
   const body = (value ?? {}) as TimeBlockInput;
@@ -162,11 +124,6 @@ export function toCalendarEvent(block: TimeBlock): CalendarEvent {
   };
 }
 
-export type TimeBlockPatchPayload = Omit<
-  CalendarEvent,
-  "id" | "calendarId" | "calendarEmail"
->;
-
 export function fromCalendarEvent(event: CalendarEvent): TimeBlockPatchPayload {
   return {
     title: event.title,
@@ -191,11 +148,6 @@ export function createBlockStub(anchor: Date): {
   );
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   return { start, end };
-}
-
-export interface ParsedTime {
-  hours: number;
-  minutes: number;
 }
 
 /**

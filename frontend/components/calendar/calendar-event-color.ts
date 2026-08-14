@@ -1,4 +1,4 @@
-import type { EventColor } from "./week-view-types";
+import type { EventColor } from "@/types/calendar";
 
 export const EVENT_COLORS: EventColor[] = [
   "red",

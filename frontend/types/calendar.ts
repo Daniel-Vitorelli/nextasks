@@ -1,20 +1,11 @@
 /**
- * Calendar view mode — "day" shows a single column, "week" shows 7 columns
+ * Domain types for the calendar views (week/day/month).
  */
+
+/** Calendar view mode — "day" shows a single column, "week" shows 7 columns */
 export type ViewType = "day" | "week" | "month";
 
-/**
- * View settings for display preferences (toggleable from the view dropdown)
- */
-export interface ViewSettings {
-  showWeekends: boolean;
-  showDeclinedEvents: boolean;
-  showWeekNumbers: boolean;
-}
-
-/**
- * Represents a single day in the week view
- */
+/** Represents a single day in the week view */
 export interface WeekDay {
   /** The full Date object for this day */
   date: Date;
@@ -26,9 +17,7 @@ export interface WeekDay {
   isToday: boolean;
 }
 
-/**
- * Represents a single hour slot in the time axis
- */
+/** Represents a single hour slot in the time axis */
 export interface HourSlot {
   /** Hour in 24-hour format (0-23) */
   hour: number;
@@ -36,17 +25,20 @@ export interface HourSlot {
   label: string;
 }
 
-/**
- * Represents an event reminder
- */
-export interface EventReminder {
-  amount: number;
-  unit: "minutes" | "hours" | "days";
-}
+/** Predefined event colors */
+export type EventColor =
+  | "red"
+  | "orange"
+  | "yellow"
+  | "green"
+  | "blue"
+  | "purple"
+  | "gray";
 
-/**
- * Represents a calendar event
- */
+/** How a time block's completion is confirmed (checklist or score tracking) */
+export type EventConfirmation = "none" | "checklist" | "score";
+
+/** Represents a calendar event */
 export interface CalendarEvent {
   /** Unique identifier for the event */
   id: string;
@@ -62,47 +54,11 @@ export interface CalendarEvent {
   color?: EventColor;
   /** How task completion is confirmed: none, checklist or score 0-10 */
   confirmation?: EventConfirmation;
-  /** Calendar ID this event belongs to */
-  calendarId?: string;
   /** Optional description */
   description?: string;
-  /** Optional location */
-  location?: string;
-  /** Timezone string (e.g. "GMT-3 Sao Paulo") */
-  timezone?: string;
-  /** Recurrence rule display string (e.g. "Every week on Thu") */
-  recurrence?: string;
-  /** Reminders list */
-  reminders?: EventReminder[];
-  /** Busy/Free status */
-  status?: "busy" | "free";
-  /** Visibility setting */
-  visibility?: "default" | "public" | "private";
-  /** Calendar account email for display */
-  calendarEmail?: string;
 }
 
-/**
- * Predefined event colors
- */
-export type EventColor =
-  | "red"
-  | "orange"
-  | "yellow"
-  | "green"
-  | "blue"
-  | "purple"
-  | "gray";
-
-/**
- * How a time block's completion is confirmed (used later for
- * checklist and score tracking)
- */
-export type EventConfirmation = "none" | "checklist" | "score";
-
-/**
- * Represents a positioned event for rendering in the grid
- */
+/** Represents a positioned event for rendering in the grid */
 export interface PositionedEvent {
   /** The original event */
   event: CalendarEvent;
@@ -122,14 +78,10 @@ export interface PositionedEvent {
   segmentPosition?: "start" | "middle" | "end" | "full";
 }
 
-/**
- * Drag variant for rendering events in different visual states during drag
- */
+/** Drag variant for rendering events in different visual states during drag */
 export type EventDragVariant = "default" | "ghost" | "dragging" | "placeholder";
 
-/**
- * State of an in-progress event drag operation
- */
+/** State of an in-progress event drag operation */
 export interface EventDragState {
   /** ID of the event being dragged */
   eventId: string;
@@ -157,9 +109,7 @@ export interface EventDragState {
   clientY: number;
 }
 
-/**
- * State of an in-progress event resize operation
- */
+/** State of an in-progress event resize operation */
 export interface EventResizeState {
   /** ID of the event being resized */
   eventId: string;
@@ -185,9 +135,7 @@ export interface EventResizeState {
   currentStartDate: Date;
 }
 
-/**
- * State of an in-progress all-day event resize operation
- */
+/** State of an in-progress all-day event resize operation */
 export interface AllDayResizeState {
   /** ID of the event being resized */
   eventId: string;

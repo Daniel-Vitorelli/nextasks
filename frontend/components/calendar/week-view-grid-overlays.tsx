@@ -8,8 +8,8 @@ import type {
   EventDragState,
   EventResizeState,
   PositionedEvent,
-  WeekViewGridProps,
-} from "./week-view-types";
+} from "@/types/calendar";
+import type { WeekViewGridProps } from "./week-view-types";
 
 interface DragPlaceholderOverlayProps {
   days: WeekViewGridProps["days"];

@@ -10,7 +10,7 @@ import type {
   EventDragState,
   EventResizeState,
   PositionedEvent,
-} from "./week-view-types";
+} from "@/types/calendar";
 
 interface DayEventsColumnProps {
   columnDate: Date;

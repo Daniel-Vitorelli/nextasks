@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import type { Routine, RoutineFormValues } from "@/lib/routines";
+import type { Routine, RoutineFormValues } from "@/types/domain";
 import { createRoutineSchema } from "@/schemas/routine-schema";
 
 interface RoutineDialogProps {

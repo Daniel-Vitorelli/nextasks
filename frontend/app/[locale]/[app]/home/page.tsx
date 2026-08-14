@@ -7,9 +7,7 @@ import { CalendarClock } from "lucide-react";
 import { useSession } from "@/components/session-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
-import type { Period } from "@/lib/completions";
-import type { TimeBlock } from "@/lib/time-blocks";
-import type { Routine } from "@/lib/routines";
+import type { Period, TimeBlock, Routine } from "@/types/domain";
 
 interface CurrentBlockResponse {
   routine: Routine | null;

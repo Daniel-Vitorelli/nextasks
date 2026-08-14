@@ -10,16 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { WeekView } from "@/components/calendar/week-view";
-import type {
-  CalendarEvent,
-  ViewType,
-} from "@/components/calendar/week-view-types";
+import type { CalendarEvent, ViewType } from "@/types/calendar";
 import {
   createBlockStub,
   toCalendarEvent,
 } from "@/lib/time-blocks";
-import type { TimeBlock } from "@/lib/time-blocks";
-import type { Routine } from "@/lib/routines";
+import type { TimeBlock } from "@/types/domain";
+import type { Routine } from "@/types/domain";
 
 interface RoutineCalendarDialogProps {
   routine: Routine | null;

@@ -13,7 +13,7 @@ import {
 import { PopoverContent } from "@/components/ui/popover";
 import { EventDetailPanel } from "./event-detail-panel";
 import { useCalendarPopoverBoundary } from "./calendar-popover-context";
-import type { CalendarEvent } from "./week-view-types";
+import type { CalendarEvent } from "@/types/calendar";
 
 interface EventDetailPopoverProps {
   event: CalendarEvent;

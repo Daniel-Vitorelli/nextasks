@@ -16,10 +16,8 @@ import { useHorizontalScroll } from "@/hooks/use-horizontal-scroll";
 import { useEventDrag } from "@/hooks/use-event-drag";
 import { useEventResize } from "@/hooks/use-event-resize";
 import { useAllDayResize } from "@/hooks/use-all-day-resize";
-import type {
-  WeekDay,
-  WeekViewProps,
-} from "./week-view-types";
+import type { WeekDay } from "@/types/calendar";
+import type { WeekViewProps } from "./week-view-types";
 import { WeekViewAllDayRow } from "./week-view-all-day-row";
 import { CalendarDayHeaders } from "./calendar-day-headers";
 import { WeekViewGrid } from "./week-view-grid";
