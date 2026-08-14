@@ -11,6 +11,7 @@ export interface Routine {
   frequency: Frequency;
   duration: Duration;
   endDate: string | null;
+  isActive: boolean;
 }
 
 export interface RoutineFormValues {

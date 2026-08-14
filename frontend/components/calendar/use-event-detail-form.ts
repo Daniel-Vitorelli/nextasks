@@ -16,6 +16,7 @@ import { formatTimeDisplay } from "./calendar-event-time";
 function toDefaultFormValues(event: CalendarEvent): TimeBlockFormValues {
   return {
     title: event.title,
+    description: event.description ?? "",
     startTime: formatTimeDisplay(event.start),
     endTime: formatTimeDisplay(event.end),
   };
@@ -57,25 +58,30 @@ export function useEventDetailForm(
     return !!errors[field] && (blurredFields[field] || isSubmitted);
   };
 
-  const { title, start, end } = event;
+  const { title, description, start, end } = event;
 
   React.useEffect(() => {
     reset({
       title,
+      description: description ?? "",
       startTime: formatTimeDisplay(start),
       endTime: formatTimeDisplay(end),
     });
-  }, [title, start, end, reset]);
+  }, [title, description, start, end, reset]);
 
   /** Set when Escape restored a field, so the commit on blur is skipped. */
   const escapePressedRef = React.useRef(false);
   const titleOnFocusRef = React.useRef(title);
+  const descriptionOnFocusRef = React.useRef(description ?? "");
   const startTimeOnFocusRef = React.useRef(formatTimeDisplay(start));
   const endTimeOnFocusRef = React.useRef(formatTimeDisplay(end));
 
   const originalValue = React.useCallback((field: keyof TimeBlockFormValues) => {
     if (field === "title") {
       return titleOnFocusRef.current;
+    }
+    if (field === "description") {
+      return descriptionOnFocusRef.current;
     }
     if (field === "startTime") {
       return startTimeOnFocusRef.current;
@@ -89,6 +95,10 @@ export function useEventDetailForm(
         titleOnFocusRef.current = title;
         return;
       }
+      if (field === "description") {
+        descriptionOnFocusRef.current = description ?? "";
+        return;
+      }
       if (field === "startTime") {
         startTimeOnFocusRef.current = formatTimeDisplay(start);
       } else {
@@ -96,7 +106,7 @@ export function useEventDetailForm(
       }
       requestAnimationFrame(() => e.currentTarget.select());
     },
-    [title, start, end],
+    [title, description, start, end],
   );
 
   const handleFieldKeyDown = React.useCallback(
@@ -145,6 +155,7 @@ export function useEventDetailForm(
 
     const values = getValues();
     const titleValue = values.title.trim();
+    const descriptionValue = values.description?.trim() ?? "";
     const parsedStart = parseTimeInput(values.startTime);
     const parsedEnd = parseTimeInput(values.endTime);
     if (!parsedStart || !parsedEnd) {
@@ -163,6 +174,7 @@ export function useEventDetailForm(
     );
 
     setValue("title", titleValue, { shouldValidate: false });
+    setValue("description", descriptionValue, { shouldValidate: false });
     setValue("startTime", formatTimeDisplay(nextStart), {
       shouldValidate: false,
     });
@@ -171,12 +183,14 @@ export function useEventDetailForm(
 
     if (
       titleValue !== event.title ||
+      descriptionValue !== (event.description ?? "") ||
       nextStart.getTime() !== event.start.getTime() ||
       nextEnd.getTime() !== event.end.getTime()
     ) {
       onEventChange?.({
         ...event,
         title: titleValue,
+        description: descriptionValue || undefined,
         start: nextStart,
         end: nextEnd,
       });

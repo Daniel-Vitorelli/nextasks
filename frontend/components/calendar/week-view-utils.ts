@@ -17,6 +17,13 @@ export const TIME_AXIS_WIDTH = 64;
  * scrolling on narrow screens instead of crushing the columns) */
 export const MIN_DAY_COLUMN_WIDTH = 64;
 
+/** Minimum day column width on phones. Lets all 7 days fit horizontally on
+ * narrow screens (otherwise the column would scroll out of the viewport). */
+export const MIN_MOBILE_DAY_COLUMN_WIDTH = 42;
+
+/** Width threshold below which the mobile column rules apply */
+export const MOBILE_BREAKPOINT_PX = 640;
+
 /** Number of visible days per view mode */
 export const VISIBLE_DAYS_BY_VIEW: Record<ViewType, number> = {
   day: 1,

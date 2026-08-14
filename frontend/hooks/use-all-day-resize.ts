@@ -17,8 +17,8 @@ interface UseAllDayResizeOptions {
 
 interface UseAllDayResizeReturn {
   allDayResizeState: AllDayResizeState | null;
-  handleAllDayResizeMouseDown: (
-    e: React.MouseEvent,
+  handleAllDayResizePointerDown: (
+    e: React.PointerEvent,
     event: CalendarEvent,
     edge: "left" | "right" | "move",
     startColumn: number,
@@ -27,6 +27,8 @@ interface UseAllDayResizeReturn {
 }
 
 const DRAG_THRESHOLD_PX = 4;
+/** Movement needed before a finger starts resizing/moving (touch slop). */
+const TOUCH_SLOP_PX = 10;
 
 function clamp(value: number, min: number, max: number): number {
   if (value < min) return min;
@@ -38,15 +40,17 @@ interface ResizeInfo {
   eventId: string;
   event: CalendarEvent;
   edge: "left" | "right" | "move";
+  pointerId: number;
+  pointerType: string;
   startClientX: number;
   isResizing: boolean;
   originalStartColumn: number;
   originalEndColumn: number;
-  /** Column index at the initial mousedown position (used for move delta) */
+  /** Column index at the initial pointerdown position (used for move delta) */
   startColumnIndex: number;
-  /** Offset from cursor to event left edge at mousedown (px) */
+  /** Offset from cursor to event left edge at pointerdown (px) */
   cursorOffsetX: number;
-  /** Offset from cursor to event top edge at mousedown (px) */
+  /** Offset from cursor to event top edge at pointerdown (px) */
   cursorOffsetY: number;
 }
 
@@ -84,26 +88,42 @@ export function useAllDayResize({
     dayColumnWidthRef.current = dayColumnWidth;
   }, [dayColumnWidth]);
 
-  const handleMouseMoveRef = useRef<((e: MouseEvent) => void) | null>(null);
-  const handleMouseUpRef = useRef<(() => void) | null>(null);
+  const handlePointerMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const handlePointerUpRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const handlePointerCancelRef = useRef<((e: PointerEvent) => void) | null>(
+    null,
+  );
+  /** Blocks the browser's native scroll while a touch interaction is active. */
+  const handleTouchMoveRef = useRef<((e: TouchEvent) => void) | null>(null);
 
   const cleanup = useCallback(() => {
-    if (handleMouseMoveRef.current) {
-      window.removeEventListener("mousemove", handleMouseMoveRef.current);
+    if (handlePointerMoveRef.current) {
+      window.removeEventListener("pointermove", handlePointerMoveRef.current);
     }
-    if (handleMouseUpRef.current) {
-      window.removeEventListener("mouseup", handleMouseUpRef.current);
+    if (handlePointerUpRef.current) {
+      window.removeEventListener("pointerup", handlePointerUpRef.current);
+    }
+    if (handlePointerCancelRef.current) {
+      window.removeEventListener(
+        "pointercancel",
+        handlePointerCancelRef.current,
+      );
+    }
+    if (handleTouchMoveRef.current) {
+      window.removeEventListener("touchmove", handleTouchMoveRef.current);
     }
     document.body.style.removeProperty("--cursor");
   }, []);
 
   useEffect(() => {
-    handleMouseMoveRef.current = (e: MouseEvent) => {
+    handlePointerMoveRef.current = (e: PointerEvent) => {
       const resize = resizeRef.current;
       if (!resize) return;
 
       const deltaX = Math.abs(e.clientX - resize.startClientX);
-      if (!resize.isResizing && deltaX < DRAG_THRESHOLD_PX) return;
+      const slop =
+        resize.pointerType === "mouse" ? DRAG_THRESHOLD_PX : TOUCH_SLOP_PX;
+      if (!resize.isResizing && deltaX < slop) return;
 
       if (!resize.isResizing) {
         resize.isResizing = true;
@@ -163,9 +183,12 @@ export function useAllDayResize({
       });
     };
 
-    handleMouseUpRef.current = () => {
+    handlePointerUpRef.current = (e: PointerEvent) => {
       const resize = resizeRef.current;
       if (!resize) return;
+
+      // Ignore unrelated pointer releases (e.g. a second finger lifting).
+      if (e.pointerId !== resize.pointerId) return;
 
       cleanup();
 
@@ -222,23 +245,41 @@ export function useAllDayResize({
 
       resizeRef.current = null;
     };
+
+    // If the browser takes over the gesture (touch scroll), abort.
+    handlePointerCancelRef.current = () => {
+      const resize = resizeRef.current;
+      if (!resize) return;
+
+      cleanup();
+      setAllDayResizeState(null);
+      resizeRef.current = null;
+    };
+
+    // All-day interactions start on touch immediately, so block the native
+    // scroll for the whole gesture.
+    handleTouchMoveRef.current = (e: TouchEvent) => {
+      if (resizeRef.current && e.cancelable) {
+        e.preventDefault();
+      }
+    };
   }, [allDayContainerRef, cleanup]);
 
-  const handleAllDayResizeMouseDown = useCallback(
+  const handleAllDayResizePointerDown = useCallback(
     (
-      e: React.MouseEvent,
+      e: React.PointerEvent,
       event: CalendarEvent,
       edge: "left" | "right" | "move",
       startColumn: number,
       endColumn: number,
     ) => {
-      if (e.button !== 0) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
 
       e.stopPropagation();
 
       onEventClickRef.current?.(event);
 
-      // Compute the column under the cursor at mousedown for move delta
+      // Compute the column under the cursor at pointerdown for move delta
       const container = allDayContainerRef.current;
       let startColumnIndex = startColumn;
       let cursorOffsetX = 0;
@@ -260,6 +301,8 @@ export function useAllDayResize({
         eventId: event.id,
         event,
         edge,
+        pointerId: e.pointerId,
+        pointerType: e.pointerType,
         startClientX: e.clientX,
         isResizing: false,
         originalStartColumn: startColumn,
@@ -280,11 +323,22 @@ export function useAllDayResize({
         isResizing: false,
       });
 
-      if (handleMouseMoveRef.current) {
-        window.addEventListener("mousemove", handleMouseMoveRef.current);
+      if (handlePointerMoveRef.current) {
+        window.addEventListener("pointermove", handlePointerMoveRef.current);
       }
-      if (handleMouseUpRef.current) {
-        window.addEventListener("mouseup", handleMouseUpRef.current);
+      if (handlePointerUpRef.current) {
+        window.addEventListener("pointerup", handlePointerUpRef.current);
+      }
+      if (handlePointerCancelRef.current) {
+        window.addEventListener(
+          "pointercancel",
+          handlePointerCancelRef.current,
+        );
+      }
+      if (handleTouchMoveRef.current) {
+        window.addEventListener("touchmove", handleTouchMoveRef.current, {
+          passive: false,
+        });
       }
     },
     [allDayContainerRef],
@@ -294,5 +348,5 @@ export function useAllDayResize({
     return cleanup;
   }, [cleanup]);
 
-  return { allDayResizeState, handleAllDayResizeMouseDown };
+  return { allDayResizeState, handleAllDayResizePointerDown };
 }

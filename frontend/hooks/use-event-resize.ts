@@ -21,14 +21,16 @@ interface UseEventResizeOptions {
 
 interface UseEventResizeReturn {
   resizeState: EventResizeState | null;
-  handleResizeMouseDown: (
-    e: React.MouseEvent,
+  handleResizePointerDown: (
+    e: React.PointerEvent,
     event: CalendarEvent,
     edge: "top" | "bottom",
   ) => void;
 }
 
 const DRAG_THRESHOLD_PX = 4;
+/** Movement needed before a finger resize starts (touch slop). */
+const TOUCH_SLOP_PX = 10;
 const SNAP_MINUTES = 15;
 const MIN_DURATION_MINUTES = 15;
 const AUTO_SCROLL_ZONE_PX = 60;
@@ -58,6 +60,8 @@ interface ResizeInfo {
   eventId: string;
   event: CalendarEvent;
   edge: "top" | "bottom";
+  pointerId: number;
+  pointerType: string;
   startClientY: number;
   isResizing: boolean;
   originalStartMinutes: number;
@@ -119,8 +123,13 @@ export function useEventResize({
   const edgeNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const edgeNavDirectionRef = useRef<number | null>(null);
 
-  const handleMouseMoveRef = useRef<((e: MouseEvent) => void) | null>(null);
-  const handleMouseUpRef = useRef<(() => void) | null>(null);
+  const handlePointerMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const handlePointerUpRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const handlePointerCancelRef = useRef<((e: PointerEvent) => void) | null>(
+    null,
+  );
+  /** Blocks the browser's native scroll while a touch resize is active. */
+  const handleTouchMoveRef = useRef<((e: TouchEvent) => void) | null>(null);
 
   const cancelAutoScroll = useCallback(() => {
     if (autoScrollRAFRef.current !== null) {
@@ -156,11 +165,20 @@ export function useEventResize({
   );
 
   const cleanup = useCallback(() => {
-    if (handleMouseMoveRef.current) {
-      window.removeEventListener("mousemove", handleMouseMoveRef.current);
+    if (handlePointerMoveRef.current) {
+      window.removeEventListener("pointermove", handlePointerMoveRef.current);
     }
-    if (handleMouseUpRef.current) {
-      window.removeEventListener("mouseup", handleMouseUpRef.current);
+    if (handlePointerUpRef.current) {
+      window.removeEventListener("pointerup", handlePointerUpRef.current);
+    }
+    if (handlePointerCancelRef.current) {
+      window.removeEventListener(
+        "pointercancel",
+        handlePointerCancelRef.current,
+      );
+    }
+    if (handleTouchMoveRef.current) {
+      window.removeEventListener("touchmove", handleTouchMoveRef.current);
     }
     cancelAutoScroll();
     cancelEdgeNav();
@@ -187,12 +205,14 @@ export function useEventResize({
   }, [scrollContainerRef]);
 
   useEffect(() => {
-    handleMouseMoveRef.current = (e: MouseEvent) => {
+    handlePointerMoveRef.current = (e: PointerEvent) => {
       const resize = resizeRef.current;
       if (!resize) return;
 
       const deltaY = Math.abs(e.clientY - resize.startClientY);
-      if (!resize.isResizing && deltaY < DRAG_THRESHOLD_PX) return;
+      const slop =
+        resize.pointerType === "mouse" ? DRAG_THRESHOLD_PX : TOUCH_SLOP_PX;
+      if (!resize.isResizing && deltaY < slop) return;
 
       if (!resize.isResizing) {
         resize.isResizing = true;
@@ -359,9 +379,12 @@ export function useEventResize({
       }
     };
 
-    handleMouseUpRef.current = () => {
+    handlePointerUpRef.current = (e: PointerEvent) => {
       const resize = resizeRef.current;
       if (!resize) return;
+
+      // Ignore unrelated pointer releases (e.g. a second finger lifting).
+      if (e.pointerId !== resize.pointerId) return;
 
       cleanup();
 
@@ -391,6 +414,24 @@ export function useEventResize({
 
       resizeRef.current = null;
     };
+
+    // If the browser takes over the gesture (touch scroll), abort the resize.
+    handlePointerCancelRef.current = () => {
+      const resize = resizeRef.current;
+      if (!resize) return;
+
+      cleanup();
+      setResizeState(null);
+      resizeRef.current = null;
+    };
+
+    // A resize starts on touch immediately, so block the native scroll for
+    // the whole gesture (the user explicitly grabbed an edge handle).
+    handleTouchMoveRef.current = (e: TouchEvent) => {
+      if (resizeRef.current && e.cancelable) {
+        e.preventDefault();
+      }
+    };
   }, [
     scrollContainerRef,
     cleanup,
@@ -400,9 +441,9 @@ export function useEventResize({
     cancelEdgeNav,
   ]);
 
-  const handleResizeMouseDown = useCallback(
-    (e: React.MouseEvent, event: CalendarEvent, edge: "top" | "bottom") => {
-      if (e.button !== 0) return;
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent, event: CalendarEvent, edge: "top" | "bottom") => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
 
       e.stopPropagation();
 
@@ -420,6 +461,8 @@ export function useEventResize({
         eventId: event.id,
         event,
         edge,
+        pointerId: e.pointerId,
+        pointerType: e.pointerType,
         startClientY: e.clientY,
         isResizing: false,
         originalStartMinutes,
@@ -442,11 +485,25 @@ export function useEventResize({
         currentStartDate: originalStartDate,
       });
 
-      if (handleMouseMoveRef.current) {
-        window.addEventListener("mousemove", handleMouseMoveRef.current);
+      if (handlePointerMoveRef.current) {
+        window.addEventListener(
+          "pointermove",
+          handlePointerMoveRef.current,
+        );
       }
-      if (handleMouseUpRef.current) {
-        window.addEventListener("mouseup", handleMouseUpRef.current);
+      if (handlePointerUpRef.current) {
+        window.addEventListener("pointerup", handlePointerUpRef.current);
+      }
+      if (handlePointerCancelRef.current) {
+        window.addEventListener(
+          "pointercancel",
+          handlePointerCancelRef.current,
+        );
+      }
+      if (handleTouchMoveRef.current) {
+        window.addEventListener("touchmove", handleTouchMoveRef.current, {
+          passive: false,
+        });
       }
     },
     [],
@@ -456,5 +513,5 @@ export function useEventResize({
     return cleanup;
   }, [cleanup]);
 
-  return { resizeState, handleResizeMouseDown };
+  return { resizeState, handleResizePointerDown };
 }

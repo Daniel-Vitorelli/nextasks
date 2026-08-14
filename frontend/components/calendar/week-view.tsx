@@ -31,6 +31,8 @@ import {
   BUFFER_STEP_BY_VIEW,
   MIN_DAY_COLUMN_WIDTH,
   MIN_HOUR_HEIGHT,
+  MIN_MOBILE_DAY_COLUMN_WIDTH,
+  MOBILE_BREAKPOINT_PX,
   TIME_AXIS_WIDTH,
   VISIBLE_DAYS_BY_VIEW,
   generateBufferedDays,
@@ -108,9 +110,13 @@ export function WeekView({
       const container = scrollContainerRef.current;
       if (!container) return;
       const availableWidth = container.clientWidth - TIME_AXIS_WIDTH;
+      const isMobile = container.clientWidth < MOBILE_BREAKPOINT_PX;
+      const minColumnWidth = isMobile
+        ? MIN_MOBILE_DAY_COLUMN_WIDTH
+        : MIN_DAY_COLUMN_WIDTH;
       setContainerWidth(availableWidth);
       setDayColumnWidth(
-        Math.max(MIN_DAY_COLUMN_WIDTH, availableWidth / VISIBLE_DAYS),
+        Math.max(minColumnWidth, availableWidth / VISIBLE_DAYS),
       );
       setHourHeight(Math.max(MIN_HOUR_HEIGHT, container.clientHeight / 24));
     };
@@ -123,6 +129,41 @@ export function WeekView({
     }
     return () => observer.disconnect();
   }, [VISIBLE_DAYS]);
+
+  /**
+   * On phones the grid starts at 12 AM, leaving the user far above the real
+   * blocks. Scroll once to "now" (or to the first event of the day) so the
+   * calendar opens at a useful position. Re-applies if the hour height
+   * changes after the first paint (e.g. the resize observer measured later).
+   */
+  const autoScrolledHourHeightRef = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches)
+      return;
+    if (autoScrolledHourHeightRef.current === hourHeight) return;
+
+    const container = scrollContainerRef.current;
+    if (!container || hourHeight <= 0) return;
+    autoScrolledHourHeightRef.current = hourHeight;
+
+    let targetMinutes: number;
+    if (timedEvents.length > 0) {
+      const firstStart = timedEvents.reduce((earliest, event) =>
+        event.start.getTime() < earliest.start.getTime() ? event : earliest,
+      ).start;
+      targetMinutes = Math.max(0, firstStart.getHours() * 60 - 60);
+    } else {
+      const now = new Date();
+      targetMinutes = Math.max(0, now.getHours() * 60 - 90);
+    }
+
+    const maxScroll = container.scrollHeight - container.clientHeight;
+    container.scrollTop = Math.min(
+      (targetMinutes / 60) * hourHeight,
+      Math.max(0, maxScroll),
+    );
+  }, [hourHeight, timedEvents]);
 
   // Track whether navigation was initiated by scroll (to avoid double-animation)
   const scrollNavigatedRef = React.useRef(false);
@@ -145,7 +186,7 @@ export function WeekView({
 
   const visibleDayDates = React.useMemo(() => days.map((d) => d.date), [days]);
 
-  const { resizeState, handleResizeMouseDown } = useEventResize({
+  const { resizeState, handleResizePointerDown } = useEventResize({
     hourHeight,
     scrollContainerRef,
     events: timedEvents,
@@ -157,7 +198,7 @@ export function WeekView({
     onResizeNavigate: handleDragNavigate,
   });
 
-  const { dragState, handleEventMouseDown } = useEventDrag({
+  const { dragState, handleEventPointerDown } = useEventDrag({
     hourHeight,
     scrollContainerRef,
     events: timedEvents,
@@ -217,7 +258,7 @@ export function WeekView({
     [bufferedBaseDays],
   );
 
-  const { allDayResizeState, handleAllDayResizeMouseDown } = useAllDayResize({
+  const { allDayResizeState, handleAllDayResizePointerDown } = useAllDayResize({
     days: bufferedDayDates,
     dayColumnWidth,
     allDayContainerRef: allDayScrollContentRef,
@@ -324,7 +365,7 @@ export function WeekView({
               selectedEventId={selectedEventId}
               scrollStyle={scrollStyle}
               allDayResizeState={allDayResizeState ?? undefined}
-              onAllDayResizeMouseDown={handleAllDayResizeMouseDown}
+              onAllDayResizeMouseDown={handleAllDayResizePointerDown}
               onEventChange={onEventChange}
               onEventDelete={onEventDelete}
               onEventDuplicate={onEventDuplicate}
@@ -363,9 +404,9 @@ export function WeekView({
                   onEventClick={onEventClick}
                   selectedEventId={selectedEventId}
                   dragState={dragState ?? undefined}
-                  onEventDragMouseDown={handleEventMouseDown}
+                  onEventDragMouseDown={handleEventPointerDown}
                   resizeState={resizeState ?? undefined}
-                  onEventResizeMouseDown={handleResizeMouseDown}
+                  onEventResizeMouseDown={handleResizePointerDown}
                   onEventChange={onEventChange}
                   onEventDelete={onEventDelete}
                   onEventDuplicate={onEventDuplicate}

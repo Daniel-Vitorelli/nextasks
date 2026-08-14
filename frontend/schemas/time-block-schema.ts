@@ -9,6 +9,7 @@ export const createTimeBlockSchema = (
   return z
     .object({
       title: z.string().trim().min(1, t("titleRequired")),
+      description: z.string().trim().optional(),
       startTime: z
         .string()
         .trim()

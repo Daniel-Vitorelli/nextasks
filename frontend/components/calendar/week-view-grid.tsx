@@ -111,9 +111,12 @@ export function WeekViewGrid({
           /**
            * Day view uses a smaller right gap than week view so events
            * nearly fill the column but still show a sliver of the grid
-           * line — matching Notion Calendar's day-view styling.
+           * line — matching Notion Calendar's day-view styling. On narrow
+           * screens the same small gap is used so overlapping blocks stay
+           * as wide as possible.
            */
-          const rightGap = isDayView ? 2 : 8;
+          const rightGap =
+            isDayView || gridWidth < 560 ? 2 : 8;
           const positionedEvents = calculatePositionedEvents(
             events,
             day,

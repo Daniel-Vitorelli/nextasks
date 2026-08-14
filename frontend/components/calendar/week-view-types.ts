@@ -22,6 +22,7 @@ export type {
   EventReminder,
   CalendarEvent,
   EventColor,
+  EventConfirmation,
   PositionedEvent,
   EventDragVariant,
   EventDragState,
@@ -128,13 +129,17 @@ export interface WeekViewGridProps {
   selectedEventId?: string;
   /** Current drag state if an event is being dragged */
   dragState?: EventDragState;
-  /** Mousedown handler to initiate event drag */
-  onEventDragMouseDown?: (e: React.MouseEvent, event: CalendarEvent) => void;
+  /** Pointer handler to initiate event drag (mouse or touch) */
+  onEventDragMouseDown?: (
+    e: React.PointerEvent,
+    event: CalendarEvent,
+    targetEl?: HTMLElement,
+  ) => void;
   /** Current resize state if an event is being resized */
   resizeState?: EventResizeState;
-  /** Mousedown handler to initiate event resize */
+  /** Pointer handler to initiate event resize (mouse or touch) */
   onEventResizeMouseDown?: (
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     event: CalendarEvent,
     edge: "top" | "bottom",
   ) => void;
@@ -198,9 +203,9 @@ export interface WeekViewAllDayRowProps {
   scrollStyle?: React.CSSProperties;
   /** Current all-day resize state */
   allDayResizeState?: AllDayResizeState;
-  /** Mousedown handler to initiate all-day event resize or drag */
+  /** Pointer handler to initiate all-day event resize or drag */
   onAllDayResizeMouseDown?: (
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     event: CalendarEvent,
     edge: "left" | "right" | "move",
     startColumn: number,
@@ -258,11 +263,15 @@ export interface CalendarEventItemProps {
   overrideStart?: Date;
   /** Override end time (for dragging/placeholder positioning) */
   overrideEnd?: Date;
-  /** Mousedown handler to initiate drag */
-  onDragMouseDown?: (e: React.MouseEvent, event: CalendarEvent) => void;
-  /** Mousedown handler to initiate resize */
+  /** Pointer handler to initiate drag (mouse or touch) */
+  onDragMouseDown?: (
+    e: React.PointerEvent,
+    event: CalendarEvent,
+    targetEl?: HTMLElement,
+  ) => void;
+  /** Pointer handler to initiate resize (mouse or touch) */
   onResizeMouseDown?: (
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     event: CalendarEvent,
     edge: "top" | "bottom",
   ) => void;

@@ -51,8 +51,8 @@ export function CalendarDayHeaders({
           <div
             key={day.date.toISOString()}
             className={cn(
-              "flex items-center justify-center py-2 text-sm",
-              day.isToday ? "gap-0.5 " : "gap-0",
+              "flex items-center justify-center py-1.5 text-sm sm:py-2",
+              !hideDayName && !hideDayNumber ? "gap-0.5" : "gap-0",
               highlightedDate &&
                 isSameDay(day.date, highlightedDate) &&
                 "column-highlight",
@@ -61,6 +61,7 @@ export function CalendarDayHeaders({
             {!hideDayName && (
               <span
                 className={cn(
+                  "hidden sm:block",
                   !hideDayNumber && day.isToday
                     ? "text-foreground font-medium"
                     : "text-muted-foreground font-normal",
@@ -72,7 +73,7 @@ export function CalendarDayHeaders({
             {!hideDayNumber && (
               <span
                 className={cn(
-                  "flex h-5 w-[1.2rem] items-center justify-center rounded-xs text-sm",
+                  "flex h-4 w-4 items-center justify-center rounded-xs text-xs sm:h-5 sm:w-[1.2rem] sm:text-sm",
                   day.isToday
                     ? "bg-primary text-primary-foreground font-medium"
                     : "text-muted-foreground",
@@ -87,7 +88,7 @@ export function CalendarDayHeaders({
     );
   }
 
-  return (
+return (
     <div
       className={cn("grid bg-background", className)}
       style={{ gridTemplateColumns: "4rem 1fr" }}
@@ -106,8 +107,8 @@ export function CalendarDayHeaders({
           <div
             key={day.date.toISOString()}
             className={cn(
-              "flex items-center justify-center py-2 text-sm",
-              day.isToday ? "gap-0.5 " : "gap-0",
+              "flex items-center justify-center py-1.5 text-sm sm:py-2",
+              !hideDayName && !hideDayNumber ? "gap-0.5" : "gap-0",
               highlightedDate &&
                 isSameDay(day.date, highlightedDate) &&
                 "column-highlight",
@@ -116,6 +117,7 @@ export function CalendarDayHeaders({
             {!hideDayName && (
               <span
                 className={cn(
+                  "hidden sm:block",
                   !hideDayNumber && day.isToday
                     ? "text-foreground font-medium"
                     : "text-muted-foreground font-normal",
@@ -127,7 +129,7 @@ export function CalendarDayHeaders({
             {!hideDayNumber && (
               <span
                 className={cn(
-                  "flex h-5 w-[1.2rem] items-center justify-center rounded-xs text-sm",
+                  "flex h-4 w-4 items-center justify-center rounded-xs text-xs sm:h-5 sm:w-[1.2rem] sm:text-sm",
                   day.isToday
                     ? "bg-primary text-primary-foreground font-medium"
                     : "text-muted-foreground",

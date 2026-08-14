@@ -24,7 +24,7 @@ export function AppDock() {
   return (
     <Dock
       direction="bottom"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2"
+      className="app-dock fixed bottom-4 left-1/2 -translate-x-1/2"
     >
       {items.map(({ labelKey, icon: Icon, href }) => (
         <DockIcon key={labelKey}>

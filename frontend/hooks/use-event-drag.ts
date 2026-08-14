@@ -20,10 +20,16 @@ interface UseEventDragOptions {
 
 interface UseEventDragReturn {
   dragState: EventDragState | null;
-  handleEventMouseDown: (e: React.MouseEvent, event: CalendarEvent) => void;
+  handleEventPointerDown: (
+    e: React.PointerEvent,
+    event: CalendarEvent,
+    targetEl?: HTMLElement,
+  ) => void;
 }
 
 const DRAG_THRESHOLD_PX = 4;
+/** Movement needed for a finger drag to start (mouse uses DRAG_THRESHOLD_PX). */
+const TOUCH_SLOP_PX = 10;
 const SNAP_MINUTES = 15;
 const EDGE_ZONE_PX = 40;
 const EDGE_NAV_DELAY_MS = 500;
@@ -51,6 +57,8 @@ function clamp(value: number, min: number, max: number): number {
 interface DragInfo {
   eventId: string;
   event: CalendarEvent;
+  pointerId: number;
+  pointerType: string;
   startClientY: number;
   startClientX: number;
   offsetWithinEvent: number;
@@ -116,8 +124,13 @@ export function useEventDrag({
   const autoScrollSpeedRef = useRef(0);
 
   // Store handlers in refs to break the circular dependency
-  const handleMouseMoveRef = useRef<((e: MouseEvent) => void) | null>(null);
-  const handleMouseUpRef = useRef<(() => void) | null>(null);
+  const handlePointerMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const handlePointerUpRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const handlePointerCancelRef = useRef<((e: PointerEvent) => void) | null>(
+    null,
+  );
+  /** Blocks the browser's native scroll while a touch drag is active. */
+  const handleTouchMoveRef = useRef<((e: TouchEvent) => void) | null>(null);
 
   const cancelEdgeNav = useCallback(() => {
     if (edgeNavTimerRef.current !== null) {
@@ -136,11 +149,20 @@ export function useEventDrag({
   }, []);
 
   const cleanup = useCallback(() => {
-    if (handleMouseMoveRef.current) {
-      window.removeEventListener("mousemove", handleMouseMoveRef.current);
+    if (handlePointerMoveRef.current) {
+      window.removeEventListener("pointermove", handlePointerMoveRef.current);
     }
-    if (handleMouseUpRef.current) {
-      window.removeEventListener("mouseup", handleMouseUpRef.current);
+    if (handlePointerUpRef.current) {
+      window.removeEventListener("pointerup", handlePointerUpRef.current);
+    }
+    if (handlePointerCancelRef.current) {
+      window.removeEventListener(
+        "pointercancel",
+        handlePointerCancelRef.current,
+      );
+    }
+    if (handleTouchMoveRef.current) {
+      window.removeEventListener("touchmove", handleTouchMoveRef.current);
     }
     cancelEdgeNav();
     cancelAutoScroll();
@@ -186,18 +208,15 @@ export function useEventDrag({
 
   // Initialize the handlers once (stable references via refs)
   useEffect(() => {
-    handleMouseMoveRef.current = (e: MouseEvent) => {
+    handlePointerMoveRef.current = (e: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag) return;
 
       const deltaY = Math.abs(e.clientY - drag.startClientY);
       const deltaX = Math.abs(e.clientX - drag.startClientX);
-      if (
-        !drag.isDragging &&
-        deltaY < DRAG_THRESHOLD_PX &&
-        deltaX < DRAG_THRESHOLD_PX
-      )
-        return;
+      const slop =
+        drag.pointerType === "mouse" ? DRAG_THRESHOLD_PX : TOUCH_SLOP_PX;
+      if (!drag.isDragging && deltaY < slop && deltaX < slop) return;
 
       if (!drag.isDragging) {
         drag.isDragging = true;
@@ -284,9 +303,12 @@ export function useEventDrag({
       }
     };
 
-    handleMouseUpRef.current = () => {
+    handlePointerUpRef.current = (e: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag) return;
+
+      // Ignore unrelated pointer releases (e.g. a second finger lifting).
+      if (e.pointerId !== drag.pointerId) return;
 
       cleanup();
 
@@ -311,6 +333,24 @@ export function useEventDrag({
 
       dragRef.current = null;
     };
+
+    // If the browser takes over the gesture (touch scroll), abort the drag.
+    handlePointerCancelRef.current = () => {
+      const drag = dragRef.current;
+      if (!drag) return;
+
+      cleanup();
+      setDragState(null);
+      dragRef.current = null;
+    };
+
+    // Only blocks the native scroll once the drag actually moved the event;
+    // before that the finger is free to scroll the grid.
+    handleTouchMoveRef.current = (e: TouchEvent) => {
+      if (dragRef.current?.isDragging && e.cancelable) {
+        e.preventDefault();
+      }
+    };
   }, [
     scrollContainerRef,
     cleanup,
@@ -320,9 +360,13 @@ export function useEventDrag({
     startAutoScrollLoop,
   ]);
 
-  const handleEventMouseDown = useCallback(
-    (e: React.MouseEvent, event: CalendarEvent) => {
-      if (e.button !== 0) return;
+  const handleEventPointerDown = useCallback(
+    (
+      e: React.PointerEvent,
+      event: CalendarEvent,
+      targetEl?: HTMLElement,
+    ) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
 
       // Select the event immediately
       onEventClickRef.current?.(event);
@@ -330,8 +374,11 @@ export function useEventDrag({
       const container = scrollContainerRef.current;
       if (!container) return;
 
-      // Compute offset within the event element
-      const target = e.currentTarget as HTMLElement;
+      // Compute offset within the event element. The element is passed
+      // explicitly because delayed initiators (touch long-press) run after
+      // the event dispatch, when currentTarget is no longer available.
+      const target = targetEl ?? (e.currentTarget as HTMLElement | null);
+      if (!target) return;
       const targetRect = target.getBoundingClientRect();
       const offsetWithinEvent = e.clientY - targetRect.top;
       const offsetWithinEventX = e.clientX - targetRect.left;
@@ -344,6 +391,8 @@ export function useEventDrag({
       dragRef.current = {
         eventId: event.id,
         event,
+        pointerId: e.pointerId,
+        pointerType: e.pointerType,
         startClientY: e.clientY,
         startClientX: e.clientX,
         offsetWithinEvent,
@@ -367,11 +416,22 @@ export function useEventDrag({
         clientY: 0,
       });
 
-      if (handleMouseMoveRef.current) {
-        window.addEventListener("mousemove", handleMouseMoveRef.current);
+      if (handlePointerMoveRef.current) {
+        window.addEventListener("pointermove", handlePointerMoveRef.current);
       }
-      if (handleMouseUpRef.current) {
-        window.addEventListener("mouseup", handleMouseUpRef.current);
+      if (handlePointerUpRef.current) {
+        window.addEventListener("pointerup", handlePointerUpRef.current);
+      }
+      if (handlePointerCancelRef.current) {
+        window.addEventListener(
+          "pointercancel",
+          handlePointerCancelRef.current,
+        );
+      }
+      if (handleTouchMoveRef.current) {
+        window.addEventListener("touchmove", handleTouchMoveRef.current, {
+          passive: false,
+        });
       }
     },
     [scrollContainerRef],
@@ -382,5 +442,5 @@ export function useEventDrag({
     return cleanup;
   }, [cleanup]);
 
-  return { dragState, handleEventMouseDown };
+  return { dragState, handleEventPointerDown };
 }

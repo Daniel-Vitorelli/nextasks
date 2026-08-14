@@ -245,6 +245,18 @@
   font-family: var(--font-jetbrainsMono);
 }
 
+/* Coherent cursor during calendar drag operations (set via JS on document.body) */
+body {
+  cursor: var(--cursor, auto);
+}
+
+/* Hide the app dock while the routine calendar dialog is open (its content
+   is portaled to body, outside the dock's parent layout). Set via JS on
+   document.body by routine-calendar-dialog.tsx. */
+body[data-calendar-open="true"] .app-dock {
+  display: none;
+}
+
 @keyframes marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }

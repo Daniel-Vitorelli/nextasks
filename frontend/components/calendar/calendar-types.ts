@@ -60,6 +60,8 @@ export interface CalendarEvent {
   isAllDay?: boolean;
   /** Event color (for styling) */
   color?: EventColor;
+  /** How task completion is confirmed: none, checklist or score 0-10 */
+  confirmation?: EventConfirmation;
   /** Calendar ID this event belongs to */
   calendarId?: string;
   /** Optional description */
@@ -91,6 +93,12 @@ export type EventColor =
   | "blue"
   | "purple"
   | "gray";
+
+/**
+ * How a time block's completion is confirmed (used later for
+ * checklist and score tracking)
+ */
+export type EventConfirmation = "none" | "checklist" | "score";
 
 /**
  * Represents a positioned event for rendering in the grid

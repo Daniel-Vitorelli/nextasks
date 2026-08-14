@@ -109,7 +109,7 @@ export function AllDayEventRow({
 
   const handleResizeMouseDown = useCallback(
     (
-      e: React.MouseEvent,
+      e: React.PointerEvent,
       ev: CalendarEvent,
       edge: "left" | "right" | "move",
     ) => {

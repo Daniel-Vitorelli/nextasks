@@ -1,7 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { CalendarClock, CalendarDays, CalendarRange, Pencil, Trash2 } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarDays,
+  CalendarRange,
+  Copy,
+  Pencil,
+  Power,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +24,8 @@ interface RoutineCardProps {
   onOpen: (routine: Routine) => void;
   onEdit: (routine: Routine) => void;
   onDelete: (routine: Routine) => void;
+  onDuplicate: (routine: Routine) => void;
+  onToggleActive: (routine: Routine) => void;
 }
 
 export function RoutineCard({
@@ -23,6 +33,8 @@ export function RoutineCard({
   onOpen,
   onEdit,
   onDelete,
+  onDuplicate,
+  onToggleActive,
 }: RoutineCardProps) {
   const t = useTranslations("dashboard.routines");
 
@@ -48,13 +60,31 @@ export function RoutineCard({
     onDelete(routine);
   };
 
+  const handleDuplicate = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onDuplicate(routine);
+  };
+
+  const handleToggleActive = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onToggleActive(routine);
+  };
+
   return (
     <li
       onClick={() => onOpen(routine)}
       className="border-border/60 flex cursor-pointer flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/25"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-medium">{routine.name}</h3>
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className="truncate font-medium">{routine.name}</h3>
+          {routine.isActive && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <span className="size-1.5 rounded-full bg-current" />
+              {t("active")}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -69,6 +99,45 @@ export function RoutineCard({
             </TooltipTrigger>
             <TooltipContent>
               <p>{t("actions.calendar")}</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                onClick={handleDuplicate}
+                aria-label={t("actions.duplicate")}
+              >
+                <Copy />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t("actions.duplicate")}</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                onClick={handleToggleActive}
+                aria-label={
+                  routine.isActive
+                    ? t("actions.deactivate")
+                    : t("actions.activate")
+                }
+                className={routine.isActive ? "text-primary" : undefined}
+              >
+                <Power />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {routine.isActive
+                  ? t("actions.deactivate")
+                  : t("actions.activate")}
+              </p>
             </TooltipContent>
           </Tooltip>
           <Tooltip>

@@ -15,9 +15,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import type { CalendarEvent } from "./week-view-types";
+import type { CalendarEvent, EventConfirmation } from "./week-view-types";
 import { EVENT_COLORS, colorSwatchClass } from "./calendar-event-color";
+import { CONFIRMATION_OPTIONS } from "@/lib/time-blocks";
 import { formatTimeDisplay, formatDuration } from "./calendar-event-time";
 import { useEventDetailForm } from "./use-event-detail-form";
 
@@ -70,6 +72,20 @@ export function EventDetailPanel({
             {errors.title?.message}
           </FieldError>
         )}
+      </div>
+
+      {/* Description */}
+      <div className="flex min-w-0 flex-col gap-1">
+        <Input
+          type="text"
+          {...register("description")}
+          onFocus={(e) => handleFieldFocus(e, "description")}
+          onBlur={() => handleFieldBlur("description")}
+          onKeyDown={(e) => handleFieldKeyDown(e, "description")}
+          placeholder={t("description")}
+          aria-label={t("description")}
+          className="h-auto min-w-0 rounded-sm border border-transparent bg-transparent px-2 py-1.5 text-xs shadow-none outline-none text-[#C7C5C1] dark:text-[#595959] hover:border-[#373737] focus-visible:border-[#242424] focus-visible:bg-[#242424] focus-visible:ring-0 dark:bg-transparent"
+        />
       </div>
 
       {/* Divider */}
@@ -203,6 +219,32 @@ export function EventDetailPanel({
         <span className="text-foreground text-xs">{t("allDay")}</span>
       </div>
 
+      {/* Confirmation mode */}
+      <div className="flex flex-col gap-1.5 px-4">
+        <span className="text-xs text-[#C7C5C1] dark:text-[#595959]">
+          {t("confirmation")}
+        </span>
+        <RadioGroup
+          value={event.confirmation ?? "none"}
+          onValueChange={(value) =>
+            onEventChange?.({
+              ...event,
+              confirmation: value as EventConfirmation,
+            })
+          }
+          aria-label={t("confirmation")}
+          className="grid gap-0.5"
+        >
+          {CONFIRMATION_OPTIONS.map((option) => (
+            <ConfirmationOption
+              key={option.value}
+              value={option.value}
+              label={t(`confirmationOption_${option.value}`)}
+            />
+          ))}
+        </RadioGroup>
+      </div>
+
       {/* Divider */}
       <div className="border-border border-t" />
 
@@ -248,5 +290,22 @@ export function EventDetailPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+function ConfirmationOption({
+  value,
+  label,
+}: {
+  value: EventConfirmation;
+  label: string;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-1 transition-colors hover:bg-[#ECECEC] dark:hover:bg-[#2B2B2B]">
+      <RadioGroupItem value={value} id={`confirmation-${value}`} />
+      <span className="text-xs text-[#C7C5C1] dark:text-[#595959]">
+        {label}
+      </span>
+    </label>
   );
 }

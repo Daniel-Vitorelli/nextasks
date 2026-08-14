@@ -72,9 +72,9 @@ export function WeekViewAllDayRow({
         className,
       )}
     >
-      {/* All-day label */}
+      {/* All-day label - hidden on phones to give events the full width */}
       <div className="border-border text-muted-foreground flex w-16 flex-shrink-0 items-start justify-end border-r px-2 py-2 text-xxs">
-        All-day
+        <span className="hidden sm:block">All-day</span>
       </div>
 
       {/* Day columns for all-day events - wrapped for scroll sync */}

@@ -89,6 +89,55 @@ export function RoutinesSection() {
     );
   };
 
+  const handleDuplicate = async (routine: Routine) => {
+    try {
+      const response = await fetch(`/api/routines/${routine.id}/duplicate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${routine.name} (${t("actions.duplicateSuffix")})`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to duplicate routine");
+      }
+
+      const copy = (await response.json()) as Routine;
+      setRoutines((current) => [copy, ...current]);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleToggleActive = async (routine: Routine) => {
+    try {
+      const response = await fetch(`/api/routines/${routine.id}/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !routine.isActive }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update active routine");
+      }
+
+      const saved = (await response.json()) as Routine;
+
+      setRoutines((current) =>
+        current.map((item) =>
+          item.id === saved.id
+            ? saved
+            : saved.isActive && item.isActive
+              ? { ...item, isActive: false }
+              : item,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) {
       return;
@@ -164,6 +213,8 @@ export function RoutinesSection() {
                 onOpen={setOpenRoutine}
                 onEdit={openEditDialog}
                 onDelete={setDeleteTarget}
+                onDuplicate={handleDuplicate}
+                onToggleActive={handleToggleActive}
               />
             ))}
           </ul>

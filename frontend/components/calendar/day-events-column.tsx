@@ -19,10 +19,14 @@ interface DayEventsColumnProps {
   onEventClick?: (event: CalendarEvent) => void;
   selectedEventId?: string;
   dragState?: EventDragState;
-  onEventDragMouseDown?: (e: React.MouseEvent, event: CalendarEvent) => void;
+  onEventDragMouseDown?: (
+    e: React.PointerEvent,
+    event: CalendarEvent,
+    targetEl?: HTMLElement,
+  ) => void;
   resizeState?: EventResizeState;
   onEventResizeMouseDown?: (
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     event: CalendarEvent,
     edge: "top" | "bottom",
   ) => void;

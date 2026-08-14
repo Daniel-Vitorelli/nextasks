@@ -46,6 +46,33 @@ function computeOverrideStyle(
 }
 
 const RESIZE_HOTZONE_PX = 8;
+/** Finger-friendlier resize target on touch screens. */
+const TOUCH_RESIZE_HOTZONE_PX = 18;
+/**
+ * Pixels of finger movement that turn a tap into a drag. Kept in sync with
+ * the touch slop in the drag/resize hooks so the drag ghost appears exactly
+ * when the synthesized click starts being suppressed.
+ */
+const TOUCH_SLOP_PX = 10;
+
+function resolveResizeEdge(
+  offsetY: number,
+  height: number,
+  showTop: boolean,
+  showBottom: boolean,
+  hotzone: number,
+): "top" | "bottom" | null {
+  if (showTop && showBottom && height < hotzone * 2) {
+    return offsetY < height / 2 ? "top" : "bottom";
+  }
+  if (showTop && offsetY <= hotzone) {
+    return "top";
+  }
+  if (showBottom && offsetY >= height - hotzone) {
+    return "bottom";
+  }
+  return null;
+}
 
 export function CalendarEventItem({
   positionedEvent,
@@ -118,6 +145,19 @@ export function CalendarEventItem({
     y: number;
   } | null>(null);
 
+  /** Which resize edge the pointer is currently over (drives hint + cursor) */
+  const [resizeHover, setResizeHover] = React.useState<
+    "top" | "bottom" | null
+  >(null);
+
+  /**
+   * True while a touch drag/resize started, so the synthesized click that
+   * follows the gesture is dropped instead of opening the detail popover.
+   */
+  const didDragRef = React.useRef(false);
+  /** Where the pointer pressed down, used to tell a tap from a drag. */
+  const dragStartPointRef = React.useRef<{ x: number; y: number } | null>(null);
+
   const closeContextMenu = React.useCallback(() => {
     setContextMenu(null);
     onContextMenuOpenChange?.(false);
@@ -160,7 +200,7 @@ export function CalendarEventItem({
     return (
       <div
         className={cn(
-          "absolute rounded-sm px-2 py-1 pointer-events-none opacity-30 overflow-hidden",
+          "absolute rounded-sm px-2 py-1 max-sm:px-1 pointer-events-none opacity-30 overflow-hidden",
           className,
         )}
         style={{
@@ -261,7 +301,7 @@ export function CalendarEventItem({
       <div
         tabIndex={-1}
         className={cn(
-          "absolute rounded-sm px-2 py-1",
+          "absolute rounded-sm px-2 py-1 max-sm:px-1",
           "pointer-events-none cursor-grabbing",
           "overflow-hidden select-none opacity-80 shadow-lg",
           className,
@@ -295,59 +335,96 @@ export function CalendarEventItem({
     );
   }
 
-  function handleMouseMove(e: React.MouseEvent) {
+  function handlePointerMove(e: React.PointerEvent) {
+    if (e.pointerType !== "mouse") {
+      // Finger movement beyond the slop marks the gesture as a real drag, so
+      // the synthesized click that follows is dropped instead of opening the
+      // detail popover.
+      const point = dragStartPointRef.current;
+      if (!didDragRef.current && point) {
+        const dx = e.clientX - point.x;
+        const dy = e.clientY - point.y;
+        if (Math.hypot(dx, dy) >= TOUCH_SLOP_PX) {
+          didDragRef.current = true;
+        }
+      }
+      return;
+    }
+
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
     const height = rect.height;
 
-    if (showTopResize && showBottomResize && height < RESIZE_HOTZONE_PX * 2) {
-      target.style.setProperty("--cursor", "row-resize");
-      return;
-    }
-
-    if (showTopResize && offsetY <= RESIZE_HOTZONE_PX) {
-      target.style.setProperty("--cursor", "row-resize");
-      return;
-    }
-
-    if (showBottomResize && offsetY >= height - RESIZE_HOTZONE_PX) {
-      target.style.setProperty("--cursor", "row-resize");
-      return;
-    }
-
-    target.style.removeProperty("--cursor");
+    const edge = resolveResizeEdge(
+      offsetY,
+      height,
+      showTopResize,
+      showBottomResize,
+      RESIZE_HOTZONE_PX,
+    );
+    target.style.cursor = edge ? "row-resize" : "grab";
+    setResizeHover((current) => (current === edge ? current : edge));
   }
 
-  function handleMouseDown(e: React.MouseEvent) {
+  function handlePointerLeave(e: React.PointerEvent) {
+    dragStartPointRef.current = null;
+    (e.currentTarget as HTMLElement).style.removeProperty("cursor");
+  }
+
+  function handlePointerDown(e: React.PointerEvent) {
     e.stopPropagation();
+    didDragRef.current = false;
+    dragStartPointRef.current = { x: e.clientX, y: e.clientY };
 
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
     const height = rect.height;
 
-    if (showTopResize && showBottomResize && height < RESIZE_HOTZONE_PX * 2) {
-      const edge = offsetY < height / 2 ? "top" : "bottom";
+    // Mouse: keep the desktop behavior — immediate resize or drag.
+    if (e.pointerType === "mouse") {
+      const edge = resolveResizeEdge(
+        offsetY,
+        height,
+        showTopResize,
+        showBottomResize,
+        RESIZE_HOTZONE_PX,
+      );
+      if (edge) {
+        onResizeMouseDown?.(e, event, edge);
+        return;
+      }
+      onDragMouseDown?.(e, event);
+      return;
+    }
+
+    // Touch/pen: grabbing an edge resizes immediately...
+    const edge = resolveResizeEdge(
+      offsetY,
+      height,
+      showTopResize,
+      showBottomResize,
+      TOUCH_RESIZE_HOTZONE_PX,
+    );
+    if (edge) {
+      didDragRef.current = true;
       onResizeMouseDown?.(e, event, edge);
       return;
     }
 
-    if (showTopResize && offsetY <= RESIZE_HOTZONE_PX) {
-      onResizeMouseDown?.(e, event, "top");
-      return;
-    }
-
-    if (showBottomResize && offsetY >= height - RESIZE_HOTZONE_PX) {
-      onResizeMouseDown?.(e, event, "bottom");
-      return;
-    }
-
-    onDragMouseDown?.(e, event);
+    // ...otherwise pick the event up right away. The element uses
+    // touch-action: none, so the browser never hijacks the gesture for
+    // scrolling; a finger can move the event immediately, no long-press.
+    onDragMouseDown?.(e, event, target);
   }
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
     if (!onClick) return;
     onClick(event);
   }
@@ -370,17 +447,18 @@ export function CalendarEventItem({
       ref={eventRef}
       role="button"
       tabIndex={0}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       onContextMenu={handleContextMenu}
       className={cn(
-        "absolute px-2 py-1",
+        "group absolute px-2 py-1 max-sm:px-1",
         hasTopRounding && "rounded-t-md",
         hasBottomRounding && "rounded-b-md",
-        "cursor-default hover:z-10 focus:outline-none focus-visible:outline-none",
-        "overflow-hidden select-none",
+        "cursor-grab hover:z-10 focus:outline-none focus-visible:outline-none",
+        "overflow-hidden select-none touch-none",
         isSelected && "z-20",
         className,
       )}
@@ -418,6 +496,35 @@ export function CalendarEventItem({
             hasBottomRounding && "rounded-bl-md",
             styles.border,
             eventIsPast && "opacity-60",
+          )}
+        />
+      )}
+
+      {/* Resize hint edges — highlighted when the pointer is over the
+          corresponding hotzone, so resizing feels discoverable */}
+      {showTopResize && (
+        <div
+          className={cn(
+            "absolute left-0 right-0 top-0 h-[3px] pointer-events-none transition-opacity duration-100",
+            hasTopRounding && "rounded-t-md",
+            styles.border,
+            "dark:bg-white dark:mix-blend-overlay",
+            resizeHover === "top"
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-60",
+          )}
+        />
+      )}
+      {showBottomResize && (
+        <div
+          className={cn(
+            "absolute left-0 right-0 bottom-0 h-[3px] pointer-events-none transition-opacity duration-100",
+            hasBottomRounding && "rounded-b-md",
+            styles.border,
+            "dark:bg-white dark:mix-blend-overlay",
+            resizeHover === "bottom"
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-60",
           )}
         />
       )}

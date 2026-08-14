@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { startOfWeek } from "date-fns";
+import { addDays, eachDayOfInterval, format, startOfWeek } from "date-fns";
 import { enUS, ptBR } from "date-fns/locale";
 import { Plus, X } from "lucide-react";
 
@@ -53,12 +53,25 @@ export function RoutineCalendarDialog({
   const appLocale = useLocale();
   const dateLocale = appLocale === "pt" ? ptBR : enUS;
 
-  const view: ViewType = routine?.frequency === "daily" ? "day" : "week";
+  const isWeekly = routine?.frequency === "weekly";
   const weekStart = startOfWeek(new Date());
 
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  /**
+   * For weekly routines only: the weekday (0-6) being viewed alone, or null
+   * to view the whole week. Weekly blocks are stored with real dates, and
+   * the weekday of each block determines which day it belongs to.
+   */
+  const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null);
+
+  const dayViewDate =
+    isWeekly && selectedWeekday !== null
+      ? addDays(weekStart, selectedWeekday)
+      : null;
+  const view: ViewType =
+    isWeekly && selectedWeekday === null ? "week" : "day";
 
   const loadBlocks = async (routineId: string) => {
     setIsLoading(true);
@@ -81,10 +94,14 @@ export function RoutineCalendarDialog({
   useEffect(() => {
     if (!open || !routine) {
       setSelectedEventId(null);
+      setSelectedWeekday(null);
+      document.body.removeAttribute("data-calendar-open");
       return;
     }
 
     setSelectedEventId(null);
+    setSelectedWeekday(null);
+    document.body.setAttribute("data-calendar-open", "true");
     void loadBlocks(routine.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, routine?.id]);
@@ -130,10 +147,12 @@ export function RoutineCalendarDialog({
           ? {
               ...block,
               title: event.title,
+              description: event.description ?? null,
               start: event.start.toISOString(),
               end: event.end.toISOString(),
               isAllDay: event.isAllDay ?? false,
               color: event.color ?? "blue",
+              confirmation: event.confirmation ?? "none",
             }
           : block,
       ),
@@ -147,10 +166,12 @@ export function RoutineCalendarDialog({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: event.title,
+            description: event.description ?? null,
             start: event.start,
             end: event.end,
             isAllDay: event.isAllDay ?? false,
             color: event.color ?? "blue",
+            confirmation: event.confirmation ?? "none",
           }),
         },
       );
@@ -193,10 +214,12 @@ export function RoutineCalendarDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: event.title,
+          description: event.description ?? null,
           start: event.start,
           end: event.end,
           isAllDay: event.isAllDay ?? false,
           color: event.color ?? "blue",
+          confirmation: event.confirmation ?? "none",
         }),
       });
 
@@ -219,31 +242,45 @@ export function RoutineCalendarDialog({
   };
 
   /** Mapeia blocos armazenados para o template genérico. */
-  const events: CalendarEvent[] = timeBlocks.map((block) => {
-    const event = toCalendarEvent(block);
+  const events: CalendarEvent[] = timeBlocks
+    // No modo dia, mostramos apenas os blocos cujo dia da semana armazenado
+    // corresponde ao dia selecionado (ex.: segunda-feira vê só as segundas).
+    .filter(
+      (block) =>
+        selectedWeekday === null ||
+        new Date(block.start).getDay() === selectedWeekday,
+    )
+    .map((block) => {
+      const event = toCalendarEvent(block);
 
-    if (view === "day") {
-      // Rotina diária: blocos sempre no mesmo horário do dia exibido.
-      event.start = applyTimeOfDay(weekStart, event.start);
-      event.end = applyTimeOfDay(weekStart, event.end);
-    } else {
-      // Rotina semanal: blocos caem na mesma coluna do dia da semana.
-      const offset = event.start.getDay();
-      const target = new Date(weekStart);
-      target.setDate(weekStart.getDate() + offset);
-      event.start = applyTimeOfDay(target, event.start);
-      event.end = applyTimeOfDay(target, event.end);
-    }
+      if (dayViewDate) {
+        // Rotina semanal em modo dia: os blocos do dia selecionado caem no
+        // dia exibido, mantendo os horários.
+        event.start = applyTimeOfDay(dayViewDate, event.start);
+        event.end = applyTimeOfDay(dayViewDate, event.end);
+      } else if (isWeekly) {
+        // Rotina semanal: blocos caem na mesma coluna do dia da semana.
+        const offset = event.start.getDay();
+        const target = new Date(weekStart);
+        target.setDate(weekStart.getDate() + offset);
+        event.start = applyTimeOfDay(target, event.start);
+        event.end = applyTimeOfDay(target, event.end);
+      } else {
+        // Rotina diária: blocos sempre no mesmo horário do dia exibido.
+        event.start = applyTimeOfDay(weekStart, event.start);
+        event.end = applyTimeOfDay(weekStart, event.end);
+      }
 
-    return event;
-  });
+      return event;
+    });
 
   const handleCreateAtCurrentTime = () => {
     const now = new Date();
+    const anchorDate = dayViewDate ?? weekStart;
     const anchor = new Date(
-      weekStart.getFullYear(),
-      weekStart.getMonth(),
-      weekStart.getDate(),
+      anchorDate.getFullYear(),
+      anchorDate.getMonth(),
+      anchorDate.getDate(),
       now.getHours(),
     );
     void createBlock(anchor);
@@ -264,9 +301,13 @@ export function RoutineCalendarDialog({
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <Button size="sm" onClick={handleCreateAtCurrentTime}>
+            <Button
+              size="sm"
+              onClick={handleCreateAtCurrentTime}
+              aria-label={t("calendar.newBlock")}
+            >
               <Plus />
-              {t("calendar.newBlock")}
+              <span className="hidden sm:inline">{t("calendar.newBlock")}</span>
             </Button>
 
             <Button
@@ -281,6 +322,36 @@ export function RoutineCalendarDialog({
         </div>
 
         <div className="min-h-0 flex-1 p-3">
+          {isWeekly && (
+            <div className="scrollbar-hide mb-2 flex items-center gap-1 overflow-x-auto pb-1">
+              <Button
+                size="sm"
+                variant={selectedWeekday === null ? "default" : "outline"}
+                onClick={() => setSelectedWeekday(null)}
+              >
+                {t("calendar.week")}
+              </Button>
+              {eachDayOfInterval({
+                start: weekStart,
+                end: addDays(weekStart, 6),
+              }).map((day) => {
+                const weekday = day.getDay();
+                const isActive = selectedWeekday === weekday;
+                return (
+                  <Button
+                    key={weekday}
+                    size="sm"
+                    variant={isActive ? "default" : "outline"}
+                    aria-pressed={isActive}
+                    onClick={() => setSelectedWeekday(weekday)}
+                  >
+                    {format(day, "EEE", { locale: dateLocale })}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex h-full items-center justify-center">
               <Spinner className="size-6" />
@@ -288,7 +359,7 @@ export function RoutineCalendarDialog({
           ) : (
             <WeekView
               view={view}
-              currentDate={weekStart}
+              currentDate={dayViewDate ?? weekStart}
               events={events}
               locale={dateLocale}
               generic

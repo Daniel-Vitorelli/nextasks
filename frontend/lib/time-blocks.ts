@@ -1,4 +1,8 @@
-import type { CalendarEvent, EventColor } from "@/components/calendar/week-view-types";
+import type {
+  CalendarEvent,
+  EventColor,
+  EventConfirmation,
+} from "@/components/calendar/week-view-types";
 
 export const EVENT_COLORS: EventColor[] = [
   "red",
@@ -10,38 +14,54 @@ export const EVENT_COLORS: EventColor[] = [
   "gray",
 ];
 
+export const CONFIRMATION_OPTIONS: {
+  value: EventConfirmation;
+}[] = [
+  { value: "none" },
+  { value: "checklist" },
+  { value: "score" },
+];
+
 export interface TimeBlock {
   id: string;
   routineId: string;
   title: string;
+  description: string | null;
   start: string;
   end: string;
   isAllDay: boolean;
   color: EventColor;
+  confirmation: EventConfirmation;
 }
 
 export interface TimeBlockInput {
   title?: unknown;
+  description?: unknown;
   start?: unknown;
   end?: unknown;
   isAllDay?: unknown;
   color?: unknown;
+  confirmation?: unknown;
 }
 
 export interface TimeBlockPayload {
   title: string;
+  description: string | null;
   start: Date;
   end: Date;
   isAllDay: boolean;
   color: EventColor;
+  confirmation: EventConfirmation;
 }
 
 export interface TimeBlockPatch {
   title?: string;
+  description?: string | null;
   start?: Date;
   end?: Date;
   isAllDay?: boolean;
   color?: EventColor;
+  confirmation?: EventConfirmation;
 }
 
 export function parseTimeBlockInput(value: unknown): TimeBlockPayload | null {
@@ -63,10 +83,17 @@ export function parseTimeBlockInput(value: unknown): TimeBlockPayload | null {
 
   return {
     title,
+    description:
+      typeof body.description === "string"
+        ? body.description.trim() || null
+        : null,
     start,
     end,
     isAllDay: body.isAllDay === true,
     color: isEventColor(body.color) ? body.color : "blue",
+    confirmation: isEventConfirmation(body.confirmation)
+      ? body.confirmation
+      : "none",
   };
 }
 
@@ -78,6 +105,10 @@ export function parseTimeBlockPatch(value: unknown): TimeBlockPatch | null {
     const title = body.title.trim();
     if (!title) return null;
     patch.title = title;
+  }
+
+  if (typeof body.description === "string") {
+    patch.description = body.description.trim() || null;
   }
 
   if (typeof body.start === "string" && !Number.isNaN(Date.parse(body.start))) {
@@ -96,6 +127,10 @@ export function parseTimeBlockPatch(value: unknown): TimeBlockPatch | null {
     patch.color = body.color;
   }
 
+  if (isEventConfirmation(body.confirmation)) {
+    patch.confirmation = body.confirmation;
+  }
+
   if (patch.start && patch.end && patch.end.getTime() <= patch.start.getTime()) {
     return null;
   }
@@ -107,14 +142,23 @@ function isEventColor(value: unknown): value is EventColor {
   return typeof value === "string" && EVENT_COLORS.includes(value as EventColor);
 }
 
+function isEventConfirmation(value: unknown): value is EventConfirmation {
+  return (
+    typeof value === "string" &&
+    CONFIRMATION_OPTIONS.some((option) => option.value === value)
+  );
+}
+
 export function toCalendarEvent(block: TimeBlock): CalendarEvent {
   return {
     id: block.id,
     title: block.title,
+    description: block.description ?? undefined,
     start: new Date(block.start),
     end: new Date(block.end),
     isAllDay: block.isAllDay,
     color: block.color,
+    confirmation: block.confirmation,
   };
 }
 
@@ -126,10 +170,12 @@ export type TimeBlockPatchPayload = Omit<
 export function fromCalendarEvent(event: CalendarEvent): TimeBlockPatchPayload {
   return {
     title: event.title,
+    description: event.description ?? undefined,
     start: event.start,
     end: event.end,
     isAllDay: event.isAllDay ?? false,
     color: event.color ?? "blue",
+    confirmation: event.confirmation ?? "none",
   };
 }
 
