@@ -22,7 +22,7 @@ export default async function Layout({
   return (
     <SessionProvider value={{ user: session.user }}>
       <div className="relative min-h-screen">
-        <main>{children}</main>
+        <main className="pb-8">{children}</main>
         <AppDock />
       </div>
     </SessionProvider>

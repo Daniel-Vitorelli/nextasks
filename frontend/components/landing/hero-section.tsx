@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { TextEffect } from "@/components/motion-primitives/text-effect";
 import { AnimatedGroup } from "@/components/motion-primitives/animated-group";
-import { HeroHeader } from "@/components/home/heroHeader";
+import { HeroHeader } from "@/components/landing/hero-header";
 import { useTranslations } from "next-intl";
 import scrollToElement from "@/lib/scrollToElement";
 

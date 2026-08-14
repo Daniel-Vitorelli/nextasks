@@ -1,9 +1,9 @@
-import AboutSection from "@/components/home/aboutSection";
-import BenefitsSection from "@/components/home/benefitsSection";
-import CallToActionSection from "@/components/home/callToActionSection";
-import FeaturesSection from "@/components/home/featuresSection";
-import FooterSection from "@/components/home/footerSection";
-import HeroSection from "@/components/home/heroSection";
+import AboutSection from "@/components/landing/about-section";
+import BenefitsSection from "@/components/landing/benefits-section";
+import CallToActionSection from "@/components/landing/call-to-action-section";
+import FeaturesSection from "@/components/landing/features-section";
+import FooterSection from "@/components/landing/footer-section";
+import HeroSection from "@/components/landing/hero-section";
 import { Separator } from "@/components/ui/separator";
 import { setRequestLocale } from "next-intl/server";
 
