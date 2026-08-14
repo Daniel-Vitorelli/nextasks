@@ -115,7 +115,11 @@
         "emptyTitle": "Nothing happening right now",
         "emptyDescription": "Your next block will show up here automatically.",
         "noRoutineTitle": "No active routine",
-        "noRoutineDescription": "Activate a routine in the dashboard to see your current schedule."
+        "noRoutineDescription": "Activate a routine in the dashboard to see your current schedule.",
+        "checklistLabel": "Done",
+        "scoreLabel": "Score",
+        "scoreValue": "{value}/10",
+        "confirm": "Confirm"
       }
     }
   },

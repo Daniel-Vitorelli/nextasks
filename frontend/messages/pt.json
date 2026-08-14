@@ -115,7 +115,11 @@
         "emptyTitle": "Nenhuma atividade no momento",
         "emptyDescription": "Seu próximo bloco aparecerá aqui automaticamente.",
         "noRoutineTitle": "Nenhuma rotina ativa",
-        "noRoutineDescription": "Ative uma rotina no painel para ver sua programação atual."
+        "noRoutineDescription": "Ative uma rotina no painel para ver sua programação atual.",
+        "checklistLabel": "Feito",
+        "scoreLabel": "Nota",
+        "scoreValue": "{value}/10",
+        "confirm": "Confirmar"
       }
     }
   },

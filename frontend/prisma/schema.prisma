@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   routines      Routine[]
+  completions   TimeBlockCompletion[]
 }
 
 model Routine {
@@ -55,8 +56,26 @@ model TimeBlock {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   routine      Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  completions  TimeBlockCompletion[]
 
   @@index([routineId])
+}
+
+model TimeBlockCompletion {
+  id          String   @id @default(cuid())
+  timeBlockId String
+  userId      String
+  periodStart DateTime
+  periodEnd   DateTime
+  value       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  timeBlock  TimeBlock @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([timeBlockId, periodStart])
+  @@index([userId, periodStart])
 }
 
 model Session {

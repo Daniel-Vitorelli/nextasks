@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarClock, Clock } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 
 import { useSession } from "@/components/session-provider";
 import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
-import { eventColorStyles } from "@/components/calendar/calendar-event-color";
+import { CurrentBlockCard } from "@/components/app/home/current-block-card";
+import type { Period } from "@/lib/completions";
 import type { TimeBlock } from "@/lib/time-blocks";
 import type { Routine } from "@/lib/routines";
 
 interface CurrentBlockResponse {
   routine: Routine | null;
   blocks: TimeBlock[];
+  period: Period | null;
 }
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -36,12 +37,16 @@ export default function HomePage() {
     minute: "2-digit",
   });
 
+  const tzOffsetMinutes = new Date().getTimezoneOffset();
+
   const [current, setCurrent] = useState<CurrentBlockResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadCurrentBlock = async () => {
+  const loadCurrentBlock = useCallback(async () => {
     try {
-      const response = await fetch("/api/routines/current-block");
+      const response = await fetch(
+        `/api/routines/current-block?tzOffset=${tzOffsetMinutes}`,
+      );
 
       if (!response.ok) {
         throw new Error("Failed to load current block");
@@ -53,17 +58,29 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [tzOffsetMinutes]);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     void loadCurrentBlock();
     const interval = setInterval(loadCurrentBlock, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadCurrentBlock]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const blocks = current?.blocks ?? [];
   const routine = current?.routine ?? null;
+
+  const handleConfirmed = (blockId: string) => {
+    setCurrent((state) =>
+      state
+        ? {
+            ...state,
+            blocks: state.blocks.filter((block) => block.id !== blockId),
+          }
+        : state,
+    );
+  };
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-12 px-4 py-12 md:px-8">
@@ -88,49 +105,16 @@ export default function HomePage() {
           </div>
         ) : blocks.length > 0 && routine ? (
           <ul className="space-y-3">
-            {blocks.map((block) => {
-              const colorStyles = eventColorStyles[block.color];
-              return (
-                <li
-                  key={block.id}
-                  className={cn(
-                    "flex items-center gap-4 rounded-xl border border-border/60 bg-card p-5 transition-colors",
-                    colorStyles?.bgHover,
-                  )}
-                >
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <h2 className="truncate text-xl font-semibold tracking-tight">
-                      {block.title}
-                    </h2>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="size-4" />
-                      {block.isAllDay
-                        ? t("currentBlock.allDay")
-                        : `${timeFormatter.format(new Date(block.start))} – ${timeFormatter.format(new Date(block.end))}`}
-                    </div>
-                    {block.description && (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {block.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs capitalize">
-                      {routine.name}
-                    </span>
-                    {colorStyles && (
-                      <span
-                        className={cn(
-                          "size-2.5 rounded-full",
-                          colorStyles.border,
-                        )}
-                      />
-                    )}
-                  </div>
-                </li>
-              );
-            })}
+            {blocks.map((block) => (
+              <CurrentBlockCard
+                key={block.id}
+                block={block}
+                routineName={routine.name}
+                timeFormatter={timeFormatter}
+                tzOffsetMinutes={tzOffsetMinutes}
+                onConfirmed={handleConfirmed}
+              />
+            ))}
           </ul>
         ) : (
           <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
