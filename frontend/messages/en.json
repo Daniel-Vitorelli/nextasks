@@ -109,6 +109,23 @@
       "eyebrow": "Home",
       "greeting": "Hello, {name}",
       "fallbackName": "welcome",
+      "progressChart": {
+        "title": "Routine progress",
+        "subtitle": "Percentage of confirmed time blocks per day",
+        "periodLabel": "Period",
+        "period": {
+          "7d": "7 days",
+          "15d": "15 days",
+          "30d": "30 days",
+          "60d": "60 days"
+        },
+        "progress": "Progress",
+        "noData": "No data",
+        "noActiveRoutineTitle": "No active routine",
+        "noActiveRoutineDescription": "Activate a routine in the dashboard to see your progress here.",
+        "emptyTitle": "No data yet",
+        "emptyDescription": "Confirm routine blocks to see your progress."
+      },
       "currentBlock": {
         "label": "Now",
         "allDay": "All day",

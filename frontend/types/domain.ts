@@ -93,3 +93,18 @@ export interface Period {
   start: Date;
   end: Date;
 }
+
+/** One day of routine progress (value is 0-100 or null when not applicable) */
+export interface DailyProgress {
+  date: string;
+  value: number | null;
+  confirmableBlocks: number;
+  confirmedValue: number;
+}
+
+/** Response of the routine progress endpoint */
+export interface ProgressResponse {
+  routine: Routine | null;
+  progress: DailyProgress[];
+  period: Period | null;
+}

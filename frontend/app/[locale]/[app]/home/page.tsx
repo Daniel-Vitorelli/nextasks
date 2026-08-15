@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, TrendingUp } from "lucide-react";
 
 import { useSession } from "@/components/session-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
+import { PeriodSelector } from "@/components/app/home/period-selector";
+import { ProgressChart } from "@/components/app/home/progress-chart";
+import { useRoutineProgress } from "@/components/app/home/use-routine-progress";
 import type { Period, TimeBlock, Routine } from "@/types/domain";
 
 interface CurrentBlockResponse {
@@ -16,6 +19,7 @@ interface CurrentBlockResponse {
 }
 
 const REFRESH_INTERVAL_MS = 60_000;
+const DEFAULT_DAYS = 30;
 
 export default function HomePage() {
   const t = useTranslations("app.home");
@@ -39,6 +43,14 @@ export default function HomePage() {
 
   const [current, setCurrent] = useState<CurrentBlockResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDays, setSelectedDays] = useState(DEFAULT_DAYS);
+
+  const {
+    data: progress,
+    isLoading: isProgressLoading,
+    error: progressError,
+    refetch: refetchProgress,
+  } = useRoutineProgress(selectedDays);
 
   const loadCurrentBlock = useCallback(async () => {
     try {
@@ -78,6 +90,7 @@ export default function HomePage() {
           }
         : state,
     );
+    void refetchProgress();
   };
 
   return (
@@ -91,6 +104,50 @@ export default function HomePage() {
         </h1>
         <p className="text-muted-foreground capitalize">{dateLabel}</p>
       </header>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-0.5">
+            <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">
+              {t("progressChart.title")}
+            </p>
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              {t("progressChart.subtitle")}
+            </h2>
+          </div>
+          <PeriodSelector value={selectedDays} onChange={setSelectedDays} />
+        </div>
+
+        {isProgressLoading ? (
+          <div className="flex h-64 items-center justify-center rounded-xl border border-border/60 bg-card">
+            <Spinner />
+          </div>
+        ) : progressError ? (
+          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/50">
+            <p className="text-sm text-muted-foreground">{progressError}</p>
+          </div>
+        ) : !progress?.routine ? (
+          <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
+            <TrendingUp className="text-muted-foreground size-6 shrink-0" />
+            <div className="flex flex-col gap-0.5">
+              <h2 className="font-semibold">
+                {t("progressChart.noActiveRoutineTitle")}
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                {t("progressChart.noActiveRoutineDescription")}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border/60 bg-card p-4">
+            <ProgressChart
+              data={progress.progress}
+              locale={locale}
+              className="h-64"
+            />
+          </div>
+        )}
+      </section>
 
       <section className="space-y-3">
         <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">

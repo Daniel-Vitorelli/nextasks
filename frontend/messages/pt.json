@@ -109,6 +109,23 @@
       "eyebrow": "Início",
       "greeting": "Olá, {name}",
       "fallbackName": "bem-vindo(a)",
+      "progressChart": {
+        "title": "Progresso da rotina",
+        "subtitle": "Percentual de blocos confirmados por dia",
+        "periodLabel": "Período",
+        "period": {
+          "7d": "7 dias",
+          "15d": "15 dias",
+          "30d": "30 dias",
+          "60d": "60 dias"
+        },
+        "progress": "Progresso",
+        "noData": "Sem dados",
+        "noActiveRoutineTitle": "Nenhuma rotina ativa",
+        "noActiveRoutineDescription": "Ative uma rotina no painel para ver seu progresso aqui.",
+        "emptyTitle": "Sem dados ainda",
+        "emptyDescription": "Confirme blocos da rotina para ver seu progresso."
+      },
       "currentBlock": {
         "label": "Agora",
         "allDay": "Dia inteiro",
