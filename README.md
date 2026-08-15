@@ -31,6 +31,11 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - Duplo clique numa célula cria um bloco; blocos podem ser **arrastados** (mover), **redimensionados** (dobrar borda) e **movidos entre dias** (all-day).
   - Popover de edição inline (título, horário, cor, modo dia inteiro), menu de contexto (cor/excluir) e menu "..." por bloco (duplicar/excluir).
   - Formulário dos blocos validado com **Zod + react-hook-form**, commit no blur (Enter/ESC), com mensagens traduzidas em pt/en.
+- **Home** (`/app/home`):
+  - **Blocos atuais**: lista os blocos de tempo da rotina ativa aplicáveis agora, com confirmação por checkbox ou nota (1–10).
+  - **Gráfico de progresso**: area chart (recharts + componente `chart.tsx` do shadcn/ui) com o progresso diário da rotina ativa, com seletor de período (7/15/30/60 dias).
+  - O valor diário é a % de blocos confirmáveis: checkbox confirmado vale 1; nota vale `nota/10` (só nota 10 equivale a um checkbox). Dia perfeito = 100%. Dias sem blocos confirmáveis ficam como gaps no gráfico.
+  - O gráfico atualiza automaticamente ao confirmar um bloco.
 - **i18n** — Português e Inglês via `next-intl` (`frontend/messages/{pt,en}.json`), incluindo os nomes dos dias da semana (date-fns com locale).
 
 ## Pré-requisitos
@@ -183,9 +188,13 @@ A app roda em http://localhost:3000.
 | POST    | `/api/routines/:id/time-blocks` | Cria um bloco de tempo           |
 | PATCH   | `/api/routines/:id/time-blocks/:blockId` | Atualiza um bloco de tempo |
 | DELETE  | `/api/routines/:id/time-blocks/:blockId` | Exclui um bloco de tempo   |
+| GET     | `/api/routines/progress` | Progresso diário (0–100) da rotina ativa. Query: `days` (7/15/30/60, default 30) e `tzOffset` (minutos). Resposta: `{ routine, progress: [{ date, value, confirmableBlocks, confirmedValue }], period }` |
+| POST    | `/api/routines/:id/duplicate` | Duplica uma rotina (com blocos de tempo) |
+| POST    | `/api/routines/:id/activate` | Ativa/desativa uma rotina (só uma ativa por usuário) |
+| POST    | `/api/time-blocks/:id/complete` | Confirma um bloco no período atual. Query: `tzOffset`. Body: `{ value }` ("true"/"false" para checkbox; "1"–"10" para nota) |
 | POST    | `/api/auth/[...all]` | Endpoints de autenticação (better-auth) |
 
-Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/time-blocks.ts`).
+Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/time-blocks.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/completions.ts`.
 
 ## Modelo de dados
 
