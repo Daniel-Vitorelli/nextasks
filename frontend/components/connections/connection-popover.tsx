@@ -380,11 +380,14 @@ export function ConnectionPopover({
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
+        side="bottom"
         align="start"
         sideOffset={6}
-        collisionPadding={12}
+        collisionPadding={16}
         avoidCollisions={true}
-        className="w-80 p-0 max-w-[90vw]"
+        collisionBoundary={[]}
+        sticky="partial"
+        className="w-80 p-0 max-w-[90vw] max-h-[calc(100vh-4rem)]"
       >
         <div className="border-border flex items-center gap-1.5 border-b px-3 py-2">
           <Link2 className="text-muted-foreground size-3.5" />
