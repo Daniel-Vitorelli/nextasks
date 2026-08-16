@@ -18,11 +18,13 @@ import type { Task } from "@/types/domain";
 interface TaskDetailsDialogProps {
   task: Task | null;
   onOpenChange: (open: boolean) => void;
+  onTaskDoneChange?: (taskId: string, done: boolean) => void;
 }
 
 export function TaskDetailsDialog({
   task,
   onOpenChange,
+  onTaskDoneChange,
 }: TaskDetailsDialogProps) {
   const t = useTranslations("dashboard.tasks");
 
@@ -96,7 +98,11 @@ export function TaskDetailsDialog({
 
           <Separator className="my-1" />
 
-          <SubtaskTree taskId={task.id} taskTitle={task.title} />
+          <SubtaskTree
+            taskId={task.id}
+            taskTitle={task.title}
+            onTaskDoneChange={(done) => onTaskDoneChange?.(task.id, done)}
+          />
         </div>
       </DialogContent>
     </Dialog>

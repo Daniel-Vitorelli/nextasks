@@ -29,16 +29,26 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SubtaskDialog } from "@/components/dashboard/tasks/subtask-dialog";
-import { useSubtasks } from "@/components/dashboard/tasks/use-subtasks";
+import {
+  completeAncestors,
+  markSubtreeDone,
+  removeAndRecomplete,
+  useSubtasks,
+} from "@/components/dashboard/tasks/use-subtasks";
 import { cn } from "@/lib/utils";
 import type { Subtask, SubtaskFormValues } from "@/types/domain";
 
 interface SubtaskTreeProps {
   taskId: string;
   taskTitle: string;
+  onTaskDoneChange?: (done: boolean) => void;
 }
 
-export function SubtaskTree({ taskId, taskTitle }: SubtaskTreeProps) {
+export function SubtaskTree({
+  taskId,
+  taskTitle,
+  onTaskDoneChange,
+}: SubtaskTreeProps) {
   const t = useTranslations("dashboard.tasks.subtasks");
   const {
     subtasks,
@@ -71,6 +81,8 @@ export function SubtaskTree({ taskId, taskTitle }: SubtaskTreeProps) {
       await updateSubtask(editingSubtask.id, values);
     } else {
       await createSubtask(values, createParent?.id ?? null);
+      // Nova sub-tarefa nasce desmarcada: a tarefa não pode seguir concluída.
+      onTaskDoneChange?.(false);
     }
   };
 
@@ -78,7 +90,27 @@ export function SubtaskTree({ taskId, taskTitle }: SubtaskTreeProps) {
     if (deleteTarget) {
       await deleteSubtask(deleteTarget.id);
       setDeleteTarget(null);
+      // Excluir o último filho pendente pode concluir a tarefa.
+      const updated = removeAndRecomplete(subtasks, deleteTarget.id);
+      if (updated) {
+        onTaskDoneChange?.(updated.every((root) => root.done));
+      }
     }
+  };
+
+  const handleToggleDone = (item: Subtask, done: boolean) => {
+    void toggleSubtaskDone(item.id, done);
+    if (!done) {
+      // Reabrir qualquer sub-tarefa reabre a tarefa.
+      onTaskDoneChange?.(false);
+      return;
+    }
+    // Concluir o último filho pendente conclui a tarefa: aplica a mesma
+    // cascata no estado atual e verifica se todas as raízes ficaram feitas.
+    const updated = completeAncestors(markSubtreeDone(subtasks, item.id), item.id);
+    onTaskDoneChange?.(
+      updated.length > 0 && updated.every((root) => root.done),
+    );
   };
 
   const parentTitle = createParent?.title ?? taskTitle;
@@ -120,9 +152,9 @@ export function SubtaskTree({ taskId, taskTitle }: SubtaskTreeProps) {
                     onAddChild={openCreateDialog}
                     onEdit={openEditDialog}
                     onDelete={setDeleteTarget}
-                    onToggleDone={(item, done) =>
-                      void toggleSubtaskDone(item.id, done)
-                    }
+                    onToggleDone={(item, done) => {
+                      handleToggleDone(item, done);
+                    }}
                   />
                 ))}
               </ul>

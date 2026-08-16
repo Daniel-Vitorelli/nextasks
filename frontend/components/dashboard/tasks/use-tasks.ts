@@ -86,6 +86,22 @@ export function useTasks() {
     }
   }, []);
 
+  /** Define o estado de conclusão de uma tarefa (usado quando sub-tarefas são reabertas). */
+  const setTaskDone = useCallback((id: string, done: boolean) => {
+    setTasks((current) => {
+      const updated = current.map((item) =>
+        item.id === id ? { ...item, done } : item,
+      );
+      // Concluidas ficam no fim da lista.
+      return updated.sort(
+        (a, b) =>
+          Number(a.done) - Number(b.done) ||
+          b.priority - a.priority ||
+          b.createdAt.localeCompare(a.createdAt),
+      );
+    });
+  }, []);
+
   const duplicateTask = useCallback(
     async (task: Task, duplicateSuffix: string) => {
       try {
@@ -137,6 +153,7 @@ export function useTasks() {
     isDeleting,
     saveTask,
     toggleTaskDone,
+    setTaskDone,
     duplicateTask,
     deleteTask,
   };

@@ -29,9 +29,21 @@ export async function PATCH(
     return badRequest("Invalid task");
   }
 
-  const task = await prisma.task.update({
-    where: { id },
-    data: patch,
+  const task = await prisma.$transaction(async (tx) => {
+    const updated = await tx.task.update({
+      where: { id },
+      data: patch,
+    });
+
+    // Marcar a tarefa como feita conclui todas as sub-tarefas dela.
+    if (patch.done === true) {
+      await tx.subtask.updateMany({
+        where: { taskId: id, done: false },
+        data: { done: true },
+      });
+    }
+
+    return updated;
   });
 
   return NextResponse.json(task);

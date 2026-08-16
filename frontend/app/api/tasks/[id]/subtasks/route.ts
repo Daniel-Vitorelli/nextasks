@@ -103,12 +103,47 @@ export async function POST(
     parentId = body.parentId;
   }
 
-  const subtask = await prisma.subtask.create({
-    data: {
-      taskId: id,
-      parentId,
-      ...payload,
-    },
+  const subtask = await prisma.$transaction(async (tx) => {
+    const created = await tx.subtask.create({
+      data: {
+        taskId: id,
+        parentId,
+        ...payload,
+      },
+    });
+
+    // Criar uma sub-tarefa não concluída sob um pai/tarefa concluídos quebra
+    // a invariante "pai só fica feito se todos os filhos estiverem feitos":
+    // reabre a cadeia de ancestrais e a tarefa, se estiverem feitos.
+    if (parentId || task.done) {
+      const siblings = await tx.subtask.findMany({
+        where: { taskId: id },
+        select: { id: true, parentId: true },
+      });
+      const parentById = new Map(
+        siblings.map((item) => [item.id, item.parentId]),
+      );
+      const ancestorIds: string[] = [];
+      let currentId = parentId;
+      while (currentId) {
+        ancestorIds.push(currentId);
+        currentId = parentById.get(currentId) ?? null;
+      }
+      if (ancestorIds.length > 0) {
+        await tx.subtask.updateMany({
+          where: { id: { in: ancestorIds }, done: true },
+          data: { done: false },
+        });
+      }
+      if (task.done) {
+        await tx.task.update({
+          where: { id },
+          data: { done: false },
+        });
+      }
+    }
+
+    return created;
   });
 
   return NextResponse.json(subtask, { status: 201 });

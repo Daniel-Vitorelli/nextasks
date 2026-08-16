@@ -32,6 +32,7 @@ export function TasksSection() {
     isDeleting,
     saveTask,
     toggleTaskDone,
+    setTaskDone,
     duplicateTask,
     deleteTask,
   } = useTasks();
@@ -57,6 +58,15 @@ export function TasksSection() {
   const handleDelete = async () => {
     await deleteTask(deleteTarget);
     setDeleteTarget(null);
+  };
+
+  // Concluir/reabrir sub-tarefas pode concluir/reabrir a tarefa pai
+  // (invariante de conclusão).
+  const handleTaskDoneChange = (taskId: string, done: boolean) => {
+    setTaskDone(taskId, done);
+    setDetailsTask((current) =>
+      current && current.id === taskId ? { ...current, done } : current,
+    );
   };
 
   const visibleTasks = showAll ? tasks : tasks.slice(0, INITIAL_VISIBLE);
@@ -89,6 +99,7 @@ export function TasksSection() {
             setDetailsTask(null);
           }
         }}
+        onTaskDoneChange={handleTaskDoneChange}
       />
 
       {isLoading ? (
