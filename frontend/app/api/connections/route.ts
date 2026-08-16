@@ -11,11 +11,12 @@ import {
 import {
   completeEntitiesForBlock,
   connectionInclude,
+  isDayFilterSatisfiable,
   loadCompletionsByBlock,
   toConnectionRow,
 } from "@/lib/server/connections";
-import { parseConnectionInput } from "@/lib/validation/connections";
 import { localWeekday } from "@/lib/server/completions";
+import { parseConnectionInput } from "@/lib/validation/connections";
 import type {
   ConnectionCatalogBlock,
   ConnectionsResponse,
@@ -109,9 +110,29 @@ export async function POST(request: Request) {
 
   const timeBlock = await prisma.timeBlock.findFirst({
     where: { id: input.timeBlockId, routine: { userId: user.id } },
+    include: { routine: { select: { frequency: true } } },
   });
   if (!timeBlock) {
     return notFound("Time block not found");
+  }
+
+  // Bloco sem modo de confirmação nunca pode satisfazer uma conexão.
+  if (timeBlock.confirmation === "none") {
+    return badRequest("Block has no confirmation mode");
+  }
+
+  // O dayFilter precisa ser possível de satisfazer para este bloco
+  // (blocos semanais só ocorrem no próprio dia da semana).
+  const blockWeekday = localWeekday(timeBlock.start, tzOffsetMinutes);
+  if (
+    !isDayFilterSatisfiable(
+      input.dayFilter,
+      timeBlock.routine.frequency as Frequency,
+      blockWeekday,
+      tzOffsetMinutes,
+    )
+  ) {
+    return badRequest("Day filter never matches this block");
   }
 
   if (input.taskId) {

@@ -5,10 +5,13 @@ import { badRequest, notFound, parseTzOffset, requireUser, type RouteContext } f
 import {
   completeEntitiesForBlock,
   connectionInclude,
+  isDayFilterSatisfiable,
   loadCompletionsByBlock,
   toConnectionRow,
 } from "@/lib/server/connections";
+import { localWeekday } from "@/lib/server/completions";
 import { parseConnectionPatch } from "@/lib/validation/connections";
+import type { Frequency } from "@/types/domain";
 
 export async function PATCH(
   request: Request,
@@ -33,6 +36,28 @@ export async function PATCH(
 
   const url = new URL(request.url);
   const tzOffsetMinutes = parseTzOffset(url.searchParams.get("tzOffset"));
+
+  // O dayFilter precisa continuar possível de satisfazer para o bloco.
+  if (patch.dayFilter) {
+    const block = await prisma.timeBlock.findFirst({
+      where: { id: existing.timeBlockId, routine: { userId: user.id } },
+      include: { routine: { select: { frequency: true } } },
+    });
+    if (!block) {
+      return notFound("Time block not found");
+    }
+    const blockWeekday = localWeekday(block.start, tzOffsetMinutes);
+    if (
+      !isDayFilterSatisfiable(
+        patch.dayFilter,
+        block.routine.frequency as Frequency,
+        blockWeekday,
+        tzOffsetMinutes,
+      )
+    ) {
+      return badRequest("Day filter never matches this block");
+    }
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     const connection = await tx.taskBlockConnection.update({

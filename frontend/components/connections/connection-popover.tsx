@@ -17,6 +17,7 @@ import type {
   ConnectionCatalogBlock,
   ConnectionPatch,
   DayFilter,
+  Frequency,
   TaskBlockConnection,
 } from "@/types/domain";
 
@@ -37,16 +38,68 @@ function todayLocal(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+function formatLocalDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** Próxima data local cujo dia da semana seja `weekday` (hoje incluso). */
+function nextDateForWeekday(weekday: number): string {
+  const date = new Date();
+  while (date.getDay() !== weekday) {
+    date.setDate(date.getDate() + 1);
+  }
+  return formatLocalDate(date);
+}
+
+/** Dia da semana (0-6) de uma data local "YYYY-MM-DD". */
+function dateWeekday(dateString: string): number {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day).getDay();
+}
+
+/**
+ * O dayFilter é possível de satisfazer para este bloco? Blocos semanais só
+ * ocorrem no próprio dia da semana: weekday de outro dia ou data em outro
+ * dia da semana nunca casam. Blocos diários aceitam qualquer filtro.
+ */
+function isDayFilterSatisfiable(
+  dayFilter: DayFilter,
+  frequency: Frequency,
+  blockWeekday: number,
+): boolean {
+  if (dayFilter === "all" || frequency === "daily") return true;
+  if (dayFilter.startsWith("weekday:")) {
+    return Number(dayFilter.slice("weekday:".length)) === blockWeekday;
+  }
+  return dateWeekday(dayFilter.slice("date:".length)) === blockWeekday;
+}
+
 /** Opções de uma conexão: contagem necessária, filtro de dia e progresso. */
 function ConnectionOptions({
   connection,
+  frequency,
+  blockWeekday,
   onUpdate,
 }: {
   connection: TaskBlockConnection;
+  frequency: Frequency;
+  blockWeekday: number;
   onUpdate: (patch: ConnectionPatch) => void;
 }) {
   const t = useTranslations("dashboard.tasks.connections");
   const isDate = connection.dayFilter.startsWith("date:");
+  const [dateError, setDateError] = React.useState(false);
+
+  const currentValid = isDayFilterSatisfiable(
+    connection.dayFilter,
+    frequency,
+    blockWeekday,
+  );
+  const weekdays =
+    frequency === "weekly" ? [blockWeekday] : [0, 1, 2, 3, 4, 5, 6];
+  const satisfied = connection.confirmedCount >= connection.requiredCount;
 
   return (
     <div className="mt-1 flex flex-col gap-1.5 pl-6">
@@ -88,19 +141,25 @@ function ConnectionOptions({
       </div>
 
       <select
-        value={isDate ? "date:" : connection.dayFilter}
+        value={currentValid ? (isDate ? "date:" : connection.dayFilter) : "all"}
         onChange={(event) => {
           const value = event.target.value;
-          onUpdate({
-            dayFilter:
-              value === "date:" ? `date:${todayLocal()}` : (value as DayFilter),
-          });
+          setDateError(false);
+          if (value === "date:") {
+            const date =
+              frequency === "weekly"
+                ? nextDateForWeekday(blockWeekday)
+                : todayLocal();
+            onUpdate({ dayFilter: `date:${date}` });
+          } else {
+            onUpdate({ dayFilter: value as DayFilter });
+          }
         }}
         aria-label={t("dayFilter")}
         className="bg-background h-7 w-full rounded-sm border border-border px-1.5 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         <option value="all">{t("allDays")}</option>
-        {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+        {weekdays.map((day) => (
           <option key={day} value={`weekday:${day}`}>
             {t(`weekday_${day}`)}
           </option>
@@ -109,24 +168,74 @@ function ConnectionOptions({
       </select>
 
       {isDate && (
-        <Input
-          type="date"
-          value={connection.dayFilter.slice("date:".length)}
-          onChange={(event) => {
-            if (event.target.value) {
-              onUpdate({ dayFilter: `date:${event.target.value}` });
-            }
-          }}
-          aria-label={t("specificDate")}
-          className="h-7 text-xs"
-        />
+        <>
+          <Input
+            type="date"
+            value={connection.dayFilter.slice("date:".length)}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (!value) return;
+              if (
+                frequency === "weekly" &&
+                dateWeekday(value) !== blockWeekday
+              ) {
+                setDateError(true);
+                return;
+              }
+              setDateError(false);
+              onUpdate({ dayFilter: `date:${value}` });
+            }}
+            aria-label={t("specificDate")}
+            className="h-7 text-xs"
+          />
+          {frequency === "weekly" && (
+            <p
+              className={
+                dateError
+                  ? "text-[11px] text-destructive"
+                  : "text-muted-foreground text-[11px]"
+              }
+            >
+              {dateError
+                ? t("dateInvalidWeekly", { day: t(`weekday_${blockWeekday}`) })
+                : t("dateHintWeekly", { day: t(`weekday_${blockWeekday}`) })}
+            </p>
+          )}
+        </>
       )}
 
-      <p className="text-[11px] text-muted-foreground">
-        {t("progress", {
+      {!currentValid && (
+        <div className="bg-muted/50 flex flex-col gap-1 rounded-sm px-2 py-1.5">
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            {t("filterImpossible", { day: t(`weekday_${blockWeekday}`) })}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-6 self-start text-[11px]"
+            onClick={() =>
+              onUpdate({ dayFilter: `weekday:${blockWeekday}` })
+            }
+          >
+            {t("fixFilter", { day: t(`weekday_${blockWeekday}`) })}
+          </Button>
+        </div>
+      )}
+
+      <p
+        className={
+          satisfied
+            ? "text-emerald-600 text-[11px] dark:text-emerald-400"
+            : "text-muted-foreground text-[11px]"
+        }
+      >
+        {t(frequency === "weekly" ? "progressWeekly" : "progressDaily", {
           count: connection.confirmedCount,
           required: connection.requiredCount,
         })}
+        {" · "}
+        {satisfied ? t("satisfied") : t("pending")}
       </p>
     </div>
   );
@@ -136,6 +245,9 @@ interface ConnectionRowProps {
   title: string;
   subtitle?: string;
   connection: TaskBlockConnection | undefined;
+  disabled?: boolean;
+  frequency: Frequency;
+  blockWeekday: number;
   onToggle: () => void;
   onUpdate: (patch: ConnectionPatch) => void;
 }
@@ -144,14 +256,24 @@ function ConnectionRow({
   title,
   subtitle,
   connection,
+  disabled = false,
+  frequency,
+  blockWeekday,
   onToggle,
   onUpdate,
 }: ConnectionRowProps) {
   return (
-    <div className="rounded-md px-1.5 py-1 hover:bg-muted/50">
+    <div
+      className={
+        disabled
+          ? "rounded-md px-1.5 py-1 opacity-60"
+          : "rounded-md px-1.5 py-1 hover:bg-muted/50"
+      }
+    >
       <label className="flex cursor-pointer items-center gap-2 py-0.5">
         <Checkbox
           checked={!!connection}
+          disabled={disabled}
           onCheckedChange={onToggle}
           className="shrink-0"
         />
@@ -164,11 +286,27 @@ function ConnectionRow({
           )}
         </span>
       </label>
-      {connection && (
-        <ConnectionOptions connection={connection} onUpdate={onUpdate} />
+      {connection && !disabled && (
+        <ConnectionOptions
+          connection={connection}
+          frequency={frequency}
+          blockWeekday={blockWeekday}
+          onUpdate={onUpdate}
+        />
       )}
     </div>
   );
+}
+
+/** Rótulo da recorrência de um bloco ("Todos os dias" / "Toda quarta-feira"). */
+function blockRecurrence(
+  frequency: Frequency,
+  weekday: number,
+  t: ReturnType<typeof useTranslations>,
+): string {
+  return frequency === "weekly"
+    ? t("recurrenceWeekly", { day: t(`weekday_${weekday}`) })
+    : t("recurrenceDaily");
 }
 
 export function ConnectionPopover({
@@ -185,6 +323,10 @@ export function ConnectionPopover({
   }, [open, reload]);
 
   const isEntity = anchor.type === "task" || anchor.type === "subtask";
+  const anchorBlock =
+    !isEntity && data
+      ? data.blocks.find((block) => block.id === anchor.id)
+      : undefined;
 
   const findConnection = React.useCallback(
     (timeBlockId: string): TaskBlockConnection | undefined => {
@@ -215,9 +357,22 @@ export function ConnectionPopover({
       <PopoverContent align="start" sideOffset={6} className="w-80 p-0">
         <div className="border-border flex items-center gap-1.5 border-b px-3 py-2">
           <Link2 className="text-muted-foreground size-3.5" />
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-[0.2em]">
-            {isEntity ? t("blocksSection") : t("entitiesSection")}
-          </p>
+          <div className="min-w-0 flex-1">
+            <p className="text-muted-foreground text-xs font-medium uppercase tracking-[0.2em]">
+              {isEntity ? t("blocksSection") : t("entitiesSection")}
+            </p>
+            {anchorBlock && (
+              <p className="truncate text-[11px] text-muted-foreground/80">
+                {t("occurs", {
+                  recurrence: blockRecurrence(
+                    anchorBlock.frequency,
+                    anchorBlock.weekday,
+                    t,
+                  ),
+                })}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="max-h-72 overflow-y-auto p-1.5">
@@ -233,12 +388,24 @@ export function ConnectionPopover({
             ) : (
               data?.blocks.map((block: ConnectionCatalogBlock) => {
                 const connection = findConnection(block.id);
+                const disabled = block.confirmation === "none";
                 return (
                   <ConnectionRow
                     key={block.id}
                     title={block.title}
-                    subtitle={block.routineName}
+                    subtitle={
+                      disabled
+                        ? t("noConfirmation")
+                        : `${block.routineName} · ${blockRecurrence(
+                            block.frequency,
+                            block.weekday,
+                            t,
+                          )}`
+                    }
                     connection={connection}
+                    disabled={disabled}
+                    frequency={block.frequency}
+                    blockWeekday={block.weekday}
                     onToggle={() =>
                       void toggleConnection({
                         taskId:
@@ -272,6 +439,8 @@ export function ConnectionPopover({
                     title={task.title}
                     subtitle={t("taskBadge")}
                     connection={connection}
+                    frequency={anchorBlock?.frequency ?? "daily"}
+                    blockWeekday={anchorBlock?.weekday ?? 0}
                     onToggle={() =>
                       void toggleConnection({
                         taskId: task.id,
@@ -294,6 +463,8 @@ export function ConnectionPopover({
                     title={subtask.title}
                     subtitle={subtask.taskTitle}
                     connection={connection}
+                    frequency={anchorBlock?.frequency ?? "daily"}
+                    blockWeekday={anchorBlock?.weekday ?? 0}
                     onToggle={() =>
                       void toggleConnection({
                         subtaskId: subtask.id,

@@ -81,6 +81,40 @@ export function confirmationMatchesDayFilter(
   );
 }
 
+/** Dia da semana (0-6) de uma data local "YYYY-MM-DD" no fuso do usuário. */
+export function localDateWeekday(
+  dateString: string,
+  tzOffsetMinutes: number,
+): number {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return localWeekday(
+    new Date(Date.UTC(year, month - 1, day)),
+    tzOffsetMinutes,
+  );
+}
+
+/**
+ * Um dayFilter é satisfazível para o bloco? Blocos semanais só ocorrem no
+ * próprio dia da semana: weekday:N com N diferente e datas de outro dia da
+ * semana nunca casam (contagem sempre 0). Blocos diários aceitam qualquer
+ * filtro. Garante que a API nunca crie conexões impossíveis de satisfazer.
+ */
+export function isDayFilterSatisfiable(
+  dayFilter: DayFilter,
+  frequency: Frequency,
+  blockWeekday: number,
+  tzOffsetMinutes: number,
+): boolean {
+  if (dayFilter === "all" || frequency === "daily") return true;
+  if (dayFilter.startsWith("weekday:")) {
+    return Number(dayFilter.slice("weekday:".length)) === blockWeekday;
+  }
+  return (
+    localDateWeekday(dayFilter.slice("date:".length), tzOffsetMinutes) ===
+    blockWeekday
+  );
+}
+
 /** Uma confirmação conta como "bloco feito"? Checklist: só "true"; score: nota >= 1. */
 export function confirmationValueCounts(
   value: string,
