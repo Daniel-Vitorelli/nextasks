@@ -24,6 +24,10 @@ app/api/routines/[id]/duplicate # duplica rotina (POST)
 app/api/routines/[id]/activate  # ativa/desativa rotina (POST)
 app/api/routines/[id]/time-blocks         # blocos de tempo (GET, POST)
 app/api/routines/[id]/time-blocks/[blockId] # bloco individual (PATCH, DELETE)
+app/api/tasks               # tarefas (GET, POST)
+app/api/tasks/[id]          # tarefa individual (PATCH, DELETE)
+app/api/tasks/[id]/subtasks # sub-tarefas de uma tarefa (GET, POST)
+app/api/subtasks/[id]       # sub-tarefa individual (PATCH, DELETE)
 app/api/time-blocks/[id]/complete # confirma bloco no período atual (POST)
 app/api/auth                # handler do better-auth
 components/dashboard/routines/
@@ -31,6 +35,16 @@ components/dashboard/routines/
   routine-dialog.tsx        # dialog criar/editar (form com react-hook-form + zod)
   routine-card.tsx          # card de uma rotina (badges, editar/excluir com tooltip)
   routine-calendar-dialog.tsx # calendário de blocos de tempo de uma rotina (WeekView)
+components/dashboard/tasks/
+  tasks-section.tsx         # contêiner: carrega lista, exclusão
+  task-dialog.tsx           # dialog criar/editar (título, descrição, data limite, prioridade)
+  task-card.tsx             # card de tarefa (checkbox, prioridade, data limite, ações)
+  task-details-dialog.tsx   # dialog "Saiba mais" com detalhes da tarefa + árvore de sub-tarefas
+  subtask-tree.tsx          # árvore recursiva de sub-tarefas (expandir/recolher, criar filho, editar, excluir)
+  subtask-dialog.tsx        # dialog criar/editar sub-tarefa (título, descrição)
+  task-priority.ts          # cores/classes das 6 prioridades
+  use-tasks.ts              # hook de carregamento e mutações
+  use-subtasks.ts           # hook da árvore de sub-tarefas (mutações otimistas)
 components/app/home/        # página inicial da área autenticada
   current-block-card.tsx    # card do bloco atual com confirmação (checkbox/nota)
   progress-chart.tsx        # area chart (recharts + ChartContainer do shadcn)
@@ -86,15 +100,26 @@ npx prisma db push    # aplica o schema no banco
 - O componente `WeekView` (em `components/calendar/`) é renderizado pelo `routine-calendar-dialog` e recebe os blocos da rotina via API `time-blocks`.
 - Interações: duplo clique cria bloco, arrastar move, bordas redimensionam, movimentos horizontais na faixa all-day, menu de contexto e menu "..." duplicam/excluem.
 - Alterações são persistidas via API (`POST`/`PATCH`/`DELETE` em `app/api/routines/[id]/time-blocks{/...}`).
-- A validação compartilhada dos blocos vive em `lib/time-blocks.ts` (`parseTimeBlockInput`/`parseTimeBlockPatch`) e o schema zod do formulário em `schemas/time-block-schema.ts`.
+- **Blocos não cruzam a meia-noite**: `createBlockStub` clampa o fim para 23:59:59.999 do mesmo dia quando o fim cairia no dia seguinte; o mapeamento do `routine-calendar-dialog` faz o mesmo clamp para blocos antigos armazenados com fim no dia seguinte (senão o `getEventsForDay` os filtra como multi-dia e somem). A validação zod do popover rejeita fim antes do início no mesmo dia.
+- A validação compartilhada dos blocos vive em `lib/time-blocks.ts` (`parseTimeBlockInput`/`parseTimeBlockPatch`) e o schema zod do formulário em `schemas/time-block-schema.ts` (all-day 00:00–00:00 é aceito; a API tolera `end == start` quando `isAllDay`).
 
 ## Gráfico de progresso (home)
 
-- Endpoint `GET /api/routines/progress?days=&tzOffset=` retorna o progresso diário (0–100) da rotina ativa do usuário.
+- Endpoint `GET /api/routines/progress?days=&tzOffset=` retorna o progresso diário (0–100) da rotina ativa do usuário, junto com `confirmableBlockCount` (total de blocos confirmáveis da rotina).
 - Cálculo por dia: soma-se o valor dos blocos confirmáveis (checkbox confirmado = 1; nota = `nota/10`) e divide-se pelo total de blocos confirmáveis daquele dia (`confirmation !== "none"`), ×100. Dias sem blocos confirmáveis retornam `value: null` (gap no gráfico). Rotina semanal só conta nos dias da semana dos blocos; o intervalo não passa da data de criação da rotina.
+- O gráfico só é renderizado se `confirmableBlockCount > 0`; rotina ativa sem blocos confirmáveis mostra o fallback "Sem dados ainda" (`progressChart.emptyTitle/emptyDescription`) e o seletor de período fica oculto (`showProgressChart` na página).
+- Sem rotina ativa, a home renderiza um único fallback (`app.home.noActiveRoutine`) no lugar das duas seções.
 - `useRoutineProgress(days)` carrega os dados com o offset do cliente; ao confirmar um bloco na home (`current-block-card` → `onConfirmed`), a página chama `refetch` e o gráfico atualiza na hora.
 - O chart usa o componente `chart.tsx` do shadcn (recharts) com a cor fixa do tema (`--chart-1`).
 
+## Sub-tarefas (árvore)
+
+- Endpoint `GET /api/tasks/:id/subtasks` retorna as sub-tarefas como árvore aninhada (campo `children`), construída em `buildTree` a partir da lista plana ordenada por `createdAt`.
+- Criação: `POST /api/tasks/:id/subtasks` com body `{ title, description, parentId? }` — o `parentId` precisa pertencer à mesma tarefa (validação no handler).
+- `PATCH /api/subtasks/:id` e `DELETE /api/subtasks/:id` conferem posse via `task.userId`; a exclusão remove toda a sub-árvore (cascade no Prisma).
+- A UI (`SubtaskTree` dentro do `task-details-dialog`) renderiza a árvore recursivamente com indentação por profundidade, botão de expandir/recolher e ações por nó (adicionar filho, editar, excluir com confirmação).
+- `useSubtasks` mantém o estado da árvore com updates otimistas: `insertNode`/`updateNode`/`removeNode` em `use-subtasks.ts`.
+
 ## Traduções
 
-As strings ficam em `messages/pt.json` e `messages/en.json`. Novas chaves devem ser adicionadas nos dois arquivos antes de usar `useTranslations` (senão o next-intl falha no typecheck). O namespace do calendário é `dashboard.routines.calendar` e o do gráfico de progresso é `app.home.progressChart`.
+As strings ficam em `messages/pt.json` e `messages/en.json`. Novas chaves devem ser adicionadas nos dois arquivos antes de usar `useTranslations` (senão o next-intl falha no typecheck). O namespace do calendário é `dashboard.routines.calendar`, o do gráfico de progresso é `app.home.progressChart` e o das sub-tarefas é `dashboard.tasks.subtasks`.

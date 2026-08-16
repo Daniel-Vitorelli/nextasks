@@ -26,15 +26,23 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - Campos: nome, descrição, frequência (diária/semanal) e duração (indeterminada ou com data final).
   - Formulário validado com **Zod + React Hook Form** (erros por campo), no mesmo padrão das páginas de login.
   - Listagem limitada a 4 itens com "ver todas / ver menos".
+- **Painel de tarefas** (`/app/dashboard`):
+  - Criação, edição e exclusão de tarefas (exclusão com dialog de confirmação).
+  - Campos: título (obrigatório), descrição e data limite (opcionais) e 6 prioridades (muito baixa → urgente).
+  - Checkbox por tarefa para alternar conclusão (concluídas vão para o fim da lista) e botão "Saiba mais" com dialog de detalhes.
+  - **Sub-tarefas**: árvore recursiva sem limite de profundidade dentro do dialog "Saiba mais" — cada sub-tarefa tem título (obrigatório) e descrição (opcional), pode ter filhos, e é excluída com confirmação (remove toda a sub-árvore).
 - **Calendário de blocos de tempo** (`/app/dashboard`, clicando no ícone de calendário de uma rotina):
   - Visão semanal com blocos de tempo (eventos) por dia e por hora, navegação entre semanas e scroll horizontal.
   - Duplo clique numa célula cria um bloco; blocos podem ser **arrastados** (mover), **redimensionados** (dobrar borda) e **movidos entre dias** (all-day).
+  - Blocos **nunca cruzam a meia-noite**: se a criação cairia no dia seguinte, o fim vai ao último horário disponível do dia (23:59:59).
   - Popover de edição inline (título, horário, cor, modo dia inteiro), menu de contexto (cor/excluir) e menu "..." por bloco (duplicar/excluir).
   - Formulário dos blocos validado com **Zod + react-hook-form**, commit no blur (Enter/ESC), com mensagens traduzidas em pt/en.
 - **Home** (`/app/home`):
   - **Blocos atuais**: lista os blocos de tempo da rotina ativa aplicáveis agora, com confirmação por checkbox ou nota (1–10).
   - **Gráfico de progresso**: area chart (recharts + componente `chart.tsx` do shadcn/ui) com o progresso diário da rotina ativa, com seletor de período (7/15/30/60 dias).
   - O valor diário é a % de blocos confirmáveis: checkbox confirmado vale 1; nota vale `nota/10` (só nota 10 equivale a um checkbox). Dia perfeito = 100%. Dias sem blocos confirmáveis ficam como gaps no gráfico.
+  - O gráfico só é exibido se a rotina ativa tiver blocos confirmáveis (`confirmableBlockCount > 0`); sem eles, o seletor de período fica oculto e aparece o fallback "Sem dados ainda".
+  - Sem rotina ativa, as seções "Agora" e do gráfico são substituídas por um **único fallback** ("Nenhuma rotina ativa").
   - O gráfico atualiza automaticamente ao confirmar um bloco.
 - **i18n** — Português e Inglês via `next-intl` (`frontend/messages/{pt,en}.json`), incluindo os nomes dos dias da semana (date-fns com locale).
 
@@ -188,13 +196,21 @@ A app roda em http://localhost:3000.
 | POST    | `/api/routines/:id/time-blocks` | Cria um bloco de tempo           |
 | PATCH   | `/api/routines/:id/time-blocks/:blockId` | Atualiza um bloco de tempo |
 | DELETE  | `/api/routines/:id/time-blocks/:blockId` | Exclui um bloco de tempo   |
-| GET     | `/api/routines/progress` | Progresso diário (0–100) da rotina ativa. Query: `days` (7/15/30/60, default 30) e `tzOffset` (minutos). Resposta: `{ routine, progress: [{ date, value, confirmableBlocks, confirmedValue }], period }` |
+| GET     | `/api/routines/progress` | Progresso diário (0–100) da rotina ativa. Query: `days` (7/15/30/60, default 30) e `tzOffset` (minutos). Resposta: `{ routine, confirmableBlockCount, progress: [{ date, value, confirmableBlocks, confirmedValue }], period }` |
+| GET     | `/api/tasks`     | Lista as tarefas do usuário autenticado |
+| POST    | `/api/tasks`     | Cria uma tarefa                        |
+| PATCH   | `/api/tasks/:id` | Atualiza uma tarefa (inclui `done`)    |
+| DELETE  | `/api/tasks/:id` | Exclui uma tarefa                      |
+| GET     | `/api/tasks/:id/subtasks` | Lista as sub-tarefas de uma tarefa como árvore aninhada |
+| POST    | `/api/tasks/:id/subtasks` | Cria uma sub-tarefa (body pode incluir `parentId` para aninhar) |
+| PATCH   | `/api/subtasks/:id` | Atualiza título/descrição de uma sub-tarefa |
+| DELETE  | `/api/subtasks/:id` | Exclui uma sub-tarefa e toda a sub-árvore abaixo dela |
 | POST    | `/api/routines/:id/duplicate` | Duplica uma rotina (com blocos de tempo) |
 | POST    | `/api/routines/:id/activate` | Ativa/desativa uma rotina (só uma ativa por usuário) |
 | POST    | `/api/time-blocks/:id/complete` | Confirma um bloco no período atual. Query: `tzOffset`. Body: `{ value }` ("true"/"false" para checkbox; "1"–"10" para nota) |
 | POST    | `/api/auth/[...all]` | Endpoints de autenticação (better-auth) |
 
-Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/time-blocks.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/completions.ts`.
+Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/time-blocks.ts`); as tarefas validam com `parseTaskInput`/`parseTaskPatch` (`frontend/lib/tasks.ts`); as sub-tarefas com `parseSubtaskInput`/`parseSubtaskPatch` (`frontend/lib/subtasks.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/completions.ts`.
 
 ## Modelo de dados
 
@@ -230,6 +246,39 @@ model TimeBlock {
   routine   Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
 
   @@index([routineId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?   @db.Text
+  dueDate     DateTime?
+  priority    Int       @default(3) // 1 (muito baixa) ate 6 (urgente)
+  done        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtasks    Subtask[]
+
+  @@index([userId])
+}
+
+model Subtask {
+  id          String    @id @default(cuid())
+  taskId      String
+  parentId    String?
+  title       String
+  description String?   @db.Text
+  done        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  parent      Subtask?  @relation("SubtaskTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Subtask[] @relation("SubtaskTree")
+
+  @@index([taskId])
+  @@index([parentId])
 }
 ```
 
