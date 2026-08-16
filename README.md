@@ -40,12 +40,14 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - Formulário dos blocos validado com **Zod + react-hook-form**, commit no blur (Enter/ESC), com mensagens traduzidas em pt/en.
 - **Home** (`/app/home`):
   - **Blocos atuais**: lista os blocos de tempo da rotina ativa aplicáveis agora, com confirmação por checkbox ou nota (1–10).
-  - **Gráfico de progresso**: area chart (recharts + componente `chart.tsx` do shadcn/ui) com o progresso diário da rotina ativa, com seletor de período (7/15/30/60 dias).
+  - **Gráfico de progresso**: area chart (recharts + componente `chart.tsx` do shadcn/ui) com o progresso diário da rotina ativa, com seletor de período (7/15/30/60 dias). O seletor é **adaptativo**: só aparecem opções até o número de dias registrados (`daysWithRecords` — dias passados com ao menos um bloco confirmável); sem registro suficiente ele fica oculto.
   - O valor diário é a % de blocos confirmáveis: checkbox confirmado vale 1; nota vale `nota/10` (só nota 10 equivale a um checkbox). Dia perfeito = 100%. Dias sem blocos confirmáveis ficam como gaps no gráfico.
   - O gráfico só é exibido se a rotina ativa tiver blocos confirmáveis (`confirmableBlockCount > 0`); sem eles, o seletor de período fica oculto e aparece o fallback "Sem dados ainda".
   - Sem rotina ativa, as seções "Agora" e do gráfico são substituídas por um **único fallback** ("Nenhuma rotina ativa").
+  - Com rotina ativa mas **sem blocos confirmáveis e sem blocos no momento**, as duas seções viram um **único fallback** ("Nenhuma atividade para mostrar"); quando apenas um lado está vazio, as seções permanecem separadas (distinção "sem histórico" vs "nada agora").
+  - O **carregamento inicial** usa um único spinner para a área de rotina (antes eram dois spinners empilhados); refetches continuam com spinner individual por seção.
   - O gráfico atualiza automaticamente ao confirmar um bloco.
-  - **Tarefas**: seção sempre visível com **uma tarefa por vez**, escolhida entre as pendentes por urgência combinada — score = urgência da data limite (atrasada 10–15, vence hoje 8–10, até 3 dias 6–8, até 7 dias 4–6, até ~1 mês 0–4, sem data 0) + prioridade (1–6), com desempate por data mais próxima, prioridade e criação (`frontend/lib/task-ordering.ts`).
+  - **Tarefas**: seção sempre visível (independente de rotina ativa) com **uma tarefa por vez**, escolhida entre as pendentes por urgência combinada — score = urgência da data limite (atrasada 10–15, vence hoje 8–10, até 3 dias 6–8, até 7 dias 4–6, até ~1 mês 0–4, sem data 0) + prioridade (1–6), com desempate por data mais próxima, prioridade e criação (`frontend/lib/task-ordering.ts`).
   - O card da tarefa atual replica o do painel (checkbox, prioridade, data limite) sem ações de edição/exclusão; as sub-tarefas dela aparecem em árvore simplificada com checkbox (mesma regra de conclusão em cascata do painel) e as próximas (até 5) em linhas sem checkbox; concluir a tarefa atual promove a próxima automaticamente.
 - **i18n** — Português e Inglês via `next-intl` (`frontend/messages/{pt,en}.json`), incluindo os nomes dos dias da semana (date-fns com locale).
 

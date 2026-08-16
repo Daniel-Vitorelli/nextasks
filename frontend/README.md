@@ -109,7 +109,9 @@ npx prisma db push    # aplica o schema no banco
 - Endpoint `GET /api/routines/progress?days=&tzOffset=` retorna o progresso diário (0–100) da rotina ativa do usuário, junto com `confirmableBlockCount` (total de blocos confirmáveis da rotina).
 - Cálculo por dia: soma-se o valor dos blocos confirmáveis (checkbox confirmado = 1; nota = `nota/10`) e divide-se pelo total de blocos confirmáveis daquele dia (`confirmation !== "none"`), ×100. Dias sem blocos confirmáveis retornam `value: null` (gap no gráfico). Rotina semanal só conta nos dias da semana dos blocos; o intervalo não passa da data de criação da rotina.
 - O gráfico só é renderizado se `confirmableBlockCount > 0`; rotina ativa sem blocos confirmáveis mostra o fallback "Sem dados ainda" (`progressChart.emptyTitle/emptyDescription`) e o seletor de período fica oculto (`showProgressChart` na página).
+- O seletor de período é **adaptativo**: o endpoint retorna `daysWithRecords` (dias passados com ao menos um bloco confirmável aplicável, desde a criação da rotina) e o `PeriodSelector` só mostra opções ≤ esse número — com 5 dias de registro nenhuma opção aparece (seletor oculto); com 10, só "7 dias"; com 20, "7 e 15". A seleção atual também é limitada ao maior período disponível (`effectiveDays` na página).
 - Sem rotina ativa, a home renderiza um único fallback (`app.home.noActiveRoutine`) no lugar das duas seções.
+- Rotina ativa sem blocos confirmáveis **e** sem blocos no momento → fallback único `app.home.emptyRoutine`; quando só um lado está vazio, as seções permanecem separadas. O carregamento inicial usa um único spinner para a área de rotina (`isInitialLoading` na página).
 - `useRoutineProgress(days)` carrega os dados com o offset do cliente; ao confirmar um bloco na home (`current-block-card` → `onConfirmed`), a página chama `refetch` e o gráfico atualiza na hora.
 - O chart usa o componente `chart.tsx` do shadcn (recharts) com a cor fixa do tema (`--chart-1`).
 
