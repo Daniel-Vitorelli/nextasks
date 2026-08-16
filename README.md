@@ -32,7 +32,7 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - Checkbox por tarefa para alternar conclusão (concluídas vão para o fim da lista) e botão "Saiba mais" com dialog de detalhes.
   - **Sub-tarefas**: árvore recursiva sem limite de profundidade dentro do dialog "Saiba mais" — cada sub-tarefa tem título (obrigatório) e descrição (opcional), pode ter filhos, e é excluída com confirmação (remove toda a sub-árvore).
   - **Conclusão consistente**: marcar uma tarefa/sub-tarefa como feita conclui toda a sub-árvore abaixo dela; reabrir uma sub-tarefa reabre a cadeia de ancestrais e a tarefa; concluir o último filho pendente (ou excluir o único filho pendente) conclui o pai automaticamente, subindo a cadeia até a tarefa; criar sub-tarefa sob um pai/tarefa concluídos reabre a cadeia.
-  - **Conexões com blocos de tempo** (M:N): qualquer tarefa ou sub-tarefa pode ser conectada a um ou mais blocos de tempo (popover no dialog de detalhes, no botão por sub-tarefa da árvore e no popover do bloco no calendário). Concluir um lado conclui o outro: bloco confirmado completa a entidade quando **todas** as conexões dela estiverem satisfeitas; entidade concluída auto-confirma os blocos conectados no período atual. Cada conexão tem `requiredCount` (confirmações necessárias, contando o histórico) e `dayFilter` (todos os dias / dia da semana / data específica); desmarcar não propaga.
+  - **Conexões com blocos de tempo** (M:N): qualquer tarefa ou sub-tarefa pode ser conectada a um ou mais blocos de tempo (popover no dialog de detalhes, no botão por sub-tarefa da árvore e no popover do bloco no calendário). Concluir um lado conclui o outro: bloco confirmado completa a entidade quando **todas** as conexões dela estiverem satisfeitas; entidade concluída auto-confirma os blocos conectados no período atual. Cada conexão tem `requiredCount` (confirmações necessárias, contando o histórico) e `dayFilter` (todos os dias / dia da semana / data específica); desmarcar não propaga. Detalhes da lógica: o `dayFilter` avalia o **dia aplicável** (diária = o dia; semanal = o dia da semana em que o bloco ocorre dentro da semana do período), a auto-confirmação é create-if-missing (nunca sobrescreve a decisão explícita do usuário) e só acontece para entidades que de fato transicionaram (sem inflação de contagens); a unicidade é garantida no banco (`@@unique` de tarefa/bloco e sub-tarefa/bloco) com P2002 → 400.
 - **Calendário de blocos de tempo** (`/app/dashboard`, clicando no ícone de calendário de uma rotina):
   - Visão semanal com blocos de tempo (eventos) por dia e por hora, navegação entre semanas e scroll horizontal.
   - Duplo clique numa célula cria um bloco; blocos podem ser **arrastados** (mover), **redimensionados** (dobrar borda) e **movidos entre dias** (all-day).
@@ -305,6 +305,8 @@ model TaskBlockConnection {
   task          Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   subtask       Subtask?  @relation(fields: [subtaskId], references: [id], onDelete: Cascade)
   timeBlock     TimeBlock @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
+  @@unique([taskId, timeBlockId])      // unicidade (1 de taskId/subtaskId não-nulo)
+  @@unique([subtaskId, timeBlockId])
 
   @@index([userId])
   @@index([timeBlockId])

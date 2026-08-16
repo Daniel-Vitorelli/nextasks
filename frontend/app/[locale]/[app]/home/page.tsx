@@ -13,6 +13,7 @@ import { ProgressChart } from "@/components/app/home/progress-chart";
 import { TasksSection } from "@/components/app/home/tasks-section";
 import { useCurrentBlock } from "@/hooks/use-current-block";
 import { useRoutineProgress } from "@/hooks/use-routine-progress";
+import { CONNECTIONS_CHANGED_EVENT } from "@/components/connections/connections-provider";
 
 const DEFAULT_DAYS = 30;
 
@@ -72,6 +73,9 @@ export default function HomePage() {
   const handleConfirmed = (blockId: string) => {
     removeBlock(blockId);
     void refetchProgress();
+    // Confirmar um bloco pode concluir tarefas/sub-tarefas conectadas
+    // server-side: avisa os hooks de tarefas para recarregarem.
+    window.dispatchEvent(new Event(CONNECTIONS_CHANGED_EVENT));
   };
 
   return (

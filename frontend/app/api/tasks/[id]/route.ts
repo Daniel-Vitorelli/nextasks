@@ -46,11 +46,21 @@ export async function PATCH(
       data: patch,
     });
 
-    // Marcar a tarefa como feita conclui todas as sub-tarefas dela e
-    // auto-confirma os blocos de tempo conectados no período atual.
+    // Marcar a tarefa como feita conclui todas as sub-tarefas dela e, para
+    // as entidades que de fato transicionaram, auto-confirma os blocos de
+    // tempo conectados no período atual.
     if (patch.done === true) {
-      await markTaskDoneCascade(tx, id);
-      await confirmBlocksForDoneEntities(tx, [id], [], tzOffsetMinutes);
+      const { completedSubtaskIds, taskCompleted } =
+        await markTaskDoneCascade(tx, id);
+
+      if (taskCompleted || completedSubtaskIds.length > 0) {
+        await confirmBlocksForDoneEntities(
+          tx,
+          taskCompleted ? [id] : [],
+          completedSubtaskIds,
+          tzOffsetMinutes,
+        );
+      }
     }
 
     return updated;

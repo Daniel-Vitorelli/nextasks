@@ -5,30 +5,55 @@ import type { Prisma } from "@/generated/prisma/client";
  * Reflete a invariante da árvore: marcar um nó concluído conclui toda a
  * sub-árvore abaixo dele e sobe a cadeia enquanto todos os filhos estiverem
  * concluídos; marcar a tarefa concluída conclui todas as sub-tarefas.
+ *
+ * Os retornos indicam apenas as entidades que de fato transicionaram
+ * (pendente -> concluída), para que a propagação para blocos de tempo
+ * conectados não crie confirmações em excesso.
  */
 
 export interface MarkSubtaskDoneResult {
-  /** Sub-árvore abaixo do nó marcado (excluindo o próprio nó). */
-  descendantIds: string[];
-  /** Ancestrais que ficam concluídos porque todos os filhos concluíram. */
-  completeIds: string[];
-  /** A tarefa inteira ficou concluída (todas as raízes concluídas). */
-  completeTask: boolean;
+  /** Sub-tarefas que transicionaram para concluídas (nó + sub-árvore + ancestrais). */
+  completedSubtaskIds: string[];
+  /** A tarefa transicionou para concluída (todas as raízes concluídas). */
+  completedTask: boolean;
 }
 
-/** Marca uma tarefa e todas as suas sub-tarefas como concluídas. */
+/**
+ * Marca uma tarefa e todas as suas sub-tarefas pendentes como concluídas.
+ * Retorna as sub-tarefas que transicionaram e se a tarefa transicionou.
+ */
 export async function markTaskDoneCascade(
   tx: Prisma.TransactionClient,
   taskId: string,
-): Promise<void> {
-  await tx.task.update({ where: { id: taskId }, data: { done: true } });
-  await tx.subtask.updateMany({
-    where: { taskId, done: false },
-    data: { done: true },
+): Promise<{ completedSubtaskIds: string[]; taskCompleted: boolean }> {
+  const task = await tx.task.findUnique({
+    where: { id: taskId },
+    select: { done: true },
   });
+  const undone = await tx.subtask.findMany({
+    where: { taskId, done: false },
+    select: { id: true },
+  });
+
+  await tx.task.update({ where: { id: taskId }, data: { done: true } });
+
+  if (undone.length > 0) {
+    await tx.subtask.updateMany({
+      where: { id: { in: undone.map((item) => item.id) }, done: false },
+      data: { done: true },
+    });
+  }
+
+  return {
+    completedSubtaskIds: undone.map((item) => item.id),
+    taskCompleted: task?.done === false,
+  };
 }
 
-/** Marca uma sub-tarefa e sua sub-árvore como concluídas, subindo a cadeia. */
+/**
+ * Marca uma sub-tarefa e sua sub-árvore como concluídas, subindo a cadeia.
+ * Retorna apenas as entidades que transicionaram (pendente -> concluída).
+ */
 export async function markSubtaskDoneCascade(
   tx: Prisma.TransactionClient,
   taskId: string,
@@ -41,6 +66,7 @@ export async function markSubtaskDoneCascade(
 
   const childrenByParent = new Map<string | null, string[]>();
   const parentById = new Map<string, string | null>();
+  const preDone = new Map(siblings.map((item) => [item.id, item.done]));
   for (const subtask of siblings) {
     const children = childrenByParent.get(subtask.parentId) ?? [];
     children.push(subtask.id);
@@ -56,7 +82,8 @@ export async function markSubtaskDoneCascade(
     stack.push(...(childrenByParent.get(current) ?? []));
   }
 
-  const doneById = new Map(siblings.map((item) => [item.id, item.done]));
+  const doneById = new Map(preDone);
+  const nodeWasDone = doneById.get(subtaskId) === true;
   doneById.set(subtaskId, true);
   for (const id of descendantIds) {
     doneById.set(id, true);
@@ -80,6 +107,21 @@ export async function markSubtaskDoneCascade(
     roots.length > 0 &&
     roots.every((root) => doneById.get(root) === true);
 
+  const completedSubtaskIds = [
+    ...(nodeWasDone ? [] : [subtaskId]),
+    ...descendantIds.filter((id) => preDone.get(id) !== true),
+    ...completeIds.filter((id) => preDone.get(id) !== true),
+  ];
+
+  let completedTask = false;
+  if (completeTask) {
+    const task = await tx.task.findUnique({
+      where: { id: taskId },
+      select: { done: true },
+    });
+    completedTask = task?.done === false;
+  }
+
   if (descendantIds.length > 0) {
     await tx.subtask.updateMany({
       where: { id: { in: descendantIds }, done: false },
@@ -101,5 +143,5 @@ export async function markSubtaskDoneCascade(
     });
   }
 
-  return { descendantIds, completeIds, completeTask };
+  return { completedSubtaskIds, completedTask };
 }

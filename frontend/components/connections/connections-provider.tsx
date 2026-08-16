@@ -115,8 +115,9 @@ export function ConnectionsProvider({
         });
 
         if (!response.ok) {
+          console.error("Failed to remove connection");
           await reload();
-          throw new Error("Failed to remove connection");
+          return;
         }
       } else {
         const pending: TaskBlockConnection = {
@@ -152,8 +153,9 @@ export function ConnectionsProvider({
         );
 
         if (!response.ok) {
+          console.error("Failed to create connection");
           await reload();
-          throw new Error("Failed to create connection");
+          return;
         }
 
         const { connection } = (await response.json()) as {
@@ -220,6 +222,7 @@ export function ConnectionsProvider({
         );
         notifyChanged();
       } catch (error) {
+        console.error(error);
         setData(
           (current) =>
             current && {
@@ -229,10 +232,10 @@ export function ConnectionsProvider({
               ),
             },
         );
-        throw error;
+        await reload();
       }
     },
-    [data, notifyChanged],
+    [data, reload, notifyChanged],
   );
 
   const value = React.useMemo(

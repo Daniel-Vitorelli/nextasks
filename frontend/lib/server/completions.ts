@@ -7,19 +7,19 @@ import type { Period } from "@/types/domain";
  */
 export function startOfDayUtc(date: Date, tzOffsetMinutes = 0): Date {
   const local = new Date(date.getTime() - tzOffsetMinutes * 60_000);
-  const localStart = new Date(
-    local.getFullYear(),
-    local.getMonth(),
-    local.getDate(),
+  const localStart = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate(),
   );
-  return new Date(localStart.getTime() + tzOffsetMinutes * 60_000);
+  return new Date(localStart - tzOffsetMinutes * 60_000);
 }
 
 /** Inicio da semana local (domingo 00:00) como instante UTC. */
 export function startOfWeekUtc(date: Date, tzOffsetMinutes = 0): Date {
   const dayStart = startOfDayUtc(date, tzOffsetMinutes);
   const local = new Date(dayStart.getTime() - tzOffsetMinutes * 60_000);
-  return new Date(dayStart.getTime() - local.getDay() * 86_400_000);
+  return new Date(dayStart.getTime() - local.getUTCDay() * 86_400_000);
 }
 
 /**
@@ -42,11 +42,11 @@ export function periodForFrequency(
 
 /** Dia da semana (0-6) de um instante UTC no fuso do usuario. */
 export function localWeekday(date: Date, tzOffsetMinutes = 0): number {
-  return new Date(date.getTime() - tzOffsetMinutes * 60_000).getDay();
+  return new Date(date.getTime() - tzOffsetMinutes * 60_000).getUTCDay();
 }
 
 /** Minutos do dia (0-1439) de um instante UTC no fuso do usuario. */
 export function localMinutesOfDay(date: Date, tzOffsetMinutes = 0): number {
   const local = new Date(date.getTime() - tzOffsetMinutes * 60_000);
-  return local.getHours() * 60 + local.getMinutes();
+  return local.getUTCHours() * 60 + local.getUTCMinutes();
 }

@@ -72,17 +72,20 @@ export async function PATCH(
     });
 
     // Marcar como feita conclui toda a sub-árvore abaixo dela, sobe a cadeia
-    // de ancestrais e auto-confirma os blocos conectados no período atual.
+    // de ancestrais e, para as entidades que de fato transicionaram,
+    // auto-confirma os blocos conectados no período atual.
     if (patch.done === true) {
-      const { descendantIds, completeIds, completeTask } =
+      const { completedSubtaskIds, completedTask } =
         await markSubtaskDoneCascade(tx, existing.taskId, id);
 
-      await confirmBlocksForDoneEntities(
-        tx,
-        completeTask ? [existing.taskId] : [],
-        [id, ...descendantIds, ...completeIds],
-        tzOffsetMinutes,
-      );
+      if (completedTask || completedSubtaskIds.length > 0) {
+        await confirmBlocksForDoneEntities(
+          tx,
+          completedTask ? [existing.taskId] : [],
+          completedSubtaskIds,
+          tzOffsetMinutes,
+        );
+      }
     }
 
     if (ancestorIds.length > 0) {

@@ -138,10 +138,12 @@ model TaskBlockConnection {
   subtask   Subtask?  @relation(fields: [subtaskId], references: [id], onDelete: Cascade)
   timeBlock TimeBlock @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
 
+  // Como exatamente um de taskId/subtaskId é preenchido, os dois índices
+  // juntos garantem unicidade por (entidade, bloco) mesmo com NULLs.
+  @@unique([taskId, timeBlockId])
+  @@unique([subtaskId, timeBlockId])
   @@index([userId])
   @@index([timeBlockId])
-  @@index([taskId])
-  @@index([subtaskId])
 }
 
 model Session {

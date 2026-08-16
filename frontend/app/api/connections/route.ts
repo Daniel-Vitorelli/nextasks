@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/server/prisma";
 import {
   badRequest,
@@ -9,42 +10,18 @@ import {
 } from "@/lib/server/api";
 import {
   completeEntitiesForBlock,
-  countConfirmedForConnection,
-  type ConnectionWithBlock,
+  connectionInclude,
+  loadCompletionsByBlock,
+  toConnectionRow,
 } from "@/lib/server/connections";
 import { parseConnectionInput } from "@/lib/validation/connections";
 import { localWeekday } from "@/lib/server/completions";
 import type {
   ConnectionCatalogBlock,
   ConnectionsResponse,
-  DayFilter,
   EventConfirmation,
   Frequency,
-  TaskBlockConnection,
 } from "@/types/domain";
-
-async function toConnectionRow(
-  connection: ConnectionWithBlock,
-  tzOffsetMinutes: number,
-): Promise<TaskBlockConnection> {
-  return {
-    id: connection.id,
-    taskId: connection.taskId,
-    subtaskId: connection.subtaskId,
-    timeBlockId: connection.timeBlockId,
-    requiredCount: connection.requiredCount,
-    dayFilter: connection.dayFilter as DayFilter,
-    confirmedCount: await countConfirmedForConnection(
-      prisma,
-      connection,
-      tzOffsetMinutes,
-    ),
-  };
-}
-
-const connectionInclude = {
-  timeBlock: { include: { routine: true } },
-} as const;
 
 export async function GET(request: Request) {
   const { user, response } = await requireUser();
@@ -81,6 +58,11 @@ export async function GET(request: Request) {
     }),
   ]);
 
+  const completionsByBlock = await loadCompletionsByBlock(
+    prisma,
+    connections.map((connection) => connection.timeBlockId),
+  );
+
   const catalogBlocks: ConnectionCatalogBlock[] = blocks.map((block) => ({
     id: block.id,
     title: block.title,
@@ -90,12 +72,6 @@ export async function GET(request: Request) {
     confirmation: block.confirmation as EventConfirmation,
     weekday: localWeekday(block.start, tzOffsetMinutes),
   }));
-
-  const connectionRows = await Promise.all(
-    connections.map((connection) =>
-      toConnectionRow(connection, tzOffsetMinutes),
-    ),
-  );
 
   const result: ConnectionsResponse = {
     tasks,
@@ -107,7 +83,13 @@ export async function GET(request: Request) {
       done: subtask.done,
     })),
     blocks: catalogBlocks,
-    connections: connectionRows,
+    connections: connections.map((connection) =>
+      toConnectionRow(
+        connection,
+        completionsByBlock.get(connection.timeBlockId) ?? [],
+        tzOffsetMinutes,
+      ),
+    ),
   };
 
   return NextResponse.json(result);
@@ -159,28 +141,51 @@ export async function POST(request: Request) {
     return badRequest("Connection already exists");
   }
 
-  const created = await prisma.$transaction(async (tx) => {
-    const connection = await tx.taskBlockConnection.create({
-      data: {
-        userId: user.id,
-        taskId: input.taskId,
-        subtaskId: input.subtaskId,
-        timeBlockId: input.timeBlockId,
-        requiredCount: input.requiredCount,
-        dayFilter: input.dayFilter,
-      },
-      include: connectionInclude,
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const connection = await tx.taskBlockConnection.create({
+        data: {
+          userId: user.id,
+          taskId: input.taskId,
+          subtaskId: input.subtaskId,
+          timeBlockId: input.timeBlockId,
+          requiredCount: input.requiredCount,
+          dayFilter: input.dayFilter,
+        },
+        include: connectionInclude,
+      });
+
+      // Conexão criada já satisfeita (bloco confirmado historicamente)?
+      // Propaga a conclusão para a entidade conectada.
+      await completeEntitiesForBlock(
+        tx,
+        user.id,
+        input.timeBlockId,
+        tzOffsetMinutes,
+      );
+
+      return connection;
     });
 
-    // Conexão criada já satisfeita (bloco confirmado historicamente)?
-    // Propaga a conclusão para a entidade conectada.
-    await completeEntitiesForBlock(tx, user.id, input.timeBlockId, tzOffsetMinutes);
+    const completionsByBlock = await loadCompletionsByBlock(prisma, [
+      created.timeBlockId,
+    ]);
 
-    return connection;
-  });
-
-  return NextResponse.json(
-    { connection: await toConnectionRow(created, tzOffsetMinutes) },
-    { status: 201 },
-  );
+    return NextResponse.json(
+      {
+        connection: toConnectionRow(
+          created,
+          completionsByBlock.get(created.timeBlockId) ?? [],
+          tzOffsetMinutes,
+        ),
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    // Unicidade também garantida no banco (@@unique taskId/subtaskId + bloco).
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return badRequest("Connection already exists");
+    }
+    throw error;
+  }
 }

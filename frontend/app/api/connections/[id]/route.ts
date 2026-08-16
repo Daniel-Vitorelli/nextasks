@@ -4,34 +4,11 @@ import { prisma } from "@/lib/server/prisma";
 import { badRequest, notFound, parseTzOffset, requireUser, type RouteContext } from "@/lib/server/api";
 import {
   completeEntitiesForBlock,
-  countConfirmedForConnection,
-  type ConnectionWithBlock,
+  connectionInclude,
+  loadCompletionsByBlock,
+  toConnectionRow,
 } from "@/lib/server/connections";
 import { parseConnectionPatch } from "@/lib/validation/connections";
-import type { DayFilter, TaskBlockConnection } from "@/types/domain";
-
-const connectionInclude = {
-  timeBlock: { include: { routine: true } },
-} as const;
-
-async function toConnectionRow(
-  connection: ConnectionWithBlock,
-  tzOffsetMinutes: number,
-): Promise<TaskBlockConnection> {
-  return {
-    id: connection.id,
-    taskId: connection.taskId,
-    subtaskId: connection.subtaskId,
-    timeBlockId: connection.timeBlockId,
-    requiredCount: connection.requiredCount,
-    dayFilter: connection.dayFilter as DayFilter,
-    confirmedCount: await countConfirmedForConnection(
-      prisma,
-      connection,
-      tzOffsetMinutes,
-    ),
-  };
-}
 
 export async function PATCH(
   request: Request,
@@ -66,13 +43,26 @@ export async function PATCH(
 
     // Ajuste (ex.: requiredCount reduzido) pode satisfazer a conexão agora:
     // propaga a conclusão para a entidade conectada.
-    await completeEntitiesForBlock(tx, user.id, existing.timeBlockId, tzOffsetMinutes);
+    await completeEntitiesForBlock(
+      tx,
+      user.id,
+      existing.timeBlockId,
+      tzOffsetMinutes,
+    );
 
     return connection;
   });
 
+  const completionsByBlock = await loadCompletionsByBlock(prisma, [
+    updated.timeBlockId,
+  ]);
+
   return NextResponse.json({
-    connection: await toConnectionRow(updated, tzOffsetMinutes),
+    connection: toConnectionRow(
+      updated,
+      completionsByBlock.get(updated.timeBlockId) ?? [],
+      tzOffsetMinutes,
+    ),
   });
 }
 
