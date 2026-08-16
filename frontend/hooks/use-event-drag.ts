@@ -5,15 +5,11 @@ import type {
   CalendarEvent,
   EventDragState,
 } from "@/types/calendar";
+import { useGridEdgeNavigation } from "./use-grid-edge-navigation";
 import {
   addMinutesToDate,
-  AUTO_SCROLL_MAX_SPEED,
-  AUTO_SCROLL_ZONE_PX,
   clamp,
   DRAG_THRESHOLD_PX,
-  EDGE_NAV_DELAY_MS,
-  EDGE_NAV_REPEAT_MS,
-  EDGE_ZONE_PX,
   snapToGrid,
   TOUCH_SLOP_PX,
 } from "@/lib/calendar/interaction";
@@ -100,13 +96,11 @@ export function useEventDrag({
     timeAxisWidthRef.current = timeAxisWidth;
   }, [timeAxisWidth]);
 
-  // Edge navigation timer refs
-  const edgeNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const edgeNavDirectionRef = useRef<number | null>(null);
-
-  // Auto-scroll RAF ref
-  const autoScrollRAFRef = useRef<number | null>(null);
-  const autoScrollSpeedRef = useRef(0);
+  // Edge-of-view week navigation + vertical auto-scroll during the drag
+  const { updateForCursor, stop: stopGridNavigation } = useGridEdgeNavigation(
+    scrollContainerRef,
+    (daysDelta) => onDragNavigateRef.current?.(daysDelta),
+  );
 
   // Store handlers in refs to break the circular dependency
   const handlePointerMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
@@ -116,22 +110,6 @@ export function useEventDrag({
   );
   /** Blocks the browser's native scroll while a touch drag is active. */
   const handleTouchMoveRef = useRef<((e: TouchEvent) => void) | null>(null);
-
-  const cancelEdgeNav = useCallback(() => {
-    if (edgeNavTimerRef.current !== null) {
-      clearTimeout(edgeNavTimerRef.current);
-      edgeNavTimerRef.current = null;
-    }
-    edgeNavDirectionRef.current = null;
-  }, []);
-
-  const cancelAutoScroll = useCallback(() => {
-    if (autoScrollRAFRef.current !== null) {
-      cancelAnimationFrame(autoScrollRAFRef.current);
-      autoScrollRAFRef.current = null;
-    }
-    autoScrollSpeedRef.current = 0;
-  }, []);
 
   const cleanup = useCallback(() => {
     if (handlePointerMoveRef.current) {
@@ -149,47 +127,8 @@ export function useEventDrag({
     if (handleTouchMoveRef.current) {
       window.removeEventListener("touchmove", handleTouchMoveRef.current);
     }
-    cancelEdgeNav();
-    cancelAutoScroll();
-  }, [cancelEdgeNav, cancelAutoScroll]);
-
-  // Auto-scroll loop
-  const startAutoScrollLoop = useCallback(() => {
-    if (autoScrollRAFRef.current !== null) return;
-
-    const tick = () => {
-      const container = scrollContainerRef.current;
-      if (!container) return;
-
-      const speed = autoScrollSpeedRef.current;
-      if (speed === 0) {
-        autoScrollRAFRef.current = null;
-        return;
-      }
-
-      container.scrollTop += speed;
-      autoScrollRAFRef.current = requestAnimationFrame(tick);
-    };
-
-    autoScrollRAFRef.current = requestAnimationFrame(tick);
-  }, [scrollContainerRef]);
-
-  const scheduleEdgeNav = useCallback(
-    (direction: number) => {
-      if (edgeNavDirectionRef.current === direction) return;
-
-      cancelEdgeNav();
-      edgeNavDirectionRef.current = direction;
-
-      const fireNav = () => {
-        onDragNavigateRef.current?.(direction);
-        edgeNavTimerRef.current = setTimeout(fireNav, EDGE_NAV_REPEAT_MS);
-      };
-
-      edgeNavTimerRef.current = setTimeout(fireNav, EDGE_NAV_DELAY_MS);
-    },
-    [cancelEdgeNav],
-  );
+    stopGridNavigation();
+  }, [stopGridNavigation]);
 
   // Initialize the handlers once (stable references via refs)
   useEffect(() => {
@@ -253,36 +192,13 @@ export function useEventDrag({
         clientY: e.clientY - drag.offsetWithinEvent,
       });
 
-      // Edge-of-view week navigation
-      // Trigger when cursor is within EDGE_ZONE_PX of the grid boundary OR past it
+      // Edge-of-view week navigation + auto-scroll at top/bottom edges
+      const cursorYInContainer = e.clientY - containerRect.top;
+      const containerHeight = containerRect.height;
       const cursorXInGrid = e.clientX - gridLeftEdge;
       const gridWidth = colWidth * visibleDays.length;
 
-      if (cursorXInGrid < EDGE_ZONE_PX) {
-        scheduleEdgeNav(-7);
-      } else if (cursorXInGrid > gridWidth - EDGE_ZONE_PX) {
-        scheduleEdgeNav(7);
-      } else {
-        cancelEdgeNav();
-      }
-
-      // Auto-scroll at top/bottom edges
-      const cursorYInContainer = e.clientY - containerRect.top;
-      const containerHeight = containerRect.height;
-
-      if (cursorYInContainer < AUTO_SCROLL_ZONE_PX) {
-        const dist = cursorYInContainer;
-        autoScrollSpeedRef.current =
-          -AUTO_SCROLL_MAX_SPEED * (1 - dist / AUTO_SCROLL_ZONE_PX);
-        startAutoScrollLoop();
-      } else if (cursorYInContainer > containerHeight - AUTO_SCROLL_ZONE_PX) {
-        const dist = containerHeight - cursorYInContainer;
-        autoScrollSpeedRef.current =
-          AUTO_SCROLL_MAX_SPEED * (1 - dist / AUTO_SCROLL_ZONE_PX);
-        startAutoScrollLoop();
-      } else {
-        cancelAutoScroll();
-      }
+      updateForCursor({ cursorXInGrid, gridWidth, cursorYInContainer, containerHeight });
     };
 
     handlePointerUpRef.current = (e: PointerEvent) => {
@@ -336,10 +252,7 @@ export function useEventDrag({
   }, [
     scrollContainerRef,
     cleanup,
-    scheduleEdgeNav,
-    cancelEdgeNav,
-    cancelAutoScroll,
-    startAutoScrollLoop,
+    updateForCursor,
   ]);
 
   const handleEventPointerDown = useCallback(

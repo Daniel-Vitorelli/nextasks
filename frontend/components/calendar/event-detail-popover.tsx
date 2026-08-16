@@ -13,6 +13,7 @@ import {
 import { PopoverContent } from "@/components/ui/popover";
 import { EventDetailPanel } from "./event-detail-panel";
 import { useCalendarPopoverBoundary } from "./calendar-popover-context";
+import { MOBILE_BREAKPOINT_PX } from "./week-view-utils";
 import type { CalendarEvent } from "@/types/calendar";
 
 interface EventDetailPopoverProps {
@@ -39,7 +40,7 @@ function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
-    const mql = window.matchMedia("(max-width: 640px)");
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`);
     const update = () => setIsMobile(mql.matches);
     update();
     mql.addEventListener("change", update);

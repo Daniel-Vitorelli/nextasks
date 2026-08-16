@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/server/prisma";
 import { parseSubtaskInput } from "@/lib/validation/subtasks";
 import {
   badRequest,
   notFound,
   requireUser,
   type RouteContext,
-} from "@/lib/api";
+} from "@/lib/server/api";
 import type { Subtask } from "@/types/domain";
 
 function buildTree(

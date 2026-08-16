@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/server/prisma";
 import { parseRoutineInput } from "@/lib/validation/routines";
-import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/api";
+import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/server/api";
 
 async function getOwnedRoutine(id: string, userId: string) {
   return prisma.routine.findFirst({

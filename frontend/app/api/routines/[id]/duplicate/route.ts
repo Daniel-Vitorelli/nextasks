@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
-import { notFound, requireUser, type RouteContext } from "@/lib/api";
+import { prisma } from "@/lib/server/prisma";
+import { notFound, requireUser, type RouteContext } from "@/lib/server/api";
 
 /**
  * Duplicates a routine (including all of its time blocks) as a fresh,

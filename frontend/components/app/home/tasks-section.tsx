@@ -1,20 +1,20 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { CalendarClock, CircleEllipsis, ListChecks } from "lucide-react";
+import { ListChecks } from "lucide-react";
 
 import { Spinner } from "@/components/ui/spinner";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useTasks } from "@/hooks/use-tasks";
+import { useSubtasks } from "@/hooks/use-subtasks";
 import {
   completeAncestors,
   markSubtreeDone,
-  useSubtasks,
-} from "@/hooks/use-subtasks";
-import { priorityBadgeStyles } from "@/components/dashboard/tasks/task-priority";
+} from "@/lib/subtask-tree";
 import { sortPendingTasks } from "@/lib/task-ordering";
-import { cn } from "@/lib/utils";
 import type { Subtask, Task } from "@/types/domain";
+import { HomeSubtaskNode } from "./home-subtask-node";
+import { HomeTaskCard } from "./home-task-card";
+import { UpcomingTaskRow } from "./upcoming-task-row";
 
 const UPCOMING_LIMIT = 5;
 
@@ -82,7 +82,7 @@ export function TasksSection() {
         </div>
       ) : (
         <>
-          <TaskCard task={current} onToggleDone={toggleTaskDone} />
+          <HomeTaskCard task={current} onToggleDone={toggleTaskDone} />
 
           {subtasks.length > 0 && (
             <div className="rounded-xl border border-border/60 bg-card p-4">
@@ -91,7 +91,7 @@ export function TasksSection() {
               </p>
               <ul className="mt-2">
                 {subtasks.map((subtask) => (
-                  <SubtaskNode
+                  <HomeSubtaskNode
                     key={subtask.id}
                     subtask={subtask}
                     depth={1}
@@ -117,159 +117,5 @@ export function TasksSection() {
         </>
       )}
     </section>
-  );
-}
-
-interface TaskCardProps {
-  task: Task;
-  onToggleDone: (task: Task) => void;
-}
-
-/** Card da tarefa atual: mesmas informações do painel, sem ações de edição. */
-function TaskCard({ task, onToggleDone }: TaskCardProps) {
-  const t = useTranslations("dashboard.tasks");
-
-  return (
-    <div className="border-border/60 flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors">
-      <Checkbox
-        checked={task.done}
-        onCheckedChange={() => onToggleDone(task)}
-        aria-label={t("actions.toggleDone")}
-        className="mt-0.5"
-      />
-
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h3
-          className={cn(
-            "truncate font-medium",
-            task.done && "text-muted-foreground line-through",
-          )}
-        >
-          {task.title}
-        </h3>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-              priorityBadgeStyles[task.priority],
-            )}
-          >
-            {t(`priority_${task.priority}`)}
-          </span>
-          {task.dueDate && (
-            <span className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs">
-              <CalendarClock className="size-3" />
-              {new Date(task.dueDate).toLocaleDateString()}
-            </span>
-          )}
-          {task.done && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-              <CircleEllipsis className="size-3" />
-              {t("done")}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Prévia simplificada de uma próxima tarefa. */
-function UpcomingTaskRow({ task }: { task: Task }) {
-  const t = useTranslations("dashboard.tasks");
-
-  return (
-    <li className="border-border/60 flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
-      <p className="min-w-0 flex-1 truncate text-sm font-medium">
-        {task.title}
-      </p>
-      <span
-        className={cn(
-          "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-          priorityBadgeStyles[task.priority],
-        )}
-      >
-        {t(`priority_${task.priority}`)}
-      </span>
-      {task.dueDate && (
-        <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-2 py-0.5 text-xs">
-          {new Date(task.dueDate).toLocaleDateString()}
-        </span>
-      )}
-    </li>
-  );
-}
-
-interface SubtaskNodeProps {
-  subtask: Subtask;
-  depth: number;
-  onToggleDone: (subtask: Subtask, done: boolean) => void;
-}
-
-/** Sub-tarefa da tarefa atual: árvore simplificada, apenas com checkbox. */
-function SubtaskNode({ subtask, depth, onToggleDone }: SubtaskNodeProps) {
-  const t = useTranslations("dashboard.tasks.subtasks");
-
-  return (
-    <li>
-      <div className="relative pl-6">
-        {depth > 0 && (
-          <span
-            aria-hidden
-            className="bg-border/70 absolute bottom-0 left-0 top-0 w-px"
-          />
-        )}
-
-        {depth > 0 && (
-          <span
-            aria-hidden
-            className="bg-border/70 absolute left-0 top-4 h-px w-6 -translate-y-1/2"
-          />
-        )}
-
-        <div className="flex items-start gap-1.5 rounded-md py-1.5 pr-1.5">
-          <Checkbox
-            checked={subtask.done}
-            onCheckedChange={(checked) =>
-              onToggleDone(subtask, checked === true)
-            }
-            aria-label={
-              subtask.done ? t("toggleDone.undo") : t("toggleDone.do")
-            }
-            className="mt-0.5 shrink-0"
-          />
-
-          <div className="min-w-0 flex-1">
-            <p
-              className={cn(
-                "truncate text-sm font-medium",
-                subtask.done && "text-muted-foreground line-through",
-              )}
-            >
-              {subtask.title}
-            </p>
-            {subtask.description && (
-              <p className="text-muted-foreground line-clamp-2 text-xs">
-                {subtask.description}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {subtask.children.length > 0 && (
-          <ul>
-            {subtask.children.map((child) => (
-              <SubtaskNode
-                key={child.id}
-                subtask={child}
-                depth={depth + 1}
-                onToggleDone={onToggleDone}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
-    </li>
   );
 }

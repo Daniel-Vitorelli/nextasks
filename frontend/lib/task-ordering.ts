@@ -57,3 +57,15 @@ export function sortPendingTasks<
     return a.createdAt.localeCompare(b.createdAt);
   });
 }
+
+/**
+ * Comparador da lista de tarefas do painel: concluídas no fim, depois maior
+ * prioridade primeiro e, por fim, mais recentes primeiro.
+ */
+export function sortTasksForList(a: Task, b: Task): number {
+  return (
+    Number(a.done) - Number(b.done) ||
+    b.priority - a.priority ||
+    b.createdAt.localeCompare(a.createdAt)
+  );
+}

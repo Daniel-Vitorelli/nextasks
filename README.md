@@ -215,7 +215,7 @@ A app roda em http://localhost:3000.
 | POST    | `/api/time-blocks/:id/complete` | Confirma um bloco no período atual. Query: `tzOffset`. Body: `{ value }` ("true"/"false" para checkbox; "1"–"10" para nota) |
 | POST    | `/api/auth/[...all]` | Endpoints de autenticação (better-auth) |
 
-Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/validation/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/validation/time-blocks.ts`); as tarefas validam com `parseTaskInput`/`parseTaskPatch` (`frontend/lib/validation/tasks.ts`); as sub-tarefas com `parseSubtaskInput`/`parseSubtaskPatch` (`frontend/lib/validation/subtasks.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/completions.ts`.
+Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/validation/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/validation/time-blocks.ts`); as tarefas validam com `parseTaskInput`/`parseTaskPatch` (`frontend/lib/validation/tasks.ts`); as sub-tarefas com `parseSubtaskInput`/`parseSubtaskPatch` (`frontend/lib/validation/subtasks.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/server/completions.ts`.
 
 ## Modelo de dados
 

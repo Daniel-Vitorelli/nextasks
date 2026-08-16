@@ -17,6 +17,9 @@ import { EventContextMenu } from "./event-context-menu";
 import { eventColorStyles } from "./calendar-event-color";
 import { formatEventTimeRange } from "./calendar-event-time";
 import { EventVisual } from "./event-visual";
+import { EventDragCopy } from "./event-drag-copy";
+import { EventDragGhost } from "./event-drag-ghost";
+import { EventDragPlaceholder } from "./event-drag-placeholder";
 
 function computeOverrideStyle(
   positionedEvent: CalendarEventItemProps["positionedEvent"],
@@ -205,71 +208,21 @@ export function CalendarEventItem({
 
   if (dragVariant === "ghost") {
     return (
-      <div
-        className={cn(
-          "absolute rounded-sm px-2 py-1 max-sm:px-1 pointer-events-none opacity-30 overflow-hidden",
-          className,
-        )}
-        style={{
-          top: `${positionedEvent.top}%`,
-          height: `${positionedEvent.height}%`,
-          left: `${positionedEvent.left}%`,
-          width: `${positionedEvent.width}%`,
-          minHeight: "20px",
-          zIndex: 15,
-        }}
-      >
-        <EventVisual
-          event={event}
-          rounding="rounded-sm"
-          barRounding="rounded-l-md"
-        >
-          <div
-            className={cn(
-              "relative flex flex-col h-full pl-1 overflow-hidden",
-              isCompact && "flex-row items-center gap-1",
-            )}
-          >
-            <span
-              className={cn(
-                "font-medium text-[0.625rem] leading-tight break-words",
-                styles.text,
-                "dark:text-white/80",
-              )}
-            >
-              {event.title}
-            </span>
-            {!isCompact && (
-              <span
-                className={cn(
-                  "text-[0.625rem] whitespace-nowrap",
-                  styles.text,
-                  "dark:text-white dark:mix-blend-overlay",
-                )}
-              >
-                {formatEventTimeRange(event)}
-              </span>
-            )}
-          </div>
-        </EventVisual>
-      </div>
+      <EventDragGhost
+        event={event}
+        positionedEvent={positionedEvent}
+        isCompact={isCompact}
+        className={className}
+      />
     );
   }
 
   if (dragVariant === "placeholder") {
     return (
-      <div
-        className={cn(
-          "absolute rounded-sm pointer-events-none border-2",
-          styles.borderLine,
-          className,
-        )}
-        style={{
-          ...posStyle,
-          left: "0%",
-          width: "100%",
-          zIndex: 25,
-        }}
+      <EventDragPlaceholder
+        event={event}
+        posStyle={posStyle}
+        className={className}
       />
     );
   }
@@ -277,64 +230,19 @@ export function CalendarEventItem({
   const isDraggingCopy = dragVariant === "dragging";
 
   if (isDraggingCopy) {
-    const durationMinutes =
-      (displayEnd.getTime() - displayStart.getTime()) / 60000;
-    const heightPx = fixedHeight ?? (durationMinutes / 60) * hourHeight;
-
-    const useFixed = cursorX != null && cursorY != null;
-
-    const draggingStyle: React.CSSProperties = useFixed
-      ? {
-          position: "fixed",
-          top: `${cursorY}px`,
-          left: `${cursorX}px`,
-          height: `${heightPx}px`,
-          width: fixedWidth != null ? `${fixedWidth}px` : "200px",
-          minHeight: "20px",
-          zIndex: 30,
-        }
-      : {
-          top: posStyle.top,
-          height: `${heightPx}px`,
-          left: `${positionedEvent.left}%`,
-          width: `${positionedEvent.width}%`,
-          minHeight: "20px",
-          zIndex: 30,
-        };
-
     return (
-      <div
-        tabIndex={-1}
-        className={cn(
-          "absolute rounded-sm px-2 py-1 max-sm:px-1",
-          "pointer-events-none cursor-grabbing",
-          "overflow-hidden select-none opacity-80 shadow-lg",
-          className,
-        )}
-        style={draggingStyle}
-      >
-        <EventVisual
-          event={event}
-          rounding="rounded-sm"
-          barRounding="rounded-l-md"
-        >
-          <div
-            className={cn(
-              "relative flex flex-col h-full pl-1 overflow-hidden",
-              heightPx < 40 && "flex-row items-center gap-1",
-            )}
-          >
-            <span className="font-medium text-[0.625rem] leading-tight break-words text-white dark:text-white flex items-center gap-0.5">
-              {event.title}
-            </span>
-            {heightPx >= 40 && (
-              <span className="text-[0.625rem] whitespace-nowrap text-white dark:text-white">
-                {formatEventTimeRange(displayEvent)}
-              </span>
-            )}
-          </div>
-        </EventVisual>
-      </div>
+      <EventDragCopy
+        event={event}
+        displayEvent={displayEvent}
+        positionedEvent={positionedEvent}
+        posStyle={posStyle}
+        hourHeight={hourHeight}
+        cursorX={cursorX}
+        cursorY={cursorY}
+        fixedWidth={fixedWidth}
+        fixedHeight={fixedHeight}
+        className={className}
+      />
     );
   }
 

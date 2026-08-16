@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/server/prisma";
 import {
   localMinutesOfDay,
   localWeekday,
   periodForFrequency,
-} from "@/lib/completions";
-import { asFrequency, parseTzOffset, requireUser } from "@/lib/api";
+} from "@/lib/server/completions";
+import { asFrequency, parseTzOffset, requireUser } from "@/lib/server/api";
 
 export async function GET(request: Request) {
   const { user, response } = await requireUser();

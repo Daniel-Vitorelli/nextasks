@@ -40,7 +40,8 @@ components/dashboard/tasks/
   task-dialog.tsx           # dialog criar/editar (título, descrição, data limite, prioridade)
   task-card.tsx             # card de tarefa (checkbox, prioridade, data limite, ações)
   task-details-dialog.tsx   # dialog "Saiba mais" com detalhes da tarefa + árvore de sub-tarefas
-  subtask-tree.tsx          # árvore recursiva de sub-tarefas (expandir/recolher, criar filho, editar, excluir)
+  subtask-tree.tsx          # orquestra a árvore: cabeçalho, dialogs, cascata de conclusão
+  subtask-node.tsx          # nó recursivo da árvore (expandir/recolher, criar filho, editar, excluir)
   subtask-dialog.tsx        # dialog criar/editar sub-tarefa (título, descrição)
   task-priority.ts          # cores/classes das 6 prioridades
 components/app/             # área autenticada (dock, sessão e páginas do app)
@@ -48,18 +49,28 @@ components/app/             # área autenticada (dock, sessão e páginas do app
   session-provider.tsx      # provider da sessão + hook useSession
   home/                     # página inicial da área autenticada
     current-block-card.tsx  # card do bloco atual com confirmação (checkbox/nota)
+    empty-state-card.tsx    # caixa padrão de estado vazio (ícone + título + descrição)
     progress-chart.tsx      # area chart (recharts + ChartContainer do shadcn)
     period-selector.tsx     # seletor 7/15/30/60 dias do gráfico
     tasks-section.tsx       # seção de tarefas: tarefa atual + sub-tarefas + prévia das próximas
+    home-task-card.tsx      # card da tarefa atual (sem ações de edição)
+    home-subtask-node.tsx   # sub-tarefa da tarefa atual (árvore simplificada, só checkbox)
+    upcoming-task-row.tsx   # prévia de uma próxima tarefa
 components/calendar/        # calendário (semanal): grid, eventos, overlays de drag/resize
   week-view.tsx             # componente principal (semana/dia, scroll horizontal, navegação)
   week-view-grid.tsx        # grid de horas×dias + colunas de eventos
   week-view-all-day-row.tsx # faixa "All-day" + portal da cópia flutuante durante move
-  calendar-event-item.tsx   # bloco posicionado no grid (timed)
-  all-day-event-item.tsx    # bloco all-day (estados ghost/placeholder/dragging)
+  calendar-event-item.tsx   # bloco posicionado no grid (timed) + popover/menu de contexto
+  all-day-event-item.tsx    # bloco all-day (chip interativo + popover/menu de contexto)
   all-day-event-row.tsx     # posiciona um bloco all-day na grade (linhas por conflito)
   day-events-column.tsx     # coluna de um dia: renderiza/bloco redimensionando
   week-view-grid-overlays.tsx # overlays de drag/resize (placeholder, cópia flutuante)
+  event-drag-ghost.tsx      # cópia fantasma que fica no lugar do evento (timed)
+  event-drag-placeholder.tsx # borda da posição alvo durante o drag/resize (timed)
+  event-drag-copy.tsx       # cópia flutuante que segue o cursor (timed)
+  all-day-drag-ghost.tsx    # versão all-day da cópia fantasma
+  all-day-drag-placeholder.tsx # versão all-day da borda de posição alvo
+  all-day-drag-copy.tsx     # versão all-day da cópia flutuante
   event-detail-panel.tsx    # popover de edição inline (título, horário, cor, all-day)
   event-detail-popover.tsx  # popover com ancoragem no boundary do calendário
   event-context-menu.tsx    # menu de contexto (cor, excluir)
@@ -71,8 +82,9 @@ components/calendar/        # calendário (semanal): grid, eventos, overlays de 
   calendar-day-headers.tsx  # cabeçalho dos dias
   week-view-types.ts        # tipos compartilhados (WeekViewProps, events, etc.)
 components/ui               # primitivos shadcn (button, dialog, dropdown-menu, popover, switch, chart, ...)
-hooks/                      # hooks do calendário (drag/resize), formulário do bloco e dados (tasks, rotinas, progresso, current-block)
-lib/                        # infra (prisma, auth, session, api) + helpers de domínio (time-blocks, task-ordering, completions)
+hooks/                      # hooks do calendário (drag/resize + navegação de borda), formulário do bloco e dados (tasks, rotinas, progresso, current-block)
+lib/                        # infra cliente/servidor + helpers de domínio (time-blocks, task-ordering, subtask-tree)
+lib/server/                 # só servidor: prisma, auth, session, api (requireUser/RouteContext) e completions
 lib/calendar/               # math puro do calendário (posicionamento, all-day, interação drag/resize, fuso, constantes)
 lib/validation/             # parsing/validação de payloads da API (routines, tasks, subtasks, time-blocks, helpers)
 schemas/                    # schemas zod (login, sign-up, routine, task, time-block)
@@ -103,7 +115,7 @@ npx prisma db push    # aplica o schema no banco
 - Interações: duplo clique cria bloco, arrastar move, bordas redimensionam, movimentos horizontais na faixa all-day, menu de contexto e menu "..." duplicam/excluem.
 - Alterações são persistidas via API (`POST`/`PATCH`/`DELETE` em `app/api/routines/[id]/time-blocks{/...}`).
 - **Blocos não cruzam a meia-noite**: `createBlockStub` clampa o fim para 23:59:59.999 do mesmo dia quando o fim cairia no dia seguinte; o mapeamento do `routine-calendar-dialog` faz o mesmo clamp para blocos antigos armazenados com fim no dia seguinte (senão o `getEventsForDay` os filtra como multi-dia e somem). A validação zod do popover rejeita fim antes do início no mesmo dia.
-- A validação compartilhada dos blocos vive em `lib/time-blocks.ts` (`parseTimeBlockInput`/`parseTimeBlockPatch`) e o schema zod do formulário em `schemas/time-block-schema.ts` (all-day 00:00–00:00 é aceito; a API tolera `end == start` quando `isAllDay`).
+- A validação compartilhada dos blocos vive em `lib/validation/time-blocks.ts` (`parseTimeBlockInput`/`parseTimeBlockPatch`) e o schema zod do formulário em `schemas/time-block-schema.ts` (all-day 00:00–00:00 é aceito; a API tolera `end == start` quando `isAllDay`).
 
 ## Gráfico de progresso (home)
 
@@ -122,7 +134,7 @@ npx prisma db push    # aplica o schema no banco
 - Criação: `POST /api/tasks/:id/subtasks` com body `{ title, description, parentId? }` — o `parentId` precisa pertencer à mesma tarefa (validação no handler).
 - `PATCH /api/subtasks/:id` e `DELETE /api/subtasks/:id` conferem posse via `task.userId`; a exclusão remove toda a sub-árvore (cascade no Prisma).
 - A UI (`SubtaskTree` dentro do `task-details-dialog`) renderiza a árvore recursivamente com indentação por profundidade, botão de expandir/recolher e ações por nó (adicionar filho, editar, excluir com confirmação).
-- `useSubtasks` mantém o estado da árvore com updates otimistas: `insertNode`/`updateNode`/`removeNode` em `use-subtasks.ts`.
+- `useSubtasks` mantém o estado da árvore com updates otimistas; as funções puras de árvore vivem em `lib/subtask-tree.ts` (`insertNode`/`updateNode`/`removeAndRecomplete`/`markSubtreeDone`/`unmarkPath`/`completeAncestors`).
 - **Conclusão em cascata** (servidor + otimista): marcar um nó como feito conclui toda a sub-árvore abaixo (`markSubtreeDone`); reabrir um nó reabre a cadeia de ancestrais e a tarefa (`unmarkPath`); concluir o último filho pendente conclui o pai recursivamente (`completeAncestors`); excluir um filho recalcula os ancestrais (filhos restantes todos feitos ou nenhum filho restante ⇒ pai/tarefa concluídos, `removeAndRecomplete`); criar sub-tarefa sob pai concluído reabre a cadeia.
 
 ## Tarefas na home

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
-import { periodForFrequency } from "@/lib/completions";
+import { prisma } from "@/lib/server/prisma";
+import { periodForFrequency } from "@/lib/server/completions";
 import {
   asFrequency,
   badRequest,
@@ -9,7 +9,7 @@ import {
   parseTzOffset,
   requireUser,
   type RouteContext,
-} from "@/lib/api";
+} from "@/lib/server/api";
 
 export async function POST(
   request: Request,

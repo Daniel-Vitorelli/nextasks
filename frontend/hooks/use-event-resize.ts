@@ -6,15 +6,11 @@ import type {
   CalendarEvent,
   EventResizeState,
 } from "@/types/calendar";
+import { useGridEdgeNavigation } from "./use-grid-edge-navigation";
 import {
   addMinutesToDate,
-  AUTO_SCROLL_MAX_SPEED,
-  AUTO_SCROLL_ZONE_PX,
   clamp,
   DRAG_THRESHOLD_PX,
-  EDGE_NAV_DELAY_MS,
-  EDGE_NAV_REPEAT_MS,
-  EDGE_ZONE_PX,
   MIN_DURATION_MINUTES,
   snapToGrid,
   TOUCH_SLOP_PX,
@@ -103,10 +99,10 @@ export function useEventResize({
     timeAxisWidthRef.current = timeAxisWidth;
   }, [timeAxisWidth]);
 
-  const autoScrollRAFRef = useRef<number | null>(null);
-  const autoScrollSpeedRef = useRef(0);
-  const edgeNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const edgeNavDirectionRef = useRef<number | null>(null);
+  const { updateForCursor, stop: stopGridNavigation } = useGridEdgeNavigation(
+    scrollContainerRef,
+    (daysDelta) => onResizeNavigateRef.current?.(daysDelta),
+  );
 
   const handlePointerMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
   const handlePointerUpRef = useRef<((e: PointerEvent) => void) | null>(null);
@@ -115,39 +111,6 @@ export function useEventResize({
   );
   /** Blocks the browser's native scroll while a touch resize is active. */
   const handleTouchMoveRef = useRef<((e: TouchEvent) => void) | null>(null);
-
-  const cancelAutoScroll = useCallback(() => {
-    if (autoScrollRAFRef.current !== null) {
-      cancelAnimationFrame(autoScrollRAFRef.current);
-      autoScrollRAFRef.current = null;
-    }
-    autoScrollSpeedRef.current = 0;
-  }, []);
-
-  const cancelEdgeNav = useCallback(() => {
-    if (edgeNavTimerRef.current !== null) {
-      clearTimeout(edgeNavTimerRef.current);
-      edgeNavTimerRef.current = null;
-    }
-    edgeNavDirectionRef.current = null;
-  }, []);
-
-  const scheduleEdgeNav = useCallback(
-    (direction: number) => {
-      if (edgeNavDirectionRef.current === direction) return;
-
-      cancelEdgeNav();
-      edgeNavDirectionRef.current = direction;
-
-      const fireNav = () => {
-        onResizeNavigateRef.current?.(direction);
-        edgeNavTimerRef.current = setTimeout(fireNav, EDGE_NAV_REPEAT_MS);
-      };
-
-      edgeNavTimerRef.current = setTimeout(fireNav, EDGE_NAV_DELAY_MS);
-    },
-    [cancelEdgeNav],
-  );
 
   const cleanup = useCallback(() => {
     if (handlePointerMoveRef.current) {
@@ -165,29 +128,8 @@ export function useEventResize({
     if (handleTouchMoveRef.current) {
       window.removeEventListener("touchmove", handleTouchMoveRef.current);
     }
-    cancelAutoScroll();
-    cancelEdgeNav();
-  }, [cancelAutoScroll, cancelEdgeNav]);
-
-  const startAutoScrollLoop = useCallback(() => {
-    if (autoScrollRAFRef.current !== null) return;
-
-    const tick = () => {
-      const container = scrollContainerRef.current;
-      if (!container) return;
-
-      const speed = autoScrollSpeedRef.current;
-      if (speed === 0) {
-        autoScrollRAFRef.current = null;
-        return;
-      }
-
-      container.scrollTop += speed;
-      autoScrollRAFRef.current = requestAnimationFrame(tick);
-    };
-
-    autoScrollRAFRef.current = requestAnimationFrame(tick);
-  }, [scrollContainerRef]);
+    stopGridNavigation();
+  }, [stopGridNavigation]);
 
   useEffect(() => {
     handlePointerMoveRef.current = (e: PointerEvent) => {
@@ -333,35 +275,13 @@ export function useEventResize({
         currentStartDate: startDate,
       });
 
-      // Auto-scroll at top/bottom edges
+      // Auto-scroll + edge-of-view week navigation
       const cursorYInContainer = e.clientY - containerRect.top;
       const containerHeight = containerRect.height;
-
-      if (cursorYInContainer < AUTO_SCROLL_ZONE_PX) {
-        const dist = cursorYInContainer;
-        autoScrollSpeedRef.current =
-          -AUTO_SCROLL_MAX_SPEED * (1 - dist / AUTO_SCROLL_ZONE_PX);
-        startAutoScrollLoop();
-      } else if (cursorYInContainer > containerHeight - AUTO_SCROLL_ZONE_PX) {
-        const dist = containerHeight - cursorYInContainer;
-        autoScrollSpeedRef.current =
-          AUTO_SCROLL_MAX_SPEED * (1 - dist / AUTO_SCROLL_ZONE_PX);
-        startAutoScrollLoop();
-      } else {
-        cancelAutoScroll();
-      }
-
-      // Edge-of-view week navigation
       const cursorXInGrid = e.clientX - gridLeftEdge;
       const gridWidth = colWidth * visibleDays.length;
 
-      if (cursorXInGrid < EDGE_ZONE_PX) {
-        scheduleEdgeNav(-7);
-      } else if (cursorXInGrid > gridWidth - EDGE_ZONE_PX) {
-        scheduleEdgeNav(7);
-      } else {
-        cancelEdgeNav();
-      }
+      updateForCursor({ cursorXInGrid, gridWidth, cursorYInContainer, containerHeight });
     };
 
     handlePointerUpRef.current = (e: PointerEvent) => {
@@ -420,10 +340,7 @@ export function useEventResize({
   }, [
     scrollContainerRef,
     cleanup,
-    cancelAutoScroll,
-    startAutoScrollLoop,
-    scheduleEdgeNav,
-    cancelEdgeNav,
+    updateForCursor,
   ]);
 
   const handleResizePointerDown = useCallback(

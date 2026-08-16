@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { Frequency } from "@/types/domain";
-import { getUser } from "@/lib/session";
+import { getUser } from "@/lib/server/session";
 
 /** Route context for dynamic segments (params arrive as a Promise in Next 15+) */
 export interface RouteContext<T extends Record<string, string> = Record<string, string>> {

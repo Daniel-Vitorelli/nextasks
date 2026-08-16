@@ -7,6 +7,7 @@ import { CalendarClock, TrendingUp } from "lucide-react";
 import { useSession } from "@/components/app/session-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
+import { EmptyStateCard } from "@/components/app/home/empty-state-card";
 import { PeriodSelector } from "@/components/app/home/period-selector";
 import { ProgressChart } from "@/components/app/home/progress-chart";
 import { TasksSection } from "@/components/app/home/tasks-section";
@@ -93,29 +94,19 @@ export default function HomePage() {
         </section>
       ) : !isPageLoading && !routine ? (
         <section>
-          <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
-            <CalendarClock className="text-muted-foreground size-6 shrink-0" />
-            <div className="flex flex-col gap-0.5">
-              <h2 className="font-semibold">
-                {t("noActiveRoutine.title")}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                {t("noActiveRoutine.description")}
-              </p>
-            </div>
-          </div>
+          <EmptyStateCard
+            icon={<CalendarClock />}
+            title={t("noActiveRoutine.title")}
+            description={t("noActiveRoutine.description")}
+          />
         </section>
       ) : showMergedEmpty ? (
         <section>
-          <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
-            <CalendarClock className="text-muted-foreground size-6 shrink-0" />
-            <div className="flex flex-col gap-0.5">
-              <h2 className="font-semibold">{t("emptyRoutine.title")}</h2>
-              <p className="text-muted-foreground text-sm">
-                {t("emptyRoutine.description")}
-              </p>
-            </div>
-          </div>
+          <EmptyStateCard
+            icon={<CalendarClock />}
+            title={t("emptyRoutine.title")}
+            description={t("emptyRoutine.description")}
+          />
         </section>
       ) : (
         <>
@@ -147,17 +138,11 @@ export default function HomePage() {
                 <p className="text-sm text-muted-foreground">{progressError}</p>
               </div>
             ) : !progress || progress.confirmableBlockCount === 0 ? (
-              <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
-                <TrendingUp className="text-muted-foreground size-6 shrink-0" />
-                <div className="flex flex-col gap-0.5">
-                  <h2 className="font-semibold">
-                    {t("progressChart.emptyTitle")}
-                  </h2>
-                  <p className="text-muted-foreground text-sm">
-                    {t("progressChart.emptyDescription")}
-                  </p>
-                </div>
-              </div>
+              <EmptyStateCard
+                icon={<TrendingUp />}
+                title={t("progressChart.emptyTitle")}
+                description={t("progressChart.emptyDescription")}
+              />
             ) : (
               <div className="rounded-xl border border-border/60 bg-card p-4">
                 <ProgressChart
@@ -188,17 +173,11 @@ export default function HomePage() {
                 ))}
               </ul>
             ) : (
-              <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
-                <CalendarClock className="text-muted-foreground size-6 shrink-0" />
-                <div className="flex flex-col gap-0.5">
-                  <h2 className="font-semibold">
-                    {t("currentBlock.emptyTitle")}
-                  </h2>
-                  <p className="text-muted-foreground text-sm">
-                    {t("currentBlock.emptyDescription")}
-                  </p>
-                </div>
-              </div>
+              <EmptyStateCard
+                icon={<CalendarClock />}
+                title={t("currentBlock.emptyTitle")}
+                description={t("currentBlock.emptyDescription")}
+              />
             )}
           </section>
         </>

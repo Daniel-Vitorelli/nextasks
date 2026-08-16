@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Task, TaskFormValues } from "@/types/domain";
+import { sortTasksForList } from "@/lib/task-ordering";
 
 /**
  * Loads and mutates the user's tasks with optimistic updates.
@@ -74,12 +75,7 @@ export function useTasks() {
           item.id === saved.id ? saved : item,
         );
         // Concluidas ficam no fim da lista.
-        return updated.sort(
-          (a, b) =>
-            Number(a.done) - Number(b.done) ||
-            b.priority - a.priority ||
-            b.createdAt.localeCompare(a.createdAt),
-        );
+        return updated.sort(sortTasksForList);
       });
     } catch (error) {
       console.error(error);
@@ -93,12 +89,7 @@ export function useTasks() {
         item.id === id ? { ...item, done } : item,
       );
       // Concluidas ficam no fim da lista.
-      return updated.sort(
-        (a, b) =>
-          Number(a.done) - Number(b.done) ||
-          b.priority - a.priority ||
-          b.createdAt.localeCompare(a.createdAt),
-      );
+      return updated.sort(sortTasksForList);
     });
   }, []);
 

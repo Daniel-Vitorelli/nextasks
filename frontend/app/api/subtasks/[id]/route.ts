@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/server/prisma";
 import { parseSubtaskPatch } from "@/lib/validation/subtasks";
-import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/api";
+import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/server/api";
 
 async function getOwnedSubtask(id: string, userId: string) {
   return prisma.subtask.findFirst({

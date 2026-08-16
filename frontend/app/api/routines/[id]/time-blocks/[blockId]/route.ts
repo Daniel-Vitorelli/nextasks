@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/server/prisma";
 import { parseTimeBlockPatch } from "@/lib/validation/time-blocks";
-import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/api";
+import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/server/api";
 
 async function getOwnedBlock(id: string, blockId: string, userId: string) {
   return prisma.timeBlock.findFirst({

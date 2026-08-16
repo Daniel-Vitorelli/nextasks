@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getUser } from "@/lib/server/session";
 import { AppDock } from "@/components/app/app-dock";
 import { SessionProvider } from "@/components/app/session-provider";
 import type { ReactNode } from "react";
@@ -11,16 +10,14 @@ export default async function Layout({
 }: {
   children: ReactNode
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const user = await getUser();
 
-  if (!session) {
+  if (!user) {
     redirect("/");
   }
 
   return (
-    <SessionProvider value={{ user: session.user }}>
+    <SessionProvider value={{ user }}>
       <div className="relative min-h-screen">
         <main className="pb-8">{children}</main>
         <AppDock />

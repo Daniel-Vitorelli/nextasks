@@ -16,6 +16,9 @@ import { EventContextMenu } from "./event-context-menu";
 import { eventColorStyles } from "./calendar-event-color";
 import { formatTimeDisplay } from "./calendar-event-time";
 import { EventVisual } from "./event-visual";
+import { AllDayDragCopy } from "./all-day-drag-copy";
+import { AllDayDragGhost } from "./all-day-drag-ghost";
+import { AllDayDragPlaceholder } from "./all-day-drag-placeholder";
 
 /** Drag visual variant for all-day events */
 export type AllDayDragVariant = "ghost" | "placeholder" | "dragging";
@@ -119,76 +122,25 @@ export function AllDayEventItem({
   // Ghost: faded version at original position during move
   if (dragVariant === "ghost") {
     return (
-      <div
-        className={cn(
-          "relative h-6 px-2 py-0.5 pointer-events-none opacity-30",
-          "overflow-hidden select-none flex items-center gap-1",
-          spanRounding,
-          className,
-        )}
-      >
-        <EventVisual
-          event={event}
-          rounding={spanRounding}
-          barRounding={spanStart ? "rounded-l-md" : undefined}
-          showLeftBar={spanStart}
-        >
-          <span
-            className={cn(
-              "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap",
-              spanStart && "pl-1",
-              styles.text,
-              "dark:text-white/80",
-            )}
-          >
-            {event.title}
-          </span>
-        </EventVisual>
-      </div>
+      <AllDayDragGhost
+        event={event}
+        spanStart={spanStart}
+        spanEnd={spanEnd}
+        className={className}
+      />
     );
   }
 
   // Placeholder: border-only outline at target position
   if (dragVariant === "placeholder") {
     return (
-      <div
-        className={cn(
-          "relative h-6 pointer-events-none border-2 rounded-sm",
-          styles.borderLine,
-          className,
-        )}
-      />
+      <AllDayDragPlaceholder event={event} className={className} />
     );
   }
 
   // Dragging copy: floating replica following cursor
   if (dragVariant === "dragging") {
-    return (
-      <div
-        className={cn(
-          "h-6 px-2 py-0.5 pointer-events-none cursor-grabbing",
-          "overflow-hidden select-none flex items-center gap-1",
-          "rounded-sm opacity-80 shadow-lg",
-          className,
-        )}
-      >
-        <EventVisual
-          event={event}
-          rounding="rounded-sm"
-          barRounding="rounded-l-md"
-        >
-          <span
-            className={cn(
-              "relative font-medium text-[0.625rem] leading-tight whitespace-nowrap pl-1",
-              styles.text,
-              "dark:text-white/80",
-            )}
-          >
-            {event.title}
-          </span>
-        </EventVisual>
-      </div>
-    );
+    return <AllDayDragCopy event={event} className={className} />;
   }
 
   // Check if event has a specific start time (not midnight)

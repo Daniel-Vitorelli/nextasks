@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/server/prisma";
 import { parseTaskInput } from "@/lib/validation/tasks";
-import { requireUser } from "@/lib/api";
+import { requireUser } from "@/lib/server/api";
 
 export async function GET() {
   const { user, response } = await requireUser();
