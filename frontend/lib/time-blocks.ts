@@ -41,7 +41,9 @@ export function parseTimeBlockInput(value: unknown): TimeBlockPayload | null {
 
   if (!title) return null;
   if (!(start instanceof Date) || !(end instanceof Date)) return null;
-  if (end.getTime() <= start.getTime()) return null;
+  const isAllDay = body.isAllDay === true;
+  // All-day 00:00-00:00 e valido; caso contrario o fim deve ser depois.
+  if (end.getTime() < start.getTime() || (end.getTime() === start.getTime() && !isAllDay)) return null;
 
   return {
     title,
@@ -51,7 +53,7 @@ export function parseTimeBlockInput(value: unknown): TimeBlockPayload | null {
         : null,
     start,
     end,
-    isAllDay: body.isAllDay === true,
+    isAllDay,
     color: isEventColor(body.color) ? body.color : "green",
     confirmation: isEventConfirmation(body.confirmation)
       ? body.confirmation
@@ -93,7 +95,7 @@ export function parseTimeBlockPatch(value: unknown): TimeBlockPatch | null {
     patch.confirmation = body.confirmation;
   }
 
-  if (patch.start && patch.end && patch.end.getTime() <= patch.start.getTime()) {
+  if (patch.start && patch.end && (patch.end.getTime() < patch.start.getTime() || (patch.end.getTime() === patch.start.getTime() && patch.isAllDay !== true))) {
     return null;
   }
 
@@ -147,6 +149,28 @@ export function createBlockStub(anchor: Date): {
     anchor.getHours(),
   );
   const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+  // Um bloco nunca cruza a meia-noite: se o fim cairia no dia seguinte,
+  // ele vai ao ultimo horario disponivel do dia (23:59:59.999).
+  if (
+    end.getFullYear() !== start.getFullYear() ||
+    end.getMonth() !== start.getMonth() ||
+    end.getDate() !== start.getDate()
+  ) {
+    return {
+      start,
+      end: new Date(
+        start.getFullYear(),
+        start.getMonth(),
+        start.getDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    };
+  }
+
   return { start, end };
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { addDays, eachDayOfInterval, format, startOfWeek } from "date-fns";
+import { addDays, eachDayOfInterval, endOfDay, format, startOfWeek } from "date-fns";
 import { enUS, ptBR } from "date-fns/locale";
 import { Plus, X } from "lucide-react";
 
@@ -119,22 +119,29 @@ export function RoutineCalendarDialog({
     .map((block) => {
       const event = toCalendarEvent(block);
 
+      let baseStart: Date;
       if (dayViewDate) {
         // Rotina semanal em modo dia: os blocos do dia selecionado caem no
         // dia exibido, mantendo os horários.
-        event.start = applyTimeOfDay(dayViewDate, event.start);
-        event.end = applyTimeOfDay(dayViewDate, event.end);
+        baseStart = dayViewDate;
       } else if (isWeekly) {
         // Rotina semanal: blocos caem na mesma coluna do dia da semana.
         const offset = event.start.getDay();
-        const target = new Date(weekStart);
-        target.setDate(weekStart.getDate() + offset);
-        event.start = applyTimeOfDay(target, event.start);
-        event.end = applyTimeOfDay(target, event.end);
+        baseStart = new Date(weekStart);
+        baseStart.setDate(weekStart.getDate() + offset);
       } else {
         // Rotina diária: blocos sempre no mesmo horário do dia exibido.
-        event.start = applyTimeOfDay(weekStart, event.start);
-        event.end = applyTimeOfDay(weekStart, event.end);
+        baseStart = weekStart;
+      }
+
+      event.start = applyTimeOfDay(baseStart, event.start);
+      event.end = applyTimeOfDay(baseStart, event.end);
+
+      // Blocos nunca cruzam a meia-noite: se o fim caiu antes do inicio
+      // (bloco antigo armazenado com fim no dia seguinte), o fim vai ao
+      // ultimo horario disponivel do dia (23:59:59.999).
+      if (event.end.getTime() <= event.start.getTime()) {
+        event.end = endOfDay(baseStart);
       }
 
       return event;

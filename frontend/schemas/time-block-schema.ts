@@ -33,7 +33,9 @@ export const createTimeBlockSchema = (
         const startTotal = start.hours * 60 + start.minutes;
         const endTotal = end.hours * 60 + end.minutes;
 
-        if (endTotal <= startTotal) {
+        // Blocos nunca cruzam a meia-noite; horarios iguais so valem para
+        // all-day (00:00-00:00).
+        if (endTotal <= startTotal && !(startTotal === 0 && endTotal === 0)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: t("endBeforeStart"),
