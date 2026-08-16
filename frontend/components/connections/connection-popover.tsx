@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import { Link2, Minus, Plus } from "lucide-react";
+import { Link2, Minus, Plus, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -317,16 +317,35 @@ export function ConnectionPopover({
   const { data, isLoading, reload, toggleConnection, updateConnection } =
     useConnections();
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
 
-  React.useEffect(() => {
-    if (open) void reload();
-  }, [open, reload]);
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      setOpen(next);
+      if (next) {
+        setSearch("");
+        void reload();
+      }
+    },
+    [reload],
+  );
 
   const isEntity = anchor.type === "task" || anchor.type === "subtask";
   const anchorBlock =
     !isEntity && data
       ? data.blocks.find((block) => block.id === anchor.id)
       : undefined;
+
+  const query = search.trim().toLowerCase();
+  const matches = (title: string) =>
+    query === "" || title.toLowerCase().includes(query);
+  const filteredBlocks = data?.blocks.filter((block) =>
+    matches(block.title),
+  );
+  const filteredTasks = data?.tasks.filter((task) => matches(task.title));
+  const filteredSubtasks = data?.subtasks.filter((subtask) =>
+    matches(subtask.title),
+  );
 
   const findConnection = React.useCallback(
     (timeBlockId: string): TaskBlockConnection | undefined => {
@@ -352,7 +371,7 @@ export function ConnectionPopover({
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent align="start" sideOffset={6} className="w-80 p-0">
         <div className="border-border flex items-center gap-1.5 border-b px-3 py-2">
@@ -375,18 +394,33 @@ export function ConnectionPopover({
           </div>
         </div>
 
-        <div className="max-h-72 overflow-y-auto p-1.5">
+        <div className="border-border p-1.5 pb-0">
+          <div className="bg-muted/50 flex items-center gap-1.5 rounded-sm px-2">
+            <Search className="text-muted-foreground size-3.5 shrink-0" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t("search")}
+              aria-label={t("search")}
+              className="bg-transparent h-7 border-none px-0 text-xs shadow-none focus-visible:ring-0"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-64 overflow-y-auto p-1.5">
           {isLoading && !data ? (
             <p className="text-muted-foreground px-2 py-3 text-xs">
               {t("loading")}
             </p>
           ) : isEntity ? (
-            (data?.blocks.length ?? 0) === 0 ? (
+            (filteredBlocks?.length ?? 0) === 0 ? (
               <p className="text-muted-foreground px-2 py-3 text-xs">
-                {t("noBlocks")}
+                {(data?.blocks.length ?? 0) === 0
+                  ? t("noBlocks")
+                  : t("noMatches")}
               </p>
             ) : (
-              data?.blocks.map((block: ConnectionCatalogBlock) => {
+              filteredBlocks?.map((block: ConnectionCatalogBlock) => {
                 const connection = findConnection(block.id);
                 const disabled = block.confirmation === "none";
                 return (
@@ -420,15 +454,18 @@ export function ConnectionPopover({
                 );
               })
             )
-          ) : (data?.tasks.length ?? 0) === 0 &&
-            (data?.subtasks.length ?? 0) === 0 ? (
+          ) : (filteredTasks?.length ?? 0) === 0 &&
+            (filteredSubtasks?.length ?? 0) === 0 ? (
             <p className="text-muted-foreground px-2 py-3 text-xs">
-              {t("noTasks")}
+              {(data?.tasks.length ?? 0) === 0 &&
+              (data?.subtasks.length ?? 0) === 0
+                ? t("noTasks")
+                : t("noMatches")}
             </p>
           ) : (
             <>
-              {data?.tasks.map((task) => {
-                const connection = data.connections.find(
+              {filteredTasks?.map((task) => {
+                const connection = data?.connections.find(
                   (item) =>
                     item.taskId === task.id &&
                     item.timeBlockId === anchor.id,
@@ -451,8 +488,8 @@ export function ConnectionPopover({
                   />
                 );
               })}
-              {data?.subtasks.map((subtask) => {
-                const connection = data.connections.find(
+              {filteredSubtasks?.map((subtask) => {
+                const connection = data?.connections.find(
                   (item) =>
                     item.subtaskId === subtask.id &&
                     item.timeBlockId === anchor.id,
@@ -480,7 +517,7 @@ export function ConnectionPopover({
         </div>
 
         <div className="border-border border-t px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-          {t("hint")}
+          {t(isEntity ? "hintEntity" : "hintBlock")}
         </div>
       </PopoverContent>
     </Popover>

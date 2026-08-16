@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConnectionPopover } from "@/components/connections/connection-popover";
+import { ConnectionBadge } from "@/components/connections/connection-badge";
 import { cn } from "@/lib/utils";
 import type { Subtask } from "@/types/domain";
 
@@ -102,7 +103,13 @@ export function SubtaskNode({
                 variant="ghost"
                 aria-label={t("connect")}
               >
-                <Link2 />
+                <span className="relative">
+                  <Link2 />
+                  <ConnectionBadge
+                    anchor={{ type: "subtask", id: subtask.id }}
+                    className="absolute -right-2 -top-2"
+                  />
+                </span>
               </Button>
             </ConnectionPopover>
             <Tooltip>

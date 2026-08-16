@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { SubtaskTree } from "@/components/dashboard/tasks/subtask-tree";
 import { ConnectionPopover } from "@/components/connections/connection-popover";
+import { ConnectionBadge } from "@/components/connections/connection-badge";
 import { priorityBadgeStyles } from "@/components/dashboard/tasks/task-priority";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types/domain";
@@ -121,7 +122,13 @@ export function TaskDetailsDialog({
                 size="sm"
                 aria-label={t("details.connectionsOpen")}
               >
-                <Link2 className="size-4" />
+                <span className="relative">
+                  <Link2 className="size-4" />
+                  <ConnectionBadge
+                    anchor={{ type: "task", id: task.id }}
+                    className="absolute -right-2 -top-2"
+                  />
+                </span>
                 <span className="hidden sm:inline">
                   {t("details.connectionsOpen")}
                 </span>

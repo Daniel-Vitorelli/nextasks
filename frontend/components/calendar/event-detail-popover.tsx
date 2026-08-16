@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { PopoverContent } from "@/components/ui/popover";
 import { ConnectionPopover } from "@/components/connections/connection-popover";
+import { ConnectionBadge } from "@/components/connections/connection-badge";
 import { EventDetailPanel } from "./event-detail-panel";
 import { useCalendarPopoverBoundary } from "./calendar-popover-context";
 import { MOBILE_BREAKPOINT_PX } from "./week-view-utils";
@@ -89,7 +90,13 @@ export function EventDetailPopover({
           title={t("connectTasks")}
           aria-label={t("connectTasks")}
         >
-          <Link2 className="size-4" />
+          <span className="relative">
+            <Link2 className="size-4" />
+            <ConnectionBadge
+              anchor={{ type: "block", id: event.id }}
+              className="absolute -right-2 -top-2"
+            />
+          </span>
         </Button>
       </ConnectionPopover>
       <Button

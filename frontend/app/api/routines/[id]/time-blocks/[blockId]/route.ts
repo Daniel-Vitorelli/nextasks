@@ -32,6 +32,17 @@ export async function PATCH(
     return badRequest("Invalid time block");
   }
 
+  // Desligar a confirmação com conexões ativas criaria conexões impossíveis
+  // de satisfazer (nunca confirmáveis).
+  if (patch.confirmation === "none") {
+    const connections = await prisma.taskBlockConnection.count({
+      where: { timeBlockId: blockId },
+    });
+    if (connections > 0) {
+      return badRequest("Block has connections; remove them first");
+    }
+  }
+
   const timeBlock = await prisma.timeBlock.update({
     where: { id: blockId },
     data: patch,
