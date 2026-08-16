@@ -50,6 +50,7 @@ components/app/home/        # página inicial da área autenticada
   progress-chart.tsx        # area chart (recharts + ChartContainer do shadcn)
   period-selector.tsx       # seletor 7/15/30/60 dias do gráfico
   use-routine-progress.ts   # hook que carrega o progresso (refetch a cada confirmação)
+  tasks-section.tsx         # seção de tarefas: tarefa atual + sub-tarefas + prévia das próximas
 components/calendar/        # calendário (semanal): grid, eventos, overlays de drag/resize
   week-view.tsx             # componente principal (semana/dia, scroll horizontal, navegação)
   week-view-grid.tsx        # grid de horas×dias + colunas de eventos
@@ -72,7 +73,7 @@ components/calendar/        # calendário (semanal): grid, eventos, overlays de 
   week-view-types.ts        # tipos compartilhados (WeekViewProps, events, etc.)
 components/ui               # primitivos shadcn (button, dialog, dropdown-menu, popover, switch, chart, ...)
 hooks/                      # use-event-drag, use-event-resize, use-all-day-resize, ...
-lib/                        # prisma, auth, session, event-utils, time-blocks, completions
+lib/                        # prisma, auth, session, event-utils, time-blocks, completions, task-ordering
 schemas/                    # schemas zod (login, sign-up, routine, time-block)
 messages/                   # traduções pt/en
 ```
@@ -119,7 +120,14 @@ npx prisma db push    # aplica o schema no banco
 - `PATCH /api/subtasks/:id` e `DELETE /api/subtasks/:id` conferem posse via `task.userId`; a exclusão remove toda a sub-árvore (cascade no Prisma).
 - A UI (`SubtaskTree` dentro do `task-details-dialog`) renderiza a árvore recursivamente com indentação por profundidade, botão de expandir/recolher e ações por nó (adicionar filho, editar, excluir com confirmação).
 - `useSubtasks` mantém o estado da árvore com updates otimistas: `insertNode`/`updateNode`/`removeNode` em `use-subtasks.ts`.
+- **Conclusão em cascata** (servidor + otimista): marcar um nó como feito conclui toda a sub-árvore abaixo (`markSubtreeDone`); reabrir um nó reabre a cadeia de ancestrais e a tarefa (`unmarkPath`); concluir o último filho pendente conclui o pai recursivamente (`completeAncestors`); excluir um filho recalcula os ancestrais (filhos restantes todos feitos ou nenhum filho restante ⇒ pai/tarefa concluídos, `removeAndRecomplete`); criar sub-tarefa sob pai concluído reabre a cadeia.
+
+## Tarefas na home
+
+- `TasksSection` (`components/app/home/tasks-section.tsx`) mostra **uma tarefa por vez** entre as pendentes, ordenada por `sortPendingTasks` (`lib/task-ordering.ts`): score = `dueUrgencyScore` (data limite: atrasada 10–15, vence hoje 8–10, ≤3 dias 6–8, ≤7 dias 4–6, ≤30 dias 0–4, sem data 0 — o dia da data limite só conta como atrasado após a meia-noite) + prioridade (1–6); desempate por data mais próxima, prioridade e data de criação.
+- O card da tarefa atual replica o `TaskCard` do painel (checkbox, prioridade, data limite) sem ações de edição/exclusão; as sub-tarefas dela aparecem em árvore simplificada com checkbox (mesma regra de cascata) e as próximas (até 5) em linhas sem checkbox.
+- Concluir a tarefa atual promove a próxima automaticamente; reabrir sub-tarefas mantém o estado sincronizado com o painel (`useTasks` compartilhado).
 
 ## Traduções
 
-As strings ficam em `messages/pt.json` e `messages/en.json`. Novas chaves devem ser adicionadas nos dois arquivos antes de usar `useTranslations` (senão o next-intl falha no typecheck). O namespace do calendário é `dashboard.routines.calendar`, o do gráfico de progresso é `app.home.progressChart` e o das sub-tarefas é `dashboard.tasks.subtasks`.
+As strings ficam em `messages/pt.json` e `messages/en.json`. Novas chaves devem ser adicionadas nos dois arquivos antes de usar `useTranslations` (senão o next-intl falha no typecheck). O namespace do calendário é `dashboard.routines.calendar`, o do gráfico de progresso é `app.home.progressChart`, o das sub-tarefas é `dashboard.tasks.subtasks` e o das tarefas da home é `app.home.tasks`.

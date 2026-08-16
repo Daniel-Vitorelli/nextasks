@@ -31,6 +31,7 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - Campos: título (obrigatório), descrição e data limite (opcionais) e 6 prioridades (muito baixa → urgente).
   - Checkbox por tarefa para alternar conclusão (concluídas vão para o fim da lista) e botão "Saiba mais" com dialog de detalhes.
   - **Sub-tarefas**: árvore recursiva sem limite de profundidade dentro do dialog "Saiba mais" — cada sub-tarefa tem título (obrigatório) e descrição (opcional), pode ter filhos, e é excluída com confirmação (remove toda a sub-árvore).
+  - **Conclusão consistente**: marcar uma tarefa/sub-tarefa como feita conclui toda a sub-árvore abaixo dela; reabrir uma sub-tarefa reabre a cadeia de ancestrais e a tarefa; concluir o último filho pendente (ou excluir o único filho pendente) conclui o pai automaticamente, subindo a cadeia até a tarefa; criar sub-tarefa sob um pai/tarefa concluídos reabre a cadeia.
 - **Calendário de blocos de tempo** (`/app/dashboard`, clicando no ícone de calendário de uma rotina):
   - Visão semanal com blocos de tempo (eventos) por dia e por hora, navegação entre semanas e scroll horizontal.
   - Duplo clique numa célula cria um bloco; blocos podem ser **arrastados** (mover), **redimensionados** (dobrar borda) e **movidos entre dias** (all-day).
@@ -44,6 +45,8 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - O gráfico só é exibido se a rotina ativa tiver blocos confirmáveis (`confirmableBlockCount > 0`); sem eles, o seletor de período fica oculto e aparece o fallback "Sem dados ainda".
   - Sem rotina ativa, as seções "Agora" e do gráfico são substituídas por um **único fallback** ("Nenhuma rotina ativa").
   - O gráfico atualiza automaticamente ao confirmar um bloco.
+  - **Tarefas**: seção sempre visível com **uma tarefa por vez**, escolhida entre as pendentes por urgência combinada — score = urgência da data limite (atrasada 10–15, vence hoje 8–10, até 3 dias 6–8, até 7 dias 4–6, até ~1 mês 0–4, sem data 0) + prioridade (1–6), com desempate por data mais próxima, prioridade e criação (`frontend/lib/task-ordering.ts`).
+  - O card da tarefa atual replica o do painel (checkbox, prioridade, data limite) sem ações de edição/exclusão; as sub-tarefas dela aparecem em árvore simplificada com checkbox (mesma regra de conclusão em cascata do painel) e as próximas (até 5) em linhas sem checkbox; concluir a tarefa atual promove a próxima automaticamente.
 - **i18n** — Português e Inglês via `next-intl` (`frontend/messages/{pt,en}.json`), incluindo os nomes dos dias da semana (date-fns com locale).
 
 ## Pré-requisitos
