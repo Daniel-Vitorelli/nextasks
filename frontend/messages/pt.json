@@ -128,6 +128,10 @@
         "title": "Nenhuma rotina ativa",
         "description": "Ative uma rotina no painel para ver seu progresso e sua programação atual aqui."
       },
+      "emptyRoutine": {
+        "title": "Nenhuma atividade para mostrar",
+        "description": "Adicione blocos de tempo à sua rotina no painel para acompanhar seu progresso e ver sua programação aqui."
+      },
       "currentBlock": {
         "label": "Agora",
         "allDay": "Dia inteiro",

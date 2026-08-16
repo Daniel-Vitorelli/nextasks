@@ -83,6 +83,24 @@ export default function HomePage() {
   const routine = current?.routine ?? progress?.routine ?? null;
   const isPageLoading = isLoading || isProgressLoading;
   const showProgressChart = !!progress && progress.confirmableBlockCount > 0;
+  const isInitialLoading = !current && !progress && (isLoading || isProgressLoading);
+  const showMergedEmpty =
+    !!routine &&
+    !!progress &&
+    !progressError &&
+    !showProgressChart &&
+    blocks.length === 0;
+
+  // Períodos do seletor limitados aos dias registrados: sem histórico
+  // suficiente, opções maiores que o registro não fazem sentido.
+  const maxAvailablePeriod = Math.max(
+    ...[7, 15, 30, 60].filter((days) => days <= (progress?.daysWithRecords ?? 0)),
+    0,
+  );
+  const effectiveDays =
+    maxAvailablePeriod > 0
+      ? Math.min(selectedDays, maxAvailablePeriod)
+      : selectedDays;
 
   const handleConfirmed = (blockId: string) => {
     setCurrent((state) =>
@@ -108,7 +126,13 @@ export default function HomePage() {
         <p className="text-muted-foreground capitalize">{dateLabel}</p>
       </header>
 
-      {!isPageLoading && !routine ? (
+      {isInitialLoading ? (
+        <section>
+          <div className="flex h-64 items-center justify-center rounded-xl border border-border/60 bg-card">
+            <Spinner />
+          </div>
+        </section>
+      ) : !isPageLoading && !routine ? (
         <section>
           <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
             <CalendarClock className="text-muted-foreground size-6 shrink-0" />
@@ -118,6 +142,18 @@ export default function HomePage() {
               </h2>
               <p className="text-muted-foreground text-sm">
                 {t("noActiveRoutine.description")}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : showMergedEmpty ? (
+        <section>
+          <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
+            <CalendarClock className="text-muted-foreground size-6 shrink-0" />
+            <div className="flex flex-col gap-0.5">
+              <h2 className="font-semibold">{t("emptyRoutine.title")}</h2>
+              <p className="text-muted-foreground text-sm">
+                {t("emptyRoutine.description")}
               </p>
             </div>
           </div>
@@ -136,8 +172,9 @@ export default function HomePage() {
               </div>
               {showProgressChart && (
                 <PeriodSelector
-                  value={selectedDays}
+                  value={effectiveDays}
                   onChange={setSelectedDays}
+                  maxDays={progress?.daysWithRecords}
                 />
               )}
             </div>
@@ -178,11 +215,7 @@ export default function HomePage() {
               {t("currentBlock.label")}
             </p>
 
-            {isLoading && !current ? (
-              <div className="flex items-center justify-center rounded-xl border border-border/60 bg-card p-8">
-                <Spinner />
-              </div>
-            ) : blocks.length > 0 && routine ? (
+            {blocks.length > 0 && routine ? (
               <ul className="space-y-3">
                 {blocks.map((block) => (
                   <CurrentBlockCard
@@ -209,10 +242,10 @@ export default function HomePage() {
               </div>
             )}
           </section>
-
-          <TasksSection />
         </>
       )}
+
+      <TasksSection />
     </main>
   );
 }

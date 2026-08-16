@@ -107,6 +107,8 @@ export interface ProgressResponse {
   routine: Routine | null;
   /** Quantos blocos confirmaveis (checklist/nota) a rotina ativa tem no total. */
   confirmableBlockCount: number;
+  /** Quantos dias no passado têm ao menos um bloco confirmável aplicável. */
+  daysWithRecords: number;
   progress: DailyProgress[];
   period: Period | null;
 }

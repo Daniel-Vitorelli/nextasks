@@ -26,7 +26,12 @@ export async function GET(request: Request) {
   });
 
   if (!routine) {
-    return NextResponse.json({ routine: null, progress: [], period: null });
+    return NextResponse.json({
+      routine: null,
+      progress: [],
+      period: null,
+      daysWithRecords: 0,
+    });
   }
 
   const frequency = asFrequency(routine.frequency);
@@ -42,6 +47,25 @@ export async function GET(request: Request) {
   ).length;
 
   const today = startOfDayUtc(new Date(), tzOffsetMinutes);
+
+  // Dias com registro desde a criação da rotina: quantos dias no passado têm
+  // ao menos um bloco confirmável aplicável (dias que aparecem no gráfico).
+  let daysWithRecords = 0;
+  for (
+    let day = startOfDayUtc(routine.createdAt, tzOffsetMinutes);
+    day.getTime() <= today.getTime();
+    day.setDate(day.getDate() + 1)
+  ) {
+    const weekday = localWeekday(day, tzOffsetMinutes);
+    const hasConfirmable = timeBlocks.some(
+      (block) =>
+        block.confirmation !== "none" &&
+        (frequency === "daily" ||
+          localWeekday(block.start, tzOffsetMinutes) === weekday),
+    );
+    if (hasConfirmable) daysWithRecords += 1;
+  }
+
   const periodStart = new Date(today.getTime() - (days - 1) * 86_400_000);
   // A rotina começa a valer na data de criação: nada antes dela aparece.
   const start =
@@ -133,5 +157,6 @@ export async function GET(request: Request) {
     confirmableBlockCount,
     progress,
     period: periodForFrequency(frequency, today, tzOffsetMinutes),
+    daysWithRecords,
   });
 }

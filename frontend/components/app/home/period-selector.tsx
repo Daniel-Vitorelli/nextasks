@@ -10,15 +10,27 @@ const PERIODS = [7, 15, 30, 60] as const;
 interface PeriodSelectorProps {
   value: number;
   onChange: (days: number) => void;
+  /** Limita as opções aos períodos ≤ o número de dias registrados. */
+  maxDays?: number;
   className?: string;
 }
 
 export function PeriodSelector({
   value,
   onChange,
+  maxDays,
   className,
 }: PeriodSelectorProps) {
   const t = useTranslations("app.home.progressChart");
+
+  const availablePeriods =
+    maxDays === undefined
+      ? PERIODS
+      : PERIODS.filter((days) => days <= maxDays);
+
+  if (availablePeriods.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -26,7 +38,7 @@ export function PeriodSelector({
       role="group"
       aria-label={t("periodLabel")}
     >
-      {PERIODS.map((days) => (
+      {availablePeriods.map((days) => (
         <Button
           key={days}
           size="sm"

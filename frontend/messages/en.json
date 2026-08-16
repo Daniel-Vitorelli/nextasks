@@ -128,6 +128,10 @@
         "title": "No active routine",
         "description": "Activate a routine in the dashboard to see your progress and current schedule here."
       },
+      "emptyRoutine": {
+        "title": "Nothing to show yet",
+        "description": "Add time blocks to your routine in the dashboard to track your progress and see your schedule here."
+      },
       "currentBlock": {
         "label": "Now",
         "allDay": "All day",
