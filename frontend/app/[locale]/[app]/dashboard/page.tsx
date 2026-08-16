@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 
 import { RoutinesSection } from "@/components/dashboard/routines/routines-section";
+import { TasksSection } from "@/components/dashboard/tasks/tasks-section";
 import { useSession } from "@/components/session-provider";
 
 export default function DashboardPage() {
@@ -24,6 +25,8 @@ export default function DashboardPage() {
       </header>
 
       <RoutinesSection />
+
+      <TasksSection />
     </main>
   );
 }

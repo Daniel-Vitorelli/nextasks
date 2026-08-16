@@ -108,3 +108,71 @@ export interface ProgressResponse {
   progress: DailyProgress[];
   period: Period | null;
 }
+
+/** Priority levels of a task (1 = lowest, 6 = highest) */
+export const TASK_PRIORITIES = [1, 2, 3, 4, 5, 6] as const;
+export type TaskPriority = (typeof TASK_PRIORITIES)[number];
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  priority: TaskPriority;
+  done: boolean;
+  createdAt: string;
+}
+
+/** Task form values (dueDate as yyyy-mm-dd string for the date input) */
+export interface TaskFormValues {
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: TaskPriority;
+}
+
+/** Validated task payload accepted by the API (dueDate as a Date) */
+export interface TaskPayload {
+  title: string;
+  description: string | null;
+  dueDate: Date | null;
+  priority: TaskPriority;
+}
+
+/** Partial task patch (all fields optional) */
+export interface TaskPatch {
+  title?: string;
+  description?: string | null;
+  dueDate?: Date | null;
+  priority?: TaskPriority;
+  done?: boolean;
+}
+
+/** A subtask node of the task tree (parentId null = direct child of the task) */
+export interface Subtask {
+  id: string;
+  title: string;
+  description: string | null;
+  parentId: string | null;
+  done: boolean;
+  children: Subtask[];
+}
+
+/** Subtask form values */
+export interface SubtaskFormValues {
+  title: string;
+  description: string;
+}
+
+/** Validated subtask payload accepted by the API */
+export interface SubtaskPayload {
+  title: string;
+  description: string | null;
+}
+
+/** Partial subtask patch (all fields optional) */
+export interface SubtaskPatch {
+  title?: string;
+  description?: string | null;
+  done?: boolean;
+}

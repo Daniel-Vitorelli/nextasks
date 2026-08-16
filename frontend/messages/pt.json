@@ -216,6 +216,91 @@
         "invalidTime": "Horário inválido (ex.: 3 PM ou 15:00)",
         "endBeforeStart": "O fim deve ser depois do início"
       }
+    },
+    "tasks": {
+      "title": "Tarefas",
+      "description": "Crie e gerencie suas tarefas.",
+      "create": "Nova tarefa",
+      "priority_1": "Muito baixa",
+      "priority_2": "Baixa",
+      "priority_3": "Média",
+      "priority_4": "Alta",
+      "priority_5": "Muito alta",
+      "priority_6": "Urgente",
+      "showAll": "Ver todas ({count})",
+      "showLess": "Ver menos",
+      "empty": {
+        "title": "Nenhuma tarefa ainda",
+        "description": "Crie sua primeira tarefa para começar."
+      },
+      "dialog": {
+        "title": "Criar nova tarefa",
+        "description": "Preencha os dados da tarefa.",
+        "editTitle": "Editar tarefa",
+        "editDescription": "Atualize os dados da tarefa.",
+        "titleLabel": "Título",
+        "titlePlaceholder": "Ex.: Enviar relatório",
+        "titleRequired": "Digite um título para a tarefa.",
+        "descriptionLabel": "Descrição",
+        "descriptionPlaceholder": "Ex.: Revisar e enviar o relatório semanal.",
+        "dueDateLabel": "Data limite",
+        "priorityLabel": "Prioridade",
+        "cancel": "Cancelar",
+        "submit": "Criar",
+        "submitEdit": "Salvar"
+      },
+      "actions": {
+        "more": "Saiba mais",
+        "edit": "Editar",
+        "duplicate": "Duplicar",
+        "duplicateSuffix": "cópia",
+        "delete": "Excluir",
+        "toggleDone": "Alternar conclusão"
+      },
+      "done": "Concluída",
+      "open": "Pendente",
+      "deleteDialog": {
+        "title": "Excluir tarefa",
+        "description": "Tem certeza que deseja excluir \"{title}\"? Essa ação não pode ser desfeita.",
+        "cancel": "Cancelar",
+        "confirm": "Excluir"
+      },
+      "details": {
+        "descriptionLabel": "Descrição",
+        "noDescription": "Sem descrição.",
+        "dueDateLabel": "Data limite",
+        "priorityLabel": "Prioridade",
+        "statusLabel": "Status"
+      },
+      "subtasks": {
+        "title": "Sub-tarefas",
+        "create": "Nova",
+        "empty": "Nenhuma sub-tarefa ainda. Clique em \"Nova\" para começar.",
+        "createTitle": "Nova sub-tarefa",
+        "editTitle": "Editar sub-tarefa",
+        "createDescription": "Sub-tarefa de \"{title}\".",
+        "titleLabel": "Título",
+        "titlePlaceholder": "Ex.: Preparar material",
+        "titleRequired": "Digite um título para a sub-tarefa.",
+        "descriptionLabel": "Descrição",
+        "descriptionPlaceholder": "Ex.: Reunir documentos e anotações.",
+        "cancel": "Cancelar",
+        "submit": "Criar",
+        "submitEdit": "Salvar",
+        "addChild": "Adicionar sub-tarefa",
+        "edit": "Editar",
+        "delete": "Excluir",
+        "collapseExpand": "Expandir/recolher",
+        "toggleDone": {
+          "do": "Marcar sub-tarefa como concluída",
+          "undo": "Reabrir sub-tarefa"
+        },
+        "deleteDialog": {
+          "title": "Excluir sub-tarefa",
+          "description": "Tem certeza que deseja excluir \"{title}\" e todas as sub-tarefas abaixo dela? Essa ação não pode ser desfeita.",
+          "confirm": "Excluir"
+        }
+      }
     }
   },
   "sign-up": {

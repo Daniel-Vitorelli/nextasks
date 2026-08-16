@@ -216,6 +216,91 @@
         "invalidTime": "Invalid time (e.g., 3 PM or 15:00)",
         "endBeforeStart": "End time must be after start time"
       }
+    },
+    "tasks": {
+      "title": "Tasks",
+      "description": "Create and manage your tasks.",
+      "create": "New task",
+      "priority_1": "Very low",
+      "priority_2": "Low",
+      "priority_3": "Medium",
+      "priority_4": "High",
+      "priority_5": "Very high",
+      "priority_6": "Urgent",
+      "showAll": "View all ({count})",
+      "showLess": "Show less",
+      "empty": {
+        "title": "No tasks yet",
+        "description": "Create your first task to get started."
+      },
+      "dialog": {
+        "title": "Create new task",
+        "description": "Fill in the task details.",
+        "editTitle": "Edit task",
+        "editDescription": "Update the task details.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g., Send the report",
+        "titleRequired": "Enter a title for the task.",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "e.g., Review and send the weekly report.",
+        "dueDateLabel": "Due date",
+        "priorityLabel": "Priority",
+        "cancel": "Cancel",
+        "submit": "Create",
+        "submitEdit": "Save"
+      },
+      "actions": {
+        "more": "Learn more",
+        "edit": "Edit",
+        "duplicate": "Duplicate",
+        "duplicateSuffix": "copy",
+        "delete": "Delete",
+        "toggleDone": "Toggle done"
+      },
+      "done": "Done",
+      "open": "Pending",
+      "deleteDialog": {
+        "title": "Delete task",
+        "description": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      },
+      "details": {
+        "descriptionLabel": "Description",
+        "noDescription": "No description.",
+        "dueDateLabel": "Due date",
+        "priorityLabel": "Priority",
+        "statusLabel": "Status"
+      },
+      "subtasks": {
+        "title": "Subtasks",
+        "create": "New",
+        "empty": "No subtasks yet. Click \"New\" to get started.",
+        "createTitle": "New subtask",
+        "editTitle": "Edit subtask",
+        "createDescription": "Subtask of \"{title}\".",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g., Prepare materials",
+        "titleRequired": "Enter a title for the subtask.",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "e.g., Gather documents and notes.",
+        "cancel": "Cancel",
+        "submit": "Create",
+        "submitEdit": "Save",
+        "addChild": "Add subtask",
+        "edit": "Edit",
+        "delete": "Delete",
+        "collapseExpand": "Expand/collapse",
+        "toggleDone": {
+          "do": "Mark subtask as done",
+          "undo": "Reopen subtask"
+        },
+        "deleteDialog": {
+          "title": "Delete subtask",
+          "description": "Are you sure you want to delete \"{title}\" and all subtasks below it? This action cannot be undone.",
+          "confirm": "Delete"
+        }
+      }
     }
   },
   "sign-up": {
