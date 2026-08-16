@@ -217,7 +217,7 @@ A app roda em http://localhost:3000.
 | GET     | `/api/connections` | Catálogo de conexões (tarefas, sub-tarefas, blocos com dia da semana local e conexões com `confirmedCount`). Query: `tzOffset` |
 | POST    | `/api/connections` | Cria uma conexão (`{ taskId | subtaskId, timeBlockId, requiredCount?, dayFilter? }`) |
 | PATCH   | `/api/connections/:id` | Atualiza `requiredCount`/`dayFilter` de uma conexão |
-| DELETE  | `/api/connections/:id` | Remove uma conexão |
+| DELETE  | `/api/connections/:id` | Remove uma conexão; se era o último obstáculo insatisfeito, a entidade completa (propagação no delete) |
 | POST    | `/api/auth/[...all]` | Endpoints de autenticação (better-auth) |
 
 Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/validation/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/validation/time-blocks.ts`); as tarefas validam com `parseTaskInput`/`parseTaskPatch` (`frontend/lib/validation/tasks.ts`); as sub-tarefas com `parseSubtaskInput`/`parseSubtaskPatch` (`frontend/lib/validation/subtasks.ts`); as conexões com `parseConnectionInput`/`parseConnectionPatch`/`parseDayFilter` (`frontend/lib/validation/connections.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/server/completions.ts`. A cascata de conclusão das tarefas/sub-tarefas vive em `frontend/lib/server/subtask-cascade.ts` e as conexões em `frontend/lib/server/connections.ts`.

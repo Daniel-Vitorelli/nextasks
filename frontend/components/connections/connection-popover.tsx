@@ -273,7 +273,7 @@ function ConnectionRow({
       <label className="flex cursor-pointer items-center gap-2 py-0.5">
         <Checkbox
           checked={!!connection}
-          disabled={disabled}
+          disabled={disabled && !connection}
           onCheckedChange={onToggle}
           className="shrink-0"
         />

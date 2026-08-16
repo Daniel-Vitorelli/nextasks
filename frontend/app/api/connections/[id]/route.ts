@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/server/prisma";
 import { badRequest, notFound, parseTzOffset, requireUser, type RouteContext } from "@/lib/server/api";
 import {
-  completeEntitiesForBlock,
+  completeEntitiesForConnections,
   connectionInclude,
   isDayFilterSatisfiable,
   loadCompletionsByBlock,
@@ -68,10 +68,10 @@ export async function PATCH(
 
     // Ajuste (ex.: requiredCount reduzido) pode satisfazer a conexão agora:
     // propaga a conclusão para a entidade conectada.
-    await completeEntitiesForBlock(
+    await completeEntitiesForConnections(
       tx,
       user.id,
-      existing.timeBlockId,
+      [{ taskId: existing.taskId, subtaskId: existing.subtaskId }],
       tzOffsetMinutes,
     );
 
@@ -92,7 +92,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: RouteContext<{ id: string }>,
 ) {
   const { user, response } = await requireUser();
@@ -107,8 +107,21 @@ export async function DELETE(
     return notFound("Connection not found");
   }
 
-  // Remover a conexão não reverte conclusões já propagadas.
-  await prisma.taskBlockConnection.delete({ where: { id } });
+  const url = new URL(request.url);
+  const tzOffsetMinutes = parseTzOffset(url.searchParams.get("tzOffset"));
+
+  // Remover a conexão não reverte conclusões já propagadas, mas pode ser a
+  // última conexão insatisfeita: com as restantes satisfeitas, a entidade
+  // completa agora (mesma invariante dos blocos confirmados).
+  await prisma.$transaction(async (tx) => {
+    await tx.taskBlockConnection.delete({ where: { id } });
+    await completeEntitiesForConnections(
+      tx,
+      user.id,
+      [{ taskId: existing.taskId, subtaskId: existing.subtaskId }],
+      tzOffsetMinutes,
+    );
+  });
 
   return NextResponse.json({ ok: true });
 }

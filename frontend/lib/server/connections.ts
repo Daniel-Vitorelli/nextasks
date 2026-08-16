@@ -277,39 +277,34 @@ export async function confirmBlocksForDoneEntities(
 }
 
 /**
- * Bloco confirmado propaga para as entidades conectadas: conclui a tarefa ou
- * sub-tarefa (com cascata na árvore) somente quando TODAS as conexões da
- * entidade estiverem satisfeitas; e, para as entidades que de fato
- * transicionaram para concluídas, confirma os blocos conectados no período
- * atual (propagação unificada, sem inflação de contagens).
+ * Núcleo da propagação: avalia as entidades das conexões informadas (todas
+ * as conexões de cada entidade) e conclui as que transicionam quando TODAS
+ * estiverem satisfeitas; entidades concluídas confirmam os blocos conectados
+ * no período atual (propagação unificada, sem inflação de contagens).
  */
-export async function completeEntitiesForBlock(
+export async function completeEntitiesForConnections(
   tx: Tx,
   userId: string,
-  blockId: string,
+  connections: { taskId: string | null; subtaskId: string | null }[],
   tzOffsetMinutes: number,
   now: Date = new Date(),
 ): Promise<void> {
-  const blockConnections = await tx.taskBlockConnection.findMany({
-    where: { userId, timeBlockId: blockId },
-    select: { taskId: true, subtaskId: true },
-  });
-  if (blockConnections.length === 0) return;
-
   const taskIds = [
     ...new Set(
-      blockConnections
+      connections
         .map((c) => c.taskId)
         .filter((id): id is string => id !== null),
     ),
   ];
   const subtaskIds = [
     ...new Set(
-      blockConnections
+      connections
         .map((c) => c.subtaskId)
         .filter((id): id is string => id !== null),
     ),
   ];
+
+  if (taskIds.length === 0 && subtaskIds.length === 0) return;
 
   const entityConnections = await tx.taskBlockConnection.findMany({
     where: {
@@ -377,4 +372,33 @@ export async function completeEntitiesForBlock(
   for (const connection of connectionsToConfirm) {
     await confirmBlockForConnection(tx, connection, tzOffsetMinutes, now);
   }
+}
+
+/**
+ * Bloco confirmado propaga para as entidades conectadas: conclui a tarefa ou
+ * sub-tarefa (com cascata na árvore) somente quando TODAS as conexões da
+ * entidade estiverem satisfeitas; e, para as entidades que de fato
+ * transicionaram para concluídas, confirma os blocos conectados no período
+ * atual.
+ */
+export async function completeEntitiesForBlock(
+  tx: Tx,
+  userId: string,
+  blockId: string,
+  tzOffsetMinutes: number,
+  now: Date = new Date(),
+): Promise<void> {
+  const blockConnections = await tx.taskBlockConnection.findMany({
+    where: { userId, timeBlockId: blockId },
+    select: { taskId: true, subtaskId: true },
+  });
+  if (blockConnections.length === 0) return;
+
+  await completeEntitiesForConnections(
+    tx,
+    userId,
+    blockConnections,
+    tzOffsetMinutes,
+    now,
+  );
 }
