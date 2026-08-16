@@ -121,18 +121,18 @@
         },
         "progress": "Progresso",
         "noData": "Sem dados",
-        "noActiveRoutineTitle": "Nenhuma rotina ativa",
-        "noActiveRoutineDescription": "Ative uma rotina no painel para ver seu progresso aqui.",
         "emptyTitle": "Sem dados ainda",
         "emptyDescription": "Confirme blocos da rotina para ver seu progresso."
+      },
+      "noActiveRoutine": {
+        "title": "Nenhuma rotina ativa",
+        "description": "Ative uma rotina no painel para ver seu progresso e sua programação atual aqui."
       },
       "currentBlock": {
         "label": "Agora",
         "allDay": "Dia inteiro",
         "emptyTitle": "Nenhuma atividade no momento",
         "emptyDescription": "Seu próximo bloco aparecerá aqui automaticamente.",
-        "noRoutineTitle": "Nenhuma rotina ativa",
-        "noRoutineDescription": "Ative uma rotina no painel para ver sua programação atual.",
         "checklistLabel": "Feito",
         "scoreLabel": "Nota",
         "scoreValue": "{value}/10",

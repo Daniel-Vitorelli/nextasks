@@ -79,7 +79,9 @@ export default function HomePage() {
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const blocks = current?.blocks ?? [];
-  const routine = current?.routine ?? null;
+  const routine = current?.routine ?? progress?.routine ?? null;
+  const isPageLoading = isLoading || isProgressLoading;
+  const showProgressChart = !!progress && progress.confirmableBlockCount > 0;
 
   const handleConfirmed = (blockId: string) => {
     setCurrent((state) =>
@@ -105,90 +107,109 @@ export default function HomePage() {
         <p className="text-muted-foreground capitalize">{dateLabel}</p>
       </header>
 
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="space-y-0.5">
-            <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">
-              {t("progressChart.title")}
-            </p>
-            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              {t("progressChart.subtitle")}
-            </h2>
-          </div>
-          <PeriodSelector value={selectedDays} onChange={setSelectedDays} />
-        </div>
-
-        {isProgressLoading ? (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-border/60 bg-card">
-            <Spinner />
-          </div>
-        ) : progressError ? (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/50">
-            <p className="text-sm text-muted-foreground">{progressError}</p>
-          </div>
-        ) : !progress?.routine ? (
-          <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
-            <TrendingUp className="text-muted-foreground size-6 shrink-0" />
-            <div className="flex flex-col gap-0.5">
-              <h2 className="font-semibold">
-                {t("progressChart.noActiveRoutineTitle")}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                {t("progressChart.noActiveRoutineDescription")}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-border/60 bg-card p-4">
-            <ProgressChart
-              data={progress.progress}
-              locale={locale}
-              className="h-64"
-            />
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">
-          {t("currentBlock.label")}
-        </p>
-
-        {isLoading && !current ? (
-          <div className="flex items-center justify-center rounded-xl border border-border/60 bg-card p-8">
-            <Spinner />
-          </div>
-        ) : blocks.length > 0 && routine ? (
-          <ul className="space-y-3">
-            {blocks.map((block) => (
-              <CurrentBlockCard
-                key={block.id}
-                block={block}
-                routineName={routine.name}
-                timeFormatter={timeFormatter}
-                tzOffsetMinutes={tzOffsetMinutes}
-                onConfirmed={handleConfirmed}
-              />
-            ))}
-          </ul>
-        ) : (
+      {!isPageLoading && !routine ? (
+        <section>
           <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
             <CalendarClock className="text-muted-foreground size-6 shrink-0" />
             <div className="flex flex-col gap-0.5">
               <h2 className="font-semibold">
-                {routine
-                  ? t("currentBlock.emptyTitle")
-                  : t("currentBlock.noRoutineTitle")}
+                {t("noActiveRoutine.title")}
               </h2>
               <p className="text-muted-foreground text-sm">
-                {routine
-                  ? t("currentBlock.emptyDescription")
-                  : t("currentBlock.noRoutineDescription")}
+                {t("noActiveRoutine.description")}
               </p>
             </div>
           </div>
-        )}
-      </section>
+        </section>
+      ) : (
+        <>
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="space-y-0.5">
+                <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">
+                  {t("progressChart.title")}
+                </p>
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  {t("progressChart.subtitle")}
+                </h2>
+              </div>
+              {showProgressChart && (
+                <PeriodSelector
+                  value={selectedDays}
+                  onChange={setSelectedDays}
+                />
+              )}
+            </div>
+
+            {isProgressLoading ? (
+              <div className="flex h-64 items-center justify-center rounded-xl border border-border/60 bg-card">
+                <Spinner />
+              </div>
+            ) : progressError ? (
+              <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/50">
+                <p className="text-sm text-muted-foreground">{progressError}</p>
+              </div>
+            ) : !progress || progress.confirmableBlockCount === 0 ? (
+              <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
+                <TrendingUp className="text-muted-foreground size-6 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <h2 className="font-semibold">
+                    {t("progressChart.emptyTitle")}
+                  </h2>
+                  <p className="text-muted-foreground text-sm">
+                    {t("progressChart.emptyDescription")}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border/60 bg-card p-4">
+                <ProgressChart
+                  data={progress.progress}
+                  locale={locale}
+                  className="h-64"
+                />
+              </div>
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">
+              {t("currentBlock.label")}
+            </p>
+
+            {isLoading && !current ? (
+              <div className="flex items-center justify-center rounded-xl border border-border/60 bg-card p-8">
+                <Spinner />
+              </div>
+            ) : blocks.length > 0 && routine ? (
+              <ul className="space-y-3">
+                {blocks.map((block) => (
+                  <CurrentBlockCard
+                    key={block.id}
+                    block={block}
+                    routineName={routine.name}
+                    timeFormatter={timeFormatter}
+                    tzOffsetMinutes={tzOffsetMinutes}
+                    onConfirmed={handleConfirmed}
+                  />
+                ))}
+              </ul>
+            ) : (
+              <div className="flex items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-5">
+                <CalendarClock className="text-muted-foreground size-6 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <h2 className="font-semibold">
+                    {t("currentBlock.emptyTitle")}
+                  </h2>
+                  <p className="text-muted-foreground text-sm">
+                    {t("currentBlock.emptyDescription")}
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }

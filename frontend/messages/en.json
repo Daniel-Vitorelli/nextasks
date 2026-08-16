@@ -121,18 +121,18 @@
         },
         "progress": "Progress",
         "noData": "No data",
-        "noActiveRoutineTitle": "No active routine",
-        "noActiveRoutineDescription": "Activate a routine in the dashboard to see your progress here.",
         "emptyTitle": "No data yet",
         "emptyDescription": "Confirm routine blocks to see your progress."
+      },
+      "noActiveRoutine": {
+        "title": "No active routine",
+        "description": "Activate a routine in the dashboard to see your progress and current schedule here."
       },
       "currentBlock": {
         "label": "Now",
         "allDay": "All day",
         "emptyTitle": "Nothing happening right now",
         "emptyDescription": "Your next block will show up here automatically.",
-        "noRoutineTitle": "No active routine",
-        "noRoutineDescription": "Activate a routine in the dashboard to see your current schedule.",
         "checklistLabel": "Done",
         "scoreLabel": "Score",
         "scoreValue": "{value}/10",

@@ -105,6 +105,8 @@ export interface DailyProgress {
 /** Response of the routine progress endpoint */
 export interface ProgressResponse {
   routine: Routine | null;
+  /** Quantos blocos confirmaveis (checklist/nota) a rotina ativa tem no total. */
+  confirmableBlockCount: number;
   progress: DailyProgress[];
   period: Period | null;
 }

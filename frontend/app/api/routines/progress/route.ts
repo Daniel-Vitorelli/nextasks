@@ -36,6 +36,11 @@ export async function GET(request: Request) {
     orderBy: { start: "asc" },
   });
 
+  // Sem blocos confirmaveis na rotina, o grafico nao faz sentido.
+  const confirmableBlockCount = timeBlocks.filter(
+    (block) => block.confirmation !== "none",
+  ).length;
+
   const today = startOfDayUtc(new Date(), tzOffsetMinutes);
   const periodStart = new Date(today.getTime() - (days - 1) * 86_400_000);
   // A rotina começa a valer na data de criação: nada antes dela aparece.
@@ -125,6 +130,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     routine,
+    confirmableBlockCount,
     progress,
     period: periodForFrequency(frequency, today, tzOffsetMinutes),
   });
