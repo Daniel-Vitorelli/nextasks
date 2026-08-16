@@ -19,7 +19,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { TaskCard } from "@/components/dashboard/tasks/task-card";
 import { TaskDetailsDialog } from "@/components/dashboard/tasks/task-details-dialog";
 import { TaskDialog } from "@/components/dashboard/tasks/task-dialog";
-import { useTasks } from "@/components/dashboard/tasks/use-tasks";
+import { useTasks } from "@/hooks/use-tasks";
 import type { Task, TaskFormValues } from "@/types/domain";
 
 const INITIAL_VISIBLE = 2;

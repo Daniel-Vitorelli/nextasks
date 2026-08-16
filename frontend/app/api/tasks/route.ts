@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { parseTaskInput } from "@/lib/tasks";
+import { parseTaskInput } from "@/lib/validation/tasks";
 import { requireUser } from "@/lib/api";
 
 export async function GET() {

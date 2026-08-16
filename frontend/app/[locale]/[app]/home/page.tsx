@@ -1,25 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarClock, TrendingUp } from "lucide-react";
 
-import { useSession } from "@/components/session-provider";
+import { useSession } from "@/components/app/session-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
 import { PeriodSelector } from "@/components/app/home/period-selector";
 import { ProgressChart } from "@/components/app/home/progress-chart";
 import { TasksSection } from "@/components/app/home/tasks-section";
-import { useRoutineProgress } from "@/components/app/home/use-routine-progress";
-import type { Period, TimeBlock, Routine } from "@/types/domain";
+import { useCurrentBlock } from "@/hooks/use-current-block";
+import { useRoutineProgress } from "@/hooks/use-routine-progress";
 
-interface CurrentBlockResponse {
-  routine: Routine | null;
-  blocks: TimeBlock[];
-  period: Period | null;
-}
-
-const REFRESH_INTERVAL_MS = 60_000;
 const DEFAULT_DAYS = 30;
 
 export default function HomePage() {
@@ -42,8 +35,7 @@ export default function HomePage() {
 
   const tzOffsetMinutes = new Date().getTimezoneOffset();
 
-  const [current, setCurrent] = useState<CurrentBlockResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { current, isLoading, removeBlock } = useCurrentBlock();
   const [selectedDays, setSelectedDays] = useState(DEFAULT_DAYS);
 
   const {
@@ -52,32 +44,6 @@ export default function HomePage() {
     error: progressError,
     refetch: refetchProgress,
   } = useRoutineProgress(selectedDays);
-
-  const loadCurrentBlock = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `/api/routines/current-block?tzOffset=${tzOffsetMinutes}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to load current block");
-      }
-
-      setCurrent((await response.json()) as CurrentBlockResponse);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [tzOffsetMinutes]);
-
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    void loadCurrentBlock();
-    const interval = setInterval(loadCurrentBlock, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [loadCurrentBlock]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const blocks = current?.blocks ?? [];
   const routine = current?.routine ?? progress?.routine ?? null;
@@ -103,14 +69,7 @@ export default function HomePage() {
       : selectedDays;
 
   const handleConfirmed = (blockId: string) => {
-    setCurrent((state) =>
-      state
-        ? {
-            ...state,
-            blocks: state.blocks.filter((block) => block.id !== blockId),
-          }
-        : state,
-    );
+    removeBlock(blockId);
     void refetchProgress();
   };
 

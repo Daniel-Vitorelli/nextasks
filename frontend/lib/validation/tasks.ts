@@ -1,22 +1,17 @@
-import type { TaskPayload, TaskPatch, TaskPriority } from "@/types/domain";
+import type { TaskPatch, TaskPayload, TaskPriority } from "@/types/domain";
 import { TASK_PRIORITIES } from "@/types/domain";
+import { dateFromString, trimmedStringOrNull } from "./helpers";
 
 export function parseTaskInput(value: unknown): TaskPayload | null {
   const body = (value ?? {}) as Record<string, unknown>;
 
-  const title = typeof body.title === "string" ? body.title.trim() : "";
+  const title = trimmedStringOrNull(body.title);
   if (!title) return null;
 
   return {
     title,
-    description:
-      typeof body.description === "string" && body.description.trim()
-        ? body.description.trim()
-        : null,
-    dueDate:
-      typeof body.dueDate === "string" && !Number.isNaN(Date.parse(body.dueDate))
-        ? new Date(body.dueDate)
-        : null,
+    description: trimmedStringOrNull(body.description),
+    dueDate: dateFromString(body.dueDate),
     priority: isTaskPriority(body.priority) ? body.priority : 3,
   };
 }
@@ -36,10 +31,7 @@ export function parseTaskPatch(value: unknown): TaskPatch | null {
   }
 
   if (typeof body.dueDate === "string") {
-    patch.dueDate =
-      body.dueDate && !Number.isNaN(Date.parse(body.dueDate))
-        ? new Date(body.dueDate)
-        : null;
+    patch.dueDate = dateFromString(body.dueDate);
   }
 
   if (isTaskPriority(body.priority)) {

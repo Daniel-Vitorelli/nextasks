@@ -13,7 +13,7 @@ import { WeekView } from "@/components/calendar/week-view";
 import type { CalendarEvent, ViewType } from "@/types/calendar";
 import type { Routine } from "@/types/domain";
 import { applyTimeOfDay, createBlockStub, toCalendarEvent } from "@/lib/time-blocks";
-import { useRoutineTimeBlocks } from "./use-routine-time-blocks";
+import { useRoutineTimeBlocks } from "@/hooks/use-routine-time-blocks";
 
 interface RoutineCalendarDialogProps {
   routine: Routine | null;

@@ -18,5 +18,3 @@ export const createTaskSchema = (
       .max(TASK_PRIORITIES[TASK_PRIORITIES.length - 1]),
   }) as unknown as z.ZodType<TaskFormValues, TaskFormValues>;
 };
-
-export type TaskSchema = ReturnType<typeof createTaskSchema>;

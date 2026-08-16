@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { parseTimeBlockInput } from "@/lib/time-blocks";
+import { parseTimeBlockInput } from "@/lib/validation/time-blocks";
 import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/api";
 
 async function getOwnedRoutine(id: string, userId: string) {

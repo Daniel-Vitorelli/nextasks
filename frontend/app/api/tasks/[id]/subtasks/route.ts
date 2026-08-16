@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { parseSubtaskInput } from "@/lib/subtasks";
+import { parseSubtaskInput } from "@/lib/validation/subtasks";
 import {
   badRequest,
   notFound,

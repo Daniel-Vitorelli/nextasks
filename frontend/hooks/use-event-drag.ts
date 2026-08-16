@@ -5,6 +5,18 @@ import type {
   CalendarEvent,
   EventDragState,
 } from "@/types/calendar";
+import {
+  addMinutesToDate,
+  AUTO_SCROLL_MAX_SPEED,
+  AUTO_SCROLL_ZONE_PX,
+  clamp,
+  DRAG_THRESHOLD_PX,
+  EDGE_NAV_DELAY_MS,
+  EDGE_NAV_REPEAT_MS,
+  EDGE_ZONE_PX,
+  snapToGrid,
+  TOUCH_SLOP_PX,
+} from "@/lib/calendar/interaction";
 
 interface UseEventDragOptions {
   hourHeight: number;
@@ -25,33 +37,6 @@ interface UseEventDragReturn {
     event: CalendarEvent,
     targetEl?: HTMLElement,
   ) => void;
-}
-
-const DRAG_THRESHOLD_PX = 4;
-/** Movement needed for a finger drag to start (mouse uses DRAG_THRESHOLD_PX). */
-const TOUCH_SLOP_PX = 10;
-const SNAP_MINUTES = 15;
-const EDGE_ZONE_PX = 40;
-const EDGE_NAV_DELAY_MS = 500;
-const EDGE_NAV_REPEAT_MS = 800;
-const AUTO_SCROLL_ZONE_PX = 60;
-const AUTO_SCROLL_MAX_SPEED = 12;
-
-function snapToGrid(minutes: number): number {
-  return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
-}
-
-function addMinutesToDate(date: Date, minutes: number): Date {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  result.setMinutes(minutes);
-  return result;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
 }
 
 interface DragInfo {
@@ -233,10 +218,7 @@ export function useEventDrag({
         e.clientX - containerRect.left - drag.offsetWithinEventX;
       const rawMinutes = (absoluteY / hourHeightRef.current) * 60;
       const snappedStartMinutes = snapToGrid(rawMinutes);
-      const clampedStart = Math.max(
-        0,
-        Math.min(snappedStartMinutes, 1440 - drag.durationMinutes),
-      );
+      const clampedStart = clamp(snappedStartMinutes, 0, 1440 - drag.durationMinutes);
 
       // Column detection — based on raw cursor position over the grid
       const colWidth = dayColumnWidthRef.current;

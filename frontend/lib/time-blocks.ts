@@ -1,117 +1,5 @@
-import type { CalendarEvent, EventColor, EventConfirmation } from "@/types/calendar";
-import type {
-  ParsedTime,
-  TimeBlock,
-  TimeBlockInput,
-  TimeBlockPatch,
-  TimeBlockPatchPayload,
-  TimeBlockPayload,
-} from "@/types/domain";
-
-export const EVENT_COLORS: EventColor[] = [
-  "red",
-  "orange",
-  "yellow",
-  "green",
-  "blue",
-  "purple",
-  "gray",
-];
-
-export const CONFIRMATION_OPTIONS: {
-  value: EventConfirmation;
-}[] = [
-  { value: "none" },
-  { value: "checklist" },
-  { value: "score" },
-];
-
-export function parseTimeBlockInput(value: unknown): TimeBlockPayload | null {
-  const body = (value ?? {}) as TimeBlockInput;
-
-  const title = typeof body.title === "string" ? body.title.trim() : "";
-  const start =
-    typeof body.start === "string" &&
-    !Number.isNaN(Date.parse(body.start)) &&
-    new Date(body.start as string);
-  const end =
-    typeof body.end === "string" &&
-    !Number.isNaN(Date.parse(body.end)) &&
-    new Date(body.end as string);
-
-  if (!title) return null;
-  if (!(start instanceof Date) || !(end instanceof Date)) return null;
-  const isAllDay = body.isAllDay === true;
-  // All-day 00:00-00:00 e valido; caso contrario o fim deve ser depois.
-  if (end.getTime() < start.getTime() || (end.getTime() === start.getTime() && !isAllDay)) return null;
-
-  return {
-    title,
-    description:
-      typeof body.description === "string"
-        ? body.description.trim() || null
-        : null,
-    start,
-    end,
-    isAllDay,
-    color: isEventColor(body.color) ? body.color : "green",
-    confirmation: isEventConfirmation(body.confirmation)
-      ? body.confirmation
-      : "none",
-  };
-}
-
-export function parseTimeBlockPatch(value: unknown): TimeBlockPatch | null {
-  const body = (value ?? {}) as TimeBlockInput;
-  const patch: TimeBlockPatch = {};
-
-  if (typeof body.title === "string") {
-    const title = body.title.trim();
-    if (!title) return null;
-    patch.title = title;
-  }
-
-  if (typeof body.description === "string") {
-    patch.description = body.description.trim() || null;
-  }
-
-  if (typeof body.start === "string" && !Number.isNaN(Date.parse(body.start))) {
-    patch.start = new Date(body.start as string);
-  }
-
-  if (typeof body.end === "string" && !Number.isNaN(Date.parse(body.end))) {
-    patch.end = new Date(body.end as string);
-  }
-
-  if (typeof body.isAllDay === "boolean") {
-    patch.isAllDay = body.isAllDay;
-  }
-
-  if (isEventColor(body.color)) {
-    patch.color = body.color;
-  }
-
-  if (isEventConfirmation(body.confirmation)) {
-    patch.confirmation = body.confirmation;
-  }
-
-  if (patch.start && patch.end && (patch.end.getTime() < patch.start.getTime() || (patch.end.getTime() === patch.start.getTime() && patch.isAllDay !== true))) {
-    return null;
-  }
-
-  return patch;
-}
-
-function isEventColor(value: unknown): value is EventColor {
-  return typeof value === "string" && EVENT_COLORS.includes(value as EventColor);
-}
-
-function isEventConfirmation(value: unknown): value is EventConfirmation {
-  return (
-    typeof value === "string" &&
-    CONFIRMATION_OPTIONS.some((option) => option.value === value)
-  );
-}
+import type { CalendarEvent, CalendarEventPatch } from "@/types/calendar";
+import type { ParsedTime, TimeBlock } from "@/types/domain";
 
 export function toCalendarEvent(block: TimeBlock): CalendarEvent {
   return {
@@ -126,7 +14,7 @@ export function toCalendarEvent(block: TimeBlock): CalendarEvent {
   };
 }
 
-export function fromCalendarEvent(event: CalendarEvent): TimeBlockPatchPayload {
+export function fromCalendarEvent(event: CalendarEvent): CalendarEventPatch {
   return {
     title: event.title,
     description: event.description ?? undefined,

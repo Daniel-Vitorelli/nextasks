@@ -7,7 +7,8 @@ import { Check, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, EventColor } from "@/types/calendar";
-import { EVENT_COLORS, colorSwatchClass } from "./calendar-event-color";
+import { EVENT_COLORS } from "@/lib/calendar/event-constants";
+import { colorSwatchClass } from "./calendar-event-color";
 
 interface EventContextMenuProps {
   event: CalendarEvent;

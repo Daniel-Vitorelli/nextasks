@@ -1,14 +1,5 @@
 import type { EventColor } from "@/types/calendar";
-
-export const EVENT_COLORS: EventColor[] = [
-  "red",
-  "orange",
-  "yellow",
-  "green",
-  "blue",
-  "purple",
-  "gray",
-];
+import { EVENT_COLORS } from "@/lib/calendar/event-constants";
 
 export const colorSwatchClass: Record<EventColor, string> = {
   red: "bg-event-red-border",

@@ -1,4 +1,5 @@
 import type { Duration, Frequency, RoutinePayload } from "@/types/domain";
+import { dateFromString, trimmedStringOrNull } from "./helpers";
 
 export const FREQUENCIES: readonly Frequency[] = ["daily", "weekly"];
 export const DURATIONS: readonly Duration[] = ["indefinite", "until"];
@@ -10,7 +11,7 @@ type ParseRoutineResult =
 export function parseRoutineInput(value: unknown): ParseRoutineResult {
   const body = (value ?? {}) as Record<string, unknown>;
 
-  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const name = trimmedStringOrNull(body.name);
   if (!name) {
     return { ok: false, error: "Name is required" };
   }
@@ -18,22 +19,14 @@ export function parseRoutineInput(value: unknown): ParseRoutineResult {
   const frequency: Frequency = body.frequency === "weekly" ? "weekly" : "daily";
   const duration: Duration = body.duration === "until" ? "until" : "indefinite";
 
-  const hasEndDate =
-    duration === "until" &&
-    typeof body.endDate === "string" &&
-    !Number.isNaN(Date.parse(body.endDate));
-
   return {
     ok: true,
     data: {
       name,
-      description:
-        typeof body.description === "string" && body.description.trim()
-          ? body.description.trim()
-          : null,
+      description: trimmedStringOrNull(body.description),
       frequency,
       duration,
-      endDate: hasEndDate ? new Date(body.endDate as string) : null,
+      endDate: duration === "until" ? dateFromString(body.endDate) : null,
     },
   };
 }

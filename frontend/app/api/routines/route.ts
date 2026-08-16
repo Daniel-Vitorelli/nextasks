@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { parseRoutineInput } from "@/lib/routines";
+import { parseRoutineInput } from "@/lib/validation/routines";
 import { requireUser } from "@/lib/api";
 
 export async function GET() {

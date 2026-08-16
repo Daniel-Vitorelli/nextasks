@@ -12,7 +12,7 @@ import {
 } from "@/schemas/time-block-schema";
 import type { CalendarEvent } from "@/types/calendar";
 import { useFieldErrors } from "@/hooks/use-field-errors";
-import { formatTimeDisplay } from "./calendar-event-time";
+import { formatTimeDisplay } from "@/components/calendar/calendar-event-time";
 
 function toDefaultFormValues(event: CalendarEvent): TimeBlockFormValues {
   return {

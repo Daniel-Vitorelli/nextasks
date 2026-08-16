@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { parseTimeBlockPatch } from "@/lib/time-blocks";
+import { parseTimeBlockPatch } from "@/lib/validation/time-blocks";
 import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/api";
 
 async function getOwnedBlock(id: string, blockId: string, userId: string) {

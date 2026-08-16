@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { RoutinesSection } from "@/components/dashboard/routines/routines-section";
 import { TasksSection } from "@/components/dashboard/tasks/tasks-section";
-import { useSession } from "@/components/session-provider";
+import { useSession } from "@/components/app/session-provider";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");

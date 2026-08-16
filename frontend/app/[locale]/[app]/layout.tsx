@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { AppDock } from "@/components/app-dock";
-import { SessionProvider } from "@/components/session-provider";
+import { AppDock } from "@/components/app/app-dock";
+import { SessionProvider } from "@/components/app/session-provider";
 import type { ReactNode } from "react";
 
 

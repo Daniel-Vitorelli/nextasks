@@ -2,13 +2,24 @@
  * Domain types shared across the app (routines, time blocks, completions).
  */
 
-import type { CalendarEvent, EventColor, EventConfirmation } from "./calendar";
-
 /** How often a routine repeats */
 export type Frequency = "daily" | "weekly";
 
 /** How long a routine stays active */
 export type Duration = "indefinite" | "until";
+
+/** Predefined colors for time blocks */
+export type EventColor =
+  | "red"
+  | "orange"
+  | "yellow"
+  | "green"
+  | "blue"
+  | "purple"
+  | "gray";
+
+/** How a time block's completion is confirmed (checklist or score tracking) */
+export type EventConfirmation = "none" | "checklist" | "score";
 
 export interface Routine {
   id: string;
@@ -79,9 +90,6 @@ export interface TimeBlockPatch {
   color?: EventColor;
   confirmation?: EventConfirmation;
 }
-
-/** All CalendarEvent fields except id (what a block patch can carry) */
-export type TimeBlockPatchPayload = Omit<CalendarEvent, "id">;
 
 export interface ParsedTime {
   hours: number;

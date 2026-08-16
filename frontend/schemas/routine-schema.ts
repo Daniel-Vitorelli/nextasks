@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import z from "zod";
 
-import { DURATIONS, FREQUENCIES } from "@/lib/routines";
+import { DURATIONS, FREQUENCIES } from "@/lib/validation/routines";
 
 export const createRoutineSchema = (t: ReturnType<typeof useTranslations>) => {
   return z
@@ -22,5 +22,3 @@ export const createRoutineSchema = (t: ReturnType<typeof useTranslations>) => {
       }
     });
 };
-
-export type RoutineSchema = ReturnType<typeof createRoutineSchema>;

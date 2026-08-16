@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { parseSubtaskPatch } from "@/lib/subtasks";
+import { parseSubtaskPatch } from "@/lib/validation/subtasks";
 import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/api";
 
 async function getOwnedSubtask(id: string, userId: string) {

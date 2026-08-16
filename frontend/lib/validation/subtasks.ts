@@ -1,17 +1,15 @@
-import type { SubtaskPayload, SubtaskPatch } from "@/types/domain";
+import type { SubtaskPatch, SubtaskPayload } from "@/types/domain";
+import { trimmedStringOrNull } from "./helpers";
 
 export function parseSubtaskInput(value: unknown): SubtaskPayload | null {
   const body = (value ?? {}) as Record<string, unknown>;
 
-  const title = typeof body.title === "string" ? body.title.trim() : "";
+  const title = trimmedStringOrNull(body.title);
   if (!title) return null;
 
   return {
     title,
-    description:
-      typeof body.description === "string" && body.description.trim()
-        ? body.description.trim()
-        : null,
+    description: trimmedStringOrNull(body.description),
   };
 }
 

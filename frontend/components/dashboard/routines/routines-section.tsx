@@ -20,7 +20,7 @@ import { RoutineCard } from "@/components/dashboard/routines/routine-card";
 import { RoutineCalendarDialog } from "@/components/dashboard/routines/routine-calendar-dialog";
 import { RoutineDialog } from "@/components/dashboard/routines/routine-dialog";
 import type { Routine, RoutineFormValues } from "@/types/domain";
-import { useRoutines } from "./use-routines";
+import { useRoutines } from "@/hooks/use-routines";
 
 const INITIAL_VISIBLE = 2;
 

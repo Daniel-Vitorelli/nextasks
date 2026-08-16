@@ -43,14 +43,14 @@ components/dashboard/tasks/
   subtask-tree.tsx          # árvore recursiva de sub-tarefas (expandir/recolher, criar filho, editar, excluir)
   subtask-dialog.tsx        # dialog criar/editar sub-tarefa (título, descrição)
   task-priority.ts          # cores/classes das 6 prioridades
-  use-tasks.ts              # hook de carregamento e mutações
-  use-subtasks.ts           # hook da árvore de sub-tarefas (mutações otimistas)
-components/app/home/        # página inicial da área autenticada
-  current-block-card.tsx    # card do bloco atual com confirmação (checkbox/nota)
-  progress-chart.tsx        # area chart (recharts + ChartContainer do shadcn)
-  period-selector.tsx       # seletor 7/15/30/60 dias do gráfico
-  use-routine-progress.ts   # hook que carrega o progresso (refetch a cada confirmação)
-  tasks-section.tsx         # seção de tarefas: tarefa atual + sub-tarefas + prévia das próximas
+components/app/             # área autenticada (dock, sessão e páginas do app)
+  app-dock.tsx              # dock de navegação (Painel, Social, Home, IA, Configurações)
+  session-provider.tsx      # provider da sessão + hook useSession
+  home/                     # página inicial da área autenticada
+    current-block-card.tsx  # card do bloco atual com confirmação (checkbox/nota)
+    progress-chart.tsx      # area chart (recharts + ChartContainer do shadcn)
+    period-selector.tsx     # seletor 7/15/30/60 dias do gráfico
+    tasks-section.tsx       # seção de tarefas: tarefa atual + sub-tarefas + prévia das próximas
 components/calendar/        # calendário (semanal): grid, eventos, overlays de drag/resize
   week-view.tsx             # componente principal (semana/dia, scroll horizontal, navegação)
   week-view-grid.tsx        # grid de horas×dias + colunas de eventos
@@ -61,10 +61,9 @@ components/calendar/        # calendário (semanal): grid, eventos, overlays de 
   day-events-column.tsx     # coluna de um dia: renderiza/bloco redimensionando
   week-view-grid-overlays.tsx # overlays de drag/resize (placeholder, cópia flutuante)
   event-detail-panel.tsx    # popover de edição inline (título, horário, cor, all-day)
-  use-event-detail-form.ts  # hook do form do painel (commit no blur, Enter/ESC)
   event-detail-popover.tsx  # popover com ancoragem no boundary do calendário
   event-context-menu.tsx    # menu de contexto (cor, excluir)
-  calendar-event-color.ts   # cores dos eventos (EVENT_COLORS, classes)
+  calendar-event-color.ts   # classes de cor dos eventos (cores vêm de lib/calendar)
   calendar-event-time.ts    # formatação de hora/duração
   week-view-utils.ts        # constantes de layout + geradores de dias/horas
   week-view-time-axis.tsx   # eixo de horas
@@ -72,9 +71,11 @@ components/calendar/        # calendário (semanal): grid, eventos, overlays de 
   calendar-day-headers.tsx  # cabeçalho dos dias
   week-view-types.ts        # tipos compartilhados (WeekViewProps, events, etc.)
 components/ui               # primitivos shadcn (button, dialog, dropdown-menu, popover, switch, chart, ...)
-hooks/                      # use-event-drag, use-event-resize, use-all-day-resize, ...
-lib/                        # prisma, auth, session, event-utils, time-blocks, completions, task-ordering
-schemas/                    # schemas zod (login, sign-up, routine, time-block)
+hooks/                      # hooks do calendário (drag/resize), formulário do bloco e dados (tasks, rotinas, progresso, current-block)
+lib/                        # infra (prisma, auth, session, api) + helpers de domínio (time-blocks, task-ordering, completions)
+lib/calendar/               # math puro do calendário (posicionamento, all-day, interação drag/resize, fuso, constantes)
+lib/validation/             # parsing/validação de payloads da API (routines, tasks, subtasks, time-blocks, helpers)
+schemas/                    # schemas zod (login, sign-up, routine, task, time-block)
 messages/                   # traduções pt/en
 ```
 

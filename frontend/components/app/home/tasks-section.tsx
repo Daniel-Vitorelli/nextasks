@@ -5,12 +5,12 @@ import { CalendarClock, CircleEllipsis, ListChecks } from "lucide-react";
 
 import { Spinner } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useTasks } from "@/components/dashboard/tasks/use-tasks";
+import { useTasks } from "@/hooks/use-tasks";
 import {
   completeAncestors,
   markSubtreeDone,
   useSubtasks,
-} from "@/components/dashboard/tasks/use-subtasks";
+} from "@/hooks/use-subtasks";
 import { priorityBadgeStyles } from "@/components/dashboard/tasks/task-priority";
 import { sortPendingTasks } from "@/lib/task-ordering";
 import { cn } from "@/lib/utils";

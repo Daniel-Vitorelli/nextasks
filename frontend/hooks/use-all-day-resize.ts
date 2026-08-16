@@ -5,6 +5,7 @@ import type {
   AllDayResizeState,
   CalendarEvent,
 } from "@/types/calendar";
+import { clamp, DRAG_THRESHOLD_PX, TOUCH_SLOP_PX } from "@/lib/calendar/interaction";
 
 interface UseAllDayResizeOptions {
   days: Date[];
@@ -24,16 +25,6 @@ interface UseAllDayResizeReturn {
     startColumn: number,
     endColumn: number,
   ) => void;
-}
-
-const DRAG_THRESHOLD_PX = 4;
-/** Movement needed before a finger starts resizing/moving (touch slop). */
-const TOUCH_SLOP_PX = 10;
-
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
 }
 
 interface ResizeInfo {

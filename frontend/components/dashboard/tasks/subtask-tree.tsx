@@ -34,7 +34,7 @@ import {
   markSubtreeDone,
   removeAndRecomplete,
   useSubtasks,
-} from "@/components/dashboard/tasks/use-subtasks";
+} from "@/hooks/use-subtasks";
 import { cn } from "@/lib/utils";
 import type { Subtask, SubtaskFormValues } from "@/types/domain";
 

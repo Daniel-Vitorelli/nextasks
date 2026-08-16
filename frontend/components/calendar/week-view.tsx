@@ -6,12 +6,12 @@ import {
   addDays,
   differenceInCalendarDays,
   eachDayOfInterval,
-  isToday,
 } from "date-fns";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { isMultiDayEvent } from "@/lib/calendar/positioning";
+import { getTimezoneAbbreviation } from "@/lib/calendar/timezone";
 import { useHorizontalScroll } from "@/hooks/use-horizontal-scroll";
 import { useEventDrag } from "@/hooks/use-event-drag";
 import { useEventResize } from "@/hooks/use-event-resize";
@@ -36,6 +36,7 @@ import {
   generateBufferedDays,
   generateHours,
   generateWeekDays,
+  markIsToday,
 } from "./week-view-utils";
 
 /**
@@ -79,10 +80,7 @@ export function WeekView({
     [currentDate, VISIBLE_DAYS, locale],
   );
 
-  const days: WeekDay[] = baseDays.map((day) => ({
-    ...day,
-    isToday: isToday(day.date),
-  }));
+  const days: WeekDay[] = markIsToday(baseDays);
 
   const hours = React.useMemo(() => generateHours(locale), [locale]);
 
@@ -246,10 +244,7 @@ export function WeekView({
     [currentDate, dynamicBuffer, VISIBLE_DAYS, locale],
   );
 
-  const bufferedDays: WeekDay[] = bufferedBaseDays.map((day) => ({
-    ...day,
-    isToday: isToday(day.date),
-  }));
+  const bufferedDays: WeekDay[] = markIsToday(bufferedBaseDays);
 
   const bufferedDayDates = React.useMemo(
     () => bufferedBaseDays.map((d) => d.date),
@@ -338,9 +333,7 @@ export function WeekView({
             <div className="flex bg-background">
               {/* Timezone label - rendered outside scroll container */}
               <div className="text-muted-foreground flex w-16 flex-shrink-0 items-center justify-end pr-2 text-xxs">
-                {new Date()
-                  .toLocaleTimeString("en-US", { timeZoneName: "short" })
-                  .match(/\s([A-Z]{2,5})$/)?.[1] ?? ""}
+                {getTimezoneAbbreviation()}
               </div>
               <div className="flex-1 overflow-hidden">
                 <div style={scrollStyle}>

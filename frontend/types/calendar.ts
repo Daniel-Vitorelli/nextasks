@@ -1,6 +1,10 @@
 /**
- * Domain types for the calendar views (week/day/month).
+ * View-model types for the calendar (week/day views).
  */
+
+import type { EventColor, EventConfirmation } from "./domain";
+
+export type { EventColor, EventConfirmation };
 
 /** Calendar view mode — "day" shows a single column, "week" shows 7 columns */
 export type ViewType = "day" | "week" | "month";
@@ -25,18 +29,8 @@ export interface HourSlot {
   label: string;
 }
 
-/** Predefined event colors */
-export type EventColor =
-  | "red"
-  | "orange"
-  | "yellow"
-  | "green"
-  | "blue"
-  | "purple"
-  | "gray";
-
-/** How a time block's completion is confirmed (checklist or score tracking) */
-export type EventConfirmation = "none" | "checklist" | "score";
+/** All CalendarEvent fields except id (what a block patch can carry) */
+export type CalendarEventPatch = Omit<CalendarEvent, "id">;
 
 /** Represents a calendar event */
 export interface CalendarEvent {

@@ -2,7 +2,7 @@ import {
   addDays,
   eachDayOfInterval,
   format,
-  getWeek,
+  isToday,
   type Locale,
 } from "date-fns";
 import type { HourSlot, ViewType, WeekDay } from "@/types/calendar";
@@ -86,6 +86,15 @@ export function generateBufferedDays(
 }
 
 /**
+ * Marca cada dia como "hoje" conforme a data atual.
+ * isToday é calculado dinamicamente (não cacheado) para cobrir páginas
+ * abertas durante a virada do dia.
+ */
+export function markIsToday(days: Omit<WeekDay, "isToday">[]): WeekDay[] {
+  return days.map((day) => ({ ...day, isToday: isToday(day.date) }));
+}
+
+/**
  * Generates an array of HourSlot objects for all 24 hours
  */
 export function generateHours(locale?: Locale): HourSlot[] {
@@ -97,30 +106,4 @@ export function generateHours(locale?: Locale): HourSlot[] {
       label: format(dateWithHour, "h a", { locale }),
     };
   });
-}
-
-/**
- * Returns the month name, year, and week number for the current date
- */
-export function getCalendarHeaderInfo(
-  currentDate: Date,
-  weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6,
-) {
-  return {
-    monthName: format(currentDate, "MMMM"),
-    year: format(currentDate, "yyyy"),
-    weekNumber: getWeek(currentDate, { weekStartsOn }),
-  };
-}
-
-/**
- * Returns the visible days starting from the given date (used for sidebar highlighting)
- */
-export function getVisibleDays(
-  currentDate: Date,
-  view: ViewType = "week",
-): Date[] {
-  const count = VISIBLE_DAYS_BY_VIEW[view];
-  const end = addDays(currentDate, count - 1);
-  return eachDayOfInterval({ start: currentDate, end });
 }

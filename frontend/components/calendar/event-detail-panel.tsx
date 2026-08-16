@@ -18,10 +18,13 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import type { CalendarEvent, EventConfirmation } from "@/types/calendar";
-import { EVENT_COLORS, colorSwatchClass } from "./calendar-event-color";
-import { CONFIRMATION_OPTIONS } from "@/lib/time-blocks";
+import {
+  CONFIRMATION_OPTIONS,
+  EVENT_COLORS,
+} from "@/lib/calendar/event-constants";
+import { colorSwatchClass } from "./calendar-event-color";
 import { formatTimeDisplay, formatDuration } from "./calendar-event-time";
-import { useEventDetailForm } from "./use-event-detail-form";
+import { useEventDetailForm } from "@/hooks/use-event-detail-form";
 
 interface EventDetailPanelProps {
   event: CalendarEvent;
@@ -235,11 +238,11 @@ export function EventDetailPanel({
           aria-label={t("confirmation")}
           className="grid gap-0.5"
         >
-          {CONFIRMATION_OPTIONS.map((option) => (
+          {CONFIRMATION_OPTIONS.map((confirmation) => (
             <ConfirmationOption
-              key={option.value}
-              value={option.value}
-              label={t(`confirmationOption_${option.value}`)}
+              key={confirmation}
+              value={confirmation}
+              label={t(`confirmationOption_${confirmation}`)}
             />
           ))}
         </RadioGroup>

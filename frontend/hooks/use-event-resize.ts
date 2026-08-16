@@ -6,6 +6,19 @@ import type {
   CalendarEvent,
   EventResizeState,
 } from "@/types/calendar";
+import {
+  addMinutesToDate,
+  AUTO_SCROLL_MAX_SPEED,
+  AUTO_SCROLL_ZONE_PX,
+  clamp,
+  DRAG_THRESHOLD_PX,
+  EDGE_NAV_DELAY_MS,
+  EDGE_NAV_REPEAT_MS,
+  EDGE_ZONE_PX,
+  MIN_DURATION_MINUTES,
+  snapToGrid,
+  TOUCH_SLOP_PX,
+} from "@/lib/calendar/interaction";
 
 interface UseEventResizeOptions {
   hourHeight: number;
@@ -26,34 +39,6 @@ interface UseEventResizeReturn {
     event: CalendarEvent,
     edge: "top" | "bottom",
   ) => void;
-}
-
-const DRAG_THRESHOLD_PX = 4;
-/** Movement needed before a finger resize starts (touch slop). */
-const TOUCH_SLOP_PX = 10;
-const SNAP_MINUTES = 15;
-const MIN_DURATION_MINUTES = 15;
-const AUTO_SCROLL_ZONE_PX = 60;
-const AUTO_SCROLL_MAX_SPEED = 12;
-const EDGE_ZONE_PX = 40;
-const EDGE_NAV_DELAY_MS = 500;
-const EDGE_NAV_REPEAT_MS = 800;
-
-function snapToGrid(minutes: number): number {
-  return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
-}
-
-function addMinutesToDate(date: Date, minutes: number): Date {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  result.setMinutes(minutes);
-  return result;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
 }
 
 interface ResizeInfo {
