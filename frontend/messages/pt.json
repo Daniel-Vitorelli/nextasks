@@ -212,6 +212,7 @@
         "close": "Fechar",
         "blockDetails": "Detalhes do bloco",
         "duplicate": "Duplicar",
+        "connectTasks": "Conectar tarefas",
         "title": "Título",
         "description": "Descrição (opcional)",
         "startTime": "Início",
@@ -282,7 +283,9 @@
         "noDescription": "Sem descrição.",
         "dueDateLabel": "Data limite",
         "priorityLabel": "Prioridade",
-        "statusLabel": "Status"
+        "statusLabel": "Status",
+        "connectionsLabel": "Blocos conectados",
+        "connectionsOpen": "Conectar blocos"
       },
       "subtasks": {
         "title": "Sub-tarefas",
@@ -303,6 +306,7 @@
         "edit": "Editar",
         "delete": "Excluir",
         "collapseExpand": "Expandir/recolher",
+        "connect": "Conectar blocos de tempo",
         "toggleDone": {
           "do": "Marcar sub-tarefa como concluída",
           "undo": "Reabrir sub-tarefa"
@@ -312,6 +316,29 @@
           "description": "Tem certeza que deseja excluir \"{title}\" e todas as sub-tarefas abaixo dela? Essa ação não pode ser desfeita.",
           "confirm": "Excluir"
         }
+      },
+      "connections": {
+        "blocksSection": "Blocos de tempo",
+        "entitiesSection": "Tarefas e sub-tarefas",
+        "noBlocks": "Nenhum bloco de tempo disponível.",
+        "noTasks": "Nenhuma tarefa ou sub-tarefa disponível.",
+        "loading": "Carregando…",
+        "taskBadge": "Tarefa",
+        "hint": "Concluir um lado conclui o outro: bloco confirmado completa a tarefa/sub-tarefa e vice-versa (requer todas as confirmações).",
+        "requiredCount": "Confirmações necessárias",
+        "decrease": "Diminuir confirmações necessárias",
+        "increase": "Aumentar confirmações necessárias",
+        "dayFilter": "Dias em que vale",
+        "allDays": "Todos os dias",
+        "specificDate": "Data específica",
+        "progress": "{count}/{required} confirmações",
+        "weekday_0": "Domingo",
+        "weekday_1": "Segunda-feira",
+        "weekday_2": "Terça-feira",
+        "weekday_3": "Quarta-feira",
+        "weekday_4": "Quinta-feira",
+        "weekday_5": "Sexta-feira",
+        "weekday_6": "Sábado"
       }
     }
   },

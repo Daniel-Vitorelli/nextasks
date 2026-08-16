@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Link2 } from "lucide-react";
 
 import {
   Dialog,
@@ -10,7 +11,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { SubtaskTree } from "@/components/dashboard/tasks/subtask-tree";
+import { ConnectionPopover } from "@/components/connections/connection-popover";
 import { priorityBadgeStyles } from "@/components/dashboard/tasks/task-priority";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types/domain";
@@ -56,7 +59,16 @@ export function TaskDetailsDialog({
 
   return (
     <Dialog open={!!task} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent
+        onInteractOutside={(event) => {
+          // Popover de conexões fica em portal próprio: clicar dentro dele
+          // não deve fechar o diálogo de detalhes.
+          const target = event.target as HTMLElement;
+          if (target.closest("[data-radix-popper-content-wrapper]")) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2 pr-8">
             {task.title}
@@ -95,6 +107,27 @@ export function TaskDetailsDialog({
               </div>
             ))}
           </dl>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">
+              {t("details.connectionsLabel")}
+            </p>
+            <ConnectionPopover
+              anchor={{ type: "task", id: task.id, title: task.title }}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label={t("details.connectionsOpen")}
+              >
+                <Link2 className="size-4" />
+                <span className="hidden sm:inline">
+                  {t("details.connectionsOpen")}
+                </span>
+              </Button>
+            </ConnectionPopover>
+          </div>
 
           <Separator className="my-1" />
 

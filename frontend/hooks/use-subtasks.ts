@@ -9,6 +9,7 @@ import {
   unmarkPath,
   updateNode,
 } from "@/lib/subtask-tree";
+import { CONNECTIONS_CHANGED_EVENT } from "@/components/connections/connections-provider";
 import type { Subtask, SubtaskFormValues } from "@/types/domain";
 
 /**
@@ -41,6 +42,16 @@ export function useSubtasks(taskId: string | null) {
     } else {
       setSubtasks([]);
     }
+  }, [taskId, loadSubtasks]);
+
+  // Conexões (bloco -> sub-tarefa) podem concluir nós server-side:
+  // recarrega a árvore quando qualquer conexão muda.
+  useEffect(() => {
+    const handle = () => {
+      if (taskId) void loadSubtasks(taskId);
+    };
+    window.addEventListener(CONNECTIONS_CHANGED_EVENT, handle);
+    return () => window.removeEventListener(CONNECTIONS_CHANGED_EVENT, handle);
   }, [taskId, loadSubtasks]);
 
   const createSubtask = useCallback(
@@ -124,11 +135,15 @@ export function useSubtasks(taskId: string | null) {
       );
 
       try {
-        const response = await fetch(`/api/subtasks/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ done }),
-        });
+        const tzOffsetMinutes = new Date().getTimezoneOffset();
+        const response = await fetch(
+          `/api/subtasks/${id}?tzOffset=${tzOffsetMinutes}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ done }),
+          },
+        );
 
         if (!response.ok) {
           throw new Error("Failed to update subtask");

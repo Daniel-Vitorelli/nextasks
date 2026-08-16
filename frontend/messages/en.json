@@ -212,6 +212,7 @@
         "close": "Close",
         "blockDetails": "Block details",
         "duplicate": "Duplicate",
+        "connectTasks": "Connect tasks",
         "title": "Title",
         "description": "Description (optional)",
         "startTime": "Start time",
@@ -282,7 +283,9 @@
         "noDescription": "No description.",
         "dueDateLabel": "Due date",
         "priorityLabel": "Priority",
-        "statusLabel": "Status"
+        "statusLabel": "Status",
+        "connectionsLabel": "Connected blocks",
+        "connectionsOpen": "Connect blocks"
       },
       "subtasks": {
         "title": "Subtasks",
@@ -303,6 +306,7 @@
         "edit": "Edit",
         "delete": "Delete",
         "collapseExpand": "Expand/collapse",
+        "connect": "Connect time blocks",
         "toggleDone": {
           "do": "Mark subtask as done",
           "undo": "Reopen subtask"
@@ -312,6 +316,29 @@
           "description": "Are you sure you want to delete \"{title}\" and all subtasks below it? This action cannot be undone.",
           "confirm": "Delete"
         }
+      },
+      "connections": {
+        "blocksSection": "Time blocks",
+        "entitiesSection": "Tasks and subtasks",
+        "noBlocks": "No time blocks available.",
+        "noTasks": "No tasks or subtasks available.",
+        "loading": "Loading…",
+        "taskBadge": "Task",
+        "hint": "Completing one side completes the other: a confirmed block completes the task/subtask and vice versa (requires all confirmations).",
+        "requiredCount": "Required confirmations",
+        "decrease": "Decrease required confirmations",
+        "increase": "Increase required confirmations",
+        "dayFilter": "Days it counts",
+        "allDays": "Every day",
+        "specificDate": "Specific date",
+        "progress": "{count}/{required} confirmations",
+        "weekday_0": "Sunday",
+        "weekday_1": "Monday",
+        "weekday_2": "Tuesday",
+        "weekday_3": "Wednesday",
+        "weekday_4": "Thursday",
+        "weekday_5": "Friday",
+        "weekday_6": "Saturday"
       }
     }
   },

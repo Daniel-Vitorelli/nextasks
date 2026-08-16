@@ -29,6 +29,8 @@ app/api/tasks/[id]          # tarefa individual (PATCH, DELETE)
 app/api/tasks/[id]/subtasks # sub-tarefas de uma tarefa (GET, POST)
 app/api/subtasks/[id]       # sub-tarefa individual (PATCH, DELETE)
 app/api/time-blocks/[id]/complete # confirma bloco no período atual (POST)
+app/api/connections          # catálogo de conexões tarefas/sub-tarefas ↔ blocos (GET) e criação (POST)
+app/api/connections/[id]     # conexão individual (PATCH, DELETE)
 app/api/auth                # handler do better-auth
 components/dashboard/routines/
   routines-section.tsx      # contêiner: carrega lista, ver mais/ver menos, exclusão
@@ -74,6 +76,9 @@ components/calendar/        # calendário (semanal): grid, eventos, overlays de 
   event-detail-panel.tsx    # popover de edição inline (título, horário, cor, all-day)
   event-detail-popover.tsx  # popover com ancoragem no boundary do calendário
   event-context-menu.tsx    # menu de contexto (cor, excluir)
+components/connections/     # conexões tarefas/sub-tarefas ↔ blocos de tempo
+  connections-provider.tsx  # estado global das conexões (contexto + mutações otimistas)
+  connection-popover.tsx    # popover de conexão (checkbox, confirmações necessárias, filtro de dia)
   calendar-event-color.ts   # classes de cor dos eventos (cores vêm de lib/calendar)
   calendar-event-time.ts    # formatação de hora/duração
   week-view-utils.ts        # constantes de layout + geradores de dias/horas
@@ -84,7 +89,7 @@ components/calendar/        # calendário (semanal): grid, eventos, overlays de 
 components/ui               # primitivos shadcn (button, dialog, dropdown-menu, popover, switch, chart, ...)
 hooks/                      # hooks do calendário (drag/resize + navegação de borda), formulário do bloco e dados (tasks, rotinas, progresso, current-block)
 lib/                        # infra cliente/servidor + helpers de domínio (time-blocks, task-ordering, subtask-tree)
-lib/server/                 # só servidor: prisma, auth, session, api (requireUser/RouteContext) e completions
+lib/server/                 # só servidor: prisma, auth, session, api (requireUser/RouteContext), completions, subtask-cascade e connections
 lib/calendar/               # math puro do calendário (posicionamento, all-day, interação drag/resize, fuso, constantes)
 lib/validation/             # parsing/validação de payloads da API (routines, tasks, subtasks, time-blocks, helpers)
 schemas/                    # schemas zod (login, sign-up, routine, task, time-block)
@@ -142,6 +147,15 @@ npx prisma db push    # aplica o schema no banco
 - `TasksSection` (`components/app/home/tasks-section.tsx`) mostra **uma tarefa por vez** entre as pendentes, ordenada por `sortPendingTasks` (`lib/task-ordering.ts`): score = `dueUrgencyScore` (data limite: atrasada 10–15, vence hoje 8–10, ≤3 dias 6–8, ≤7 dias 4–6, ≤30 dias 0–4, sem data 0 — o dia da data limite só conta como atrasado após a meia-noite) + prioridade (1–6); desempate por data mais próxima, prioridade e data de criação.
 - O card da tarefa atual replica o `TaskCard` do painel (checkbox, prioridade, data limite) sem ações de edição/exclusão; as sub-tarefas dela aparecem em árvore simplificada com checkbox (mesma regra de cascata) e as próximas (até 5) em linhas sem checkbox.
 - Concluir a tarefa atual promove a próxima automaticamente; reabrir sub-tarefas mantém o estado sincronizado com o painel (`useTasks` compartilhado).
+
+## Conexões tarefas/sub-tarefas ↔ blocos de tempo
+
+- Modelo `TaskBlockConnection` (tabela `TaskBlockConnection`): exatamente um de `taskId`/`subtaskId` + `timeBlockId`, com `requiredCount` (confirmações necessárias) e `dayFilter` (`"all" | "weekday:N" | "date:YYYY-MM-DD"`).
+- Regras (definidas com o usuário): **bloco confirmado** completa a entidade conectada quando **todas** as conexões dela estiverem satisfeitas; **entidade concluída** auto-confirma os blocos conectados no período atual (checklist `"true"`, nota `"10"`), respeitando o `dayFilter`; **desmarcar não propaga**; `requiredCount` conta **todas** as confirmações históricas do bloco que satisfazem o filtro; ciclos são seguros (upserts idempotentes).
+- A lógica vive em `lib/server/connections.ts` (`countConfirmedForConnection`, `confirmBlocksForDoneEntities`, `completeEntitiesForBlock`, `confirmationMatchesDayFilter`) e é chamada dentro das transações de `time-blocks/[id]/complete`, `tasks/[id]` (PATCH) e `subtasks/[id]` (PATCH). A cascata de conclusão de árvore compartilhada está em `lib/server/subtask-cascade.ts` (`markTaskDoneCascade`/`markSubtaskDoneCascade`).
+- API: `GET /api/connections?tzOffset=` (catálogo de tarefas, sub-tarefas, blocos com dia da semana local + conexões com `confirmedCount`), `POST /api/connections`, `PATCH/DELETE /api/connections/[id]`. A validação está em `lib/validation/connections.ts`.
+- UI: `ConnectionPopover` abre em três lugares — detalhes da tarefa (`task-details-dialog`), por sub-tarefa na árvore (`subtask-node`) e no painel do bloco no calendário (`event-detail-popover`, botão no header). O estado global fica no `ConnectionsProvider` (montado no layout `[app]`), que dispara `CONNECTIONS_CHANGED_EVENT` após mutações para `useTasks`/`useSubtasks` recarregarem (blocos podem concluir tarefas server-side).
+- Popovers portalados dentro de dialog/popover precisam de `onInteractOutside` com checagem de `[data-radix-popper-content-wrapper]` para não fechar o contêiner ao interagir com o popover de conexões.
 
 ## Traduções
 

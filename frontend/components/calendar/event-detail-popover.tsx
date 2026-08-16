@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
-import { X } from "lucide-react";
+import { Link2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PopoverContent } from "@/components/ui/popover";
+import { ConnectionPopover } from "@/components/connections/connection-popover";
 import { EventDetailPanel } from "./event-detail-panel";
 import { useCalendarPopoverBoundary } from "./calendar-popover-context";
 import { MOBILE_BREAKPOINT_PX } from "./week-view-utils";
@@ -78,6 +79,19 @@ export function EventDetailPopover({
 
   const popoverHeaderActions = (
     <>
+      <ConnectionPopover
+        anchor={{ type: "block", id: event.id, title: event.title }}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7 text-[#C7C5C1] dark:text-[#595959]"
+          title={t("connectTasks")}
+          aria-label={t("connectTasks")}
+        >
+          <Link2 className="size-4" />
+        </Button>
+      </ConnectionPopover>
       <Button
         variant="ghost"
         size="icon"
@@ -113,6 +127,14 @@ export function EventDetailPopover({
           showCloseButton={false}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            // Popover de conexões fica em portal próprio: clicar dentro dele
+            // não deve fechar a folha de detalhes.
+            const target = e.target as HTMLElement;
+            if (target.closest("[data-radix-popper-content-wrapper]")) {
+              e.preventDefault();
+            }
+          }}
           className="shadow-2xl bg-background top-auto bottom-0 left-0 right-0 w-full max-w-none translate-y-0 translate-x-0 rounded-t-2xl rounded-b-none rounded-none border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)] max-h-[85dvh] overflow-y-auto overscroll-contain sm:max-w-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full"
         >
           <DialogTitle className="sr-only">{t("blockDetails")}</DialogTitle>

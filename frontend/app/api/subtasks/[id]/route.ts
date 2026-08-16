@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/server/prisma";
 import { parseSubtaskPatch } from "@/lib/validation/subtasks";
-import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/server/api";
+import {
+  badRequest,
+  notFound,
+  parseTzOffset,
+  requireUser,
+  type RouteContext,
+} from "@/lib/server/api";
+import { markSubtaskDoneCascade } from "@/lib/server/subtask-cascade";
+import { confirmBlocksForDoneEntities } from "@/lib/server/connections";
 
 async function getOwnedSubtask(id: string, userId: string) {
   return prisma.subtask.findFirst({
@@ -29,6 +37,9 @@ export async function PATCH(
     return badRequest("Invalid subtask");
   }
 
+  const url = new URL(request.url);
+  const tzOffsetMinutes = parseTzOffset(url.searchParams.get("tzOffset"));
+
   // Irmãos da mesma tarefa, para navegar entre descendentes e ancestrais.
   const siblings = await prisma.subtask.findMany({
     where: { taskId: existing.taskId },
@@ -43,20 +54,9 @@ export async function PATCH(
     parentById.set(subtask.id, subtask.parentId);
   }
 
-  // Marcar como feita conclui toda a sub-árvore abaixo dela.
-  let descendantIds: string[] = [];
-  if (patch.done === true) {
-    const stack = [...(childrenByParent.get(existing.id) ?? [])];
-    while (stack.length > 0) {
-      const current = stack.pop()!;
-      descendantIds.push(current);
-      stack.push(...(childrenByParent.get(current) ?? []));
-    }
-  }
-
   // Reabrir quebra a invariante "pai só fica feito se todos os filhos
   // estiverem feitos": reabre a cadeia de ancestrais e a tarefa.
-  let ancestorIds: string[] = [];
+  const ancestorIds: string[] = [];
   if (patch.done === false) {
     let currentId = parentById.get(existing.id) ?? null;
     while (currentId) {
@@ -65,60 +65,24 @@ export async function PATCH(
     }
   }
 
-  // Quando todos os filhos de um ancestral estiverem feitos, o ancestral
-  // também fica feito (subindo a cadeia), assim como a tarefa.
-  let completeIds: string[] = [];
-  let completeTask = false;
-  if (patch.done === true) {
-    const doneById = new Map(siblings.map((item) => [item.id, item.done]));
-    doneById.set(existing.id, true);
-    for (const id of descendantIds) {
-      doneById.set(id, true);
-    }
-
-    let currentId = parentById.get(existing.id) ?? null;
-    while (currentId) {
-      const children = childrenByParent.get(currentId) ?? [];
-      const allChildrenDone =
-        children.length > 0 &&
-        children.every((child) => doneById.get(child) === true);
-      if (!allChildrenDone) break;
-      completeIds.push(currentId);
-      doneById.set(currentId, true);
-      currentId = parentById.get(currentId) ?? null;
-    }
-
-    const roots = childrenByParent.get(null) ?? [];
-    completeTask =
-      roots.length > 0 &&
-      roots.every((root) => doneById.get(root) === true);
-  }
-
   const subtask = await prisma.$transaction(async (tx) => {
     const updated = await tx.subtask.update({
       where: { id },
       data: patch,
     });
 
-    if (descendantIds.length > 0) {
-      await tx.subtask.updateMany({
-        where: { id: { in: descendantIds }, done: false },
-        data: { done: true },
-      });
-    }
+    // Marcar como feita conclui toda a sub-árvore abaixo dela, sobe a cadeia
+    // de ancestrais e auto-confirma os blocos conectados no período atual.
+    if (patch.done === true) {
+      const { descendantIds, completeIds, completeTask } =
+        await markSubtaskDoneCascade(tx, existing.taskId, id);
 
-    if (completeIds.length > 0) {
-      await tx.subtask.updateMany({
-        where: { id: { in: completeIds }, done: false },
-        data: { done: true },
-      });
-    }
-
-    if (completeTask) {
-      await tx.task.updateMany({
-        where: { id: existing.taskId, done: false },
-        data: { done: true },
-      });
+      await confirmBlocksForDoneEntities(
+        tx,
+        completeTask ? [existing.taskId] : [],
+        [id, ...descendantIds, ...completeIds],
+        tzOffsetMinutes,
+      );
     }
 
     if (ancestorIds.length > 0) {

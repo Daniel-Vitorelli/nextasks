@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/server/prisma";
 import { parseTaskPatch } from "@/lib/validation/tasks";
-import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/server/api";
+import {
+  badRequest,
+  notFound,
+  parseTzOffset,
+  requireUser,
+  type RouteContext,
+} from "@/lib/server/api";
+import { markTaskDoneCascade } from "@/lib/server/subtask-cascade";
+import { confirmBlocksForDoneEntities } from "@/lib/server/connections";
 
 async function getOwnedTask(id: string, userId: string) {
   return prisma.task.findFirst({
@@ -29,18 +37,20 @@ export async function PATCH(
     return badRequest("Invalid task");
   }
 
+  const url = new URL(request.url);
+  const tzOffsetMinutes = parseTzOffset(url.searchParams.get("tzOffset"));
+
   const task = await prisma.$transaction(async (tx) => {
     const updated = await tx.task.update({
       where: { id },
       data: patch,
     });
 
-    // Marcar a tarefa como feita conclui todas as sub-tarefas dela.
+    // Marcar a tarefa como feita conclui todas as sub-tarefas dela e
+    // auto-confirma os blocos de tempo conectados no período atual.
     if (patch.done === true) {
-      await tx.subtask.updateMany({
-        where: { taskId: id, done: false },
-        data: { done: true },
-      });
+      await markTaskDoneCascade(tx, id);
+      await confirmBlocksForDoneEntities(tx, [id], [], tzOffsetMinutes);
     }
 
     return updated;

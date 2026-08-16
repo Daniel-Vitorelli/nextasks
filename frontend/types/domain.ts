@@ -188,3 +188,72 @@ export interface SubtaskPatch {
   description?: string | null;
   done?: boolean;
 }
+
+/**
+ * Filtro de dia de uma conexão: "all" (qualquer dia), "weekday:N" (dia da
+ * semana local, 0-6) ou "date:YYYY-MM-DD" (data específica, local).
+ */
+export type DayFilter = "all" | `weekday:${number}` | `date:${string}`;
+
+/** Conexão entre uma entidade (tarefa ou sub-tarefa) e um bloco de tempo. */
+export interface TaskBlockConnection {
+  id: string;
+  taskId: string | null;
+  subtaskId: string | null;
+  timeBlockId: string;
+  requiredCount: number;
+  dayFilter: DayFilter;
+  /** Quantas confirmações do bloco satisfazem o dayFilter. */
+  confirmedCount: number;
+}
+
+/** Bloco de tempo listado no catálogo de conexões. */
+export interface ConnectionCatalogBlock {
+  id: string;
+  title: string;
+  routineId: string;
+  routineName: string;
+  frequency: Frequency;
+  confirmation: EventConfirmation;
+  /** Dia da semana local do início do bloco (0-6). */
+  weekday: number;
+}
+
+/** Tarefa listada no catálogo de conexões. */
+export interface ConnectionCatalogTask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+/** Sub-tarefa listada no catálogo de conexões (com a tarefa pai). */
+export interface ConnectionCatalogSubtask {
+  id: string;
+  title: string;
+  taskId: string;
+  taskTitle: string;
+  done: boolean;
+}
+
+/** Resposta de GET /api/connections. */
+export interface ConnectionsResponse {
+  tasks: ConnectionCatalogTask[];
+  subtasks: ConnectionCatalogSubtask[];
+  blocks: ConnectionCatalogBlock[];
+  connections: TaskBlockConnection[];
+}
+
+/** Corpo aceito por POST /api/connections. */
+export interface ConnectionInput {
+  taskId: string | null;
+  subtaskId: string | null;
+  timeBlockId: string;
+  requiredCount: number;
+  dayFilter: DayFilter;
+}
+
+/** Corpo aceito por PATCH /api/connections/[id]. */
+export interface ConnectionPatch {
+  requiredCount?: number;
+  dayFilter?: DayFilter;
+}

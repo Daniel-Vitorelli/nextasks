@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Link2, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConnectionPopover } from "@/components/connections/connection-popover";
 import { cn } from "@/lib/utils";
 import type { Subtask } from "@/types/domain";
 
@@ -93,6 +94,17 @@ export function SubtaskNode({
           </div>
 
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
+            <ConnectionPopover
+              anchor={{ type: "subtask", id: subtask.id, title: subtask.title }}
+            >
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                aria-label={t("connect")}
+              >
+                <Link2 />
+              </Button>
+            </ConnectionPopover>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

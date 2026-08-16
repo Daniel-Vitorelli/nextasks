@@ -32,6 +32,7 @@ Aplicação fullstack com **Next.js 16** (frontend + API), **MariaDB/MySQL** com
   - Checkbox por tarefa para alternar conclusão (concluídas vão para o fim da lista) e botão "Saiba mais" com dialog de detalhes.
   - **Sub-tarefas**: árvore recursiva sem limite de profundidade dentro do dialog "Saiba mais" — cada sub-tarefa tem título (obrigatório) e descrição (opcional), pode ter filhos, e é excluída com confirmação (remove toda a sub-árvore).
   - **Conclusão consistente**: marcar uma tarefa/sub-tarefa como feita conclui toda a sub-árvore abaixo dela; reabrir uma sub-tarefa reabre a cadeia de ancestrais e a tarefa; concluir o último filho pendente (ou excluir o único filho pendente) conclui o pai automaticamente, subindo a cadeia até a tarefa; criar sub-tarefa sob um pai/tarefa concluídos reabre a cadeia.
+  - **Conexões com blocos de tempo** (M:N): qualquer tarefa ou sub-tarefa pode ser conectada a um ou mais blocos de tempo (popover no dialog de detalhes, no botão por sub-tarefa da árvore e no popover do bloco no calendário). Concluir um lado conclui o outro: bloco confirmado completa a entidade quando **todas** as conexões dela estiverem satisfeitas; entidade concluída auto-confirma os blocos conectados no período atual. Cada conexão tem `requiredCount` (confirmações necessárias, contando o histórico) e `dayFilter` (todos os dias / dia da semana / data específica); desmarcar não propaga.
 - **Calendário de blocos de tempo** (`/app/dashboard`, clicando no ícone de calendário de uma rotina):
   - Visão semanal com blocos de tempo (eventos) por dia e por hora, navegação entre semanas e scroll horizontal.
   - Duplo clique numa célula cria um bloco; blocos podem ser **arrastados** (mover), **redimensionados** (dobrar borda) e **movidos entre dias** (all-day).
@@ -212,10 +213,14 @@ A app roda em http://localhost:3000.
 | DELETE  | `/api/subtasks/:id` | Exclui uma sub-tarefa e toda a sub-árvore abaixo dela |
 | POST    | `/api/routines/:id/duplicate` | Duplica uma rotina (com blocos de tempo) |
 | POST    | `/api/routines/:id/activate` | Ativa/desativa uma rotina (só uma ativa por usuário) |
-| POST    | `/api/time-blocks/:id/complete` | Confirma um bloco no período atual. Query: `tzOffset`. Body: `{ value }` ("true"/"false" para checkbox; "1"–"10" para nota) |
+| POST    | `/api/time-blocks/:id/complete` | Confirma um bloco no período atual. Query: `tzOffset`. Body: `{ value }` ("true"/"false" para checkbox; "1"–"10" para nota). Propaga para entidades conectadas satisfeitas |
+| GET     | `/api/connections` | Catálogo de conexões (tarefas, sub-tarefas, blocos com dia da semana local e conexões com `confirmedCount`). Query: `tzOffset` |
+| POST    | `/api/connections` | Cria uma conexão (`{ taskId | subtaskId, timeBlockId, requiredCount?, dayFilter? }`) |
+| PATCH   | `/api/connections/:id` | Atualiza `requiredCount`/`dayFilter` de uma conexão |
+| DELETE  | `/api/connections/:id` | Remove uma conexão |
 | POST    | `/api/auth/[...all]` | Endpoints de autenticação (better-auth) |
 
-Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/validation/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/validation/time-blocks.ts`); as tarefas validam com `parseTaskInput`/`parseTaskPatch` (`frontend/lib/validation/tasks.ts`); as sub-tarefas com `parseSubtaskInput`/`parseSubtaskPatch` (`frontend/lib/validation/subtasks.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/server/completions.ts`.
+Todas as rotas exigem autenticação. As rotinas validam o payload com a mesma regra compartilhada usada no frontend (`frontend/lib/validation/routines.ts`); os blocos de tempo validam com `parseTimeBlockInput`/`parseTimeBlockPatch` (`frontend/lib/validation/time-blocks.ts`); as tarefas validam com `parseTaskInput`/`parseTaskPatch` (`frontend/lib/validation/tasks.ts`); as sub-tarefas com `parseSubtaskInput`/`parseSubtaskPatch` (`frontend/lib/validation/subtasks.ts`); as conexões com `parseConnectionInput`/`parseConnectionPatch`/`parseDayFilter` (`frontend/lib/validation/connections.ts`). O progresso é calculado em `frontend/app/api/routines/progress/route.ts` usando os períodos de `frontend/lib/server/completions.ts`. A cascata de conclusão das tarefas/sub-tarefas vive em `frontend/lib/server/subtask-cascade.ts` e as conexões em `frontend/lib/server/connections.ts`.
 
 ## Modelo de dados
 
@@ -284,6 +289,27 @@ model Subtask {
 
   @@index([taskId])
   @@index([parentId])
+}
+
+model TaskBlockConnection {
+  id            String    @id @default(cuid())
+  userId        String
+  taskId        String?   // exatamente um de taskId/subtaskId é preenchido
+  subtaskId     String?
+  timeBlockId   String
+  requiredCount Int       @default(1)   // confirmações necessárias (histórico)
+  dayFilter     String    @default("all") // all | weekday:N (0-6) | date:YYYY-MM-DD
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task          Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  subtask       Subtask?  @relation(fields: [subtaskId], references: [id], onDelete: Cascade)
+  timeBlock     TimeBlock @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timeBlockId])
+  @@index([taskId])
+  @@index([subtaskId])
 }
 ```
 

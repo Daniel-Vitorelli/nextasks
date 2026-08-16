@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Task, TaskFormValues } from "@/types/domain";
 import { sortTasksForList } from "@/lib/task-ordering";
+import { CONNECTIONS_CHANGED_EVENT } from "@/components/connections/connections-provider";
 
 /**
  * Loads and mutates the user's tasks with optimistic updates.
@@ -28,6 +29,16 @@ export function useTasks() {
 
   useEffect(() => {
     void loadTasks();
+  }, [loadTasks]);
+
+  // Conexões (bloco -> tarefa) podem concluir tarefas server-side:
+  // recarrega a lista quando qualquer conexão muda.
+  useEffect(() => {
+    const handle = () => {
+      void loadTasks();
+    };
+    window.addEventListener(CONNECTIONS_CHANGED_EVENT, handle);
+    return () => window.removeEventListener(CONNECTIONS_CHANGED_EVENT, handle);
   }, [loadTasks]);
 
   const saveTask = useCallback(
@@ -58,11 +69,15 @@ export function useTasks() {
 
   const toggleTaskDone = useCallback(async (task: Task) => {
     try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ done: !task.done }),
-      });
+      const tzOffsetMinutes = new Date().getTimezoneOffset();
+      const response = await fetch(
+        `/api/tasks/${task.id}?tzOffset=${tzOffsetMinutes}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ done: !task.done }),
+        },
+      );
 
       if (!response.ok) {
         throw new Error("Failed to update task");

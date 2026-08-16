@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/server/prisma";
 import { periodForFrequency } from "@/lib/server/completions";
+import { completeEntitiesForBlock } from "@/lib/server/connections";
 import {
   asFrequency,
   badRequest,
@@ -59,23 +60,36 @@ export async function POST(
     tzOffsetMinutes,
   );
 
-  const completion = await prisma.timeBlockCompletion.upsert({
-    where: {
-      timeBlockId_periodStart: {
-        timeBlockId: timeBlock.id,
-        periodStart: period.start,
+  const completion = await prisma.$transaction(async (tx) => {
+    const saved = await tx.timeBlockCompletion.upsert({
+      where: {
+        timeBlockId_periodStart: {
+          timeBlockId: timeBlock.id,
+          periodStart: period.start,
+        },
       },
-    },
-    create: {
-      timeBlockId: timeBlock.id,
-      userId: user.id,
-      periodStart: period.start,
-      periodEnd: period.end,
-      value: validValue,
-    },
-    update: {
-      value: validValue,
-    },
+      create: {
+        timeBlockId: timeBlock.id,
+        userId: user.id,
+        periodStart: period.start,
+        periodEnd: period.end,
+        value: validValue,
+      },
+      update: {
+        value: validValue,
+      },
+    });
+
+    // Bloco confirmado propaga para as entidades conectadas (quando todas
+    // as conexões da entidade estiverem satisfeitas).
+    await completeEntitiesForBlock(
+      tx,
+      user.id,
+      timeBlock.id,
+      tzOffsetMinutes,
+    );
+
+    return saved;
   });
 
   return NextResponse.json({ completion, period });
