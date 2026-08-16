@@ -9,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
 import { PeriodSelector } from "@/components/app/home/period-selector";
 import { ProgressChart } from "@/components/app/home/progress-chart";
+import { TasksSection } from "@/components/app/home/tasks-section";
 import { useRoutineProgress } from "@/components/app/home/use-routine-progress";
 import type { Period, TimeBlock, Routine } from "@/types/domain";
 
@@ -208,6 +209,8 @@ export default function HomePage() {
               </div>
             )}
           </section>
+
+          <TasksSection />
         </>
       )}
     </main>

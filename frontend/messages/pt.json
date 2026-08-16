@@ -137,6 +137,14 @@
         "scoreLabel": "Nota",
         "scoreValue": "{value}/10",
         "confirm": "Confirmar"
+      },
+      "tasks": {
+        "title": "Tarefas",
+        "description": "Uma tarefa por vez",
+        "emptyTitle": "Nenhuma tarefa pendente",
+        "emptyDescription": "Crie tarefas no painel para vê-las aqui.",
+        "upcomingTitle": "Próximas",
+        "subtasksLabel": "Sub-tarefas"
       }
     }
   },

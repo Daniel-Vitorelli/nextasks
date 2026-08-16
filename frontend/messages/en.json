@@ -137,6 +137,14 @@
         "scoreLabel": "Score",
         "scoreValue": "{value}/10",
         "confirm": "Confirm"
+      },
+      "tasks": {
+        "title": "Tasks",
+        "description": "One task at a time",
+        "emptyTitle": "No pending tasks",
+        "emptyDescription": "Create tasks in the dashboard to see them here.",
+        "upcomingTitle": "Upcoming",
+        "subtasksLabel": "Subtasks"
       }
     }
   },
