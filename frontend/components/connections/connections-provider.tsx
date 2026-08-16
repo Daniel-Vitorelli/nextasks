@@ -128,6 +128,7 @@ export function ConnectionsProvider({
           requiredCount: 1,
           dayFilter: "all",
           confirmedCount: 0,
+          countedBefore: 0,
         };
 
         setData(

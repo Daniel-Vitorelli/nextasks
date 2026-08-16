@@ -203,8 +203,10 @@ export interface TaskBlockConnection {
   timeBlockId: string;
   requiredCount: number;
   dayFilter: DayFilter;
-  /** Quantas confirmações do bloco satisfazem o dayFilter. */
+  /** Quantas confirmações do bloco satisfazem o dayFilter a partir da criação da conexão. */
   confirmedCount: number;
+  /** Confirmações que satisfazem o dayFilter mas foram feitas antes da conexão (não contam). */
+  countedBefore: number;
 }
 
 /** Bloco de tempo listado no catálogo de conexões. */

@@ -15,8 +15,9 @@ import { markSubtaskDoneCascade, markTaskDoneCascade } from "./subtask-cascade";
  *   respeitando o dayFilter — sem sobrescrever confirmações explícitas do
  *   período e sem inflar contagens de entidades já concluídas.
  * - Desmarcar NÃO propaga: a cascata só acontece na direção de concluir.
- * - requiredCount conta todas as confirmações históricas do bloco que
- *   satisfazem o dayFilter da conexão.
+ * - requiredCount conta apenas as confirmações do bloco feitas A PARTIR da
+ *   criação da conexão (updatedAt >= createdAt): marcações anteriores à
+ *   conexão não contam, só a partir do momento em que ela existe.
  * - O dayFilter é avaliado sobre o DIA APLICÁVEL da confirmação: para rotina
  *   diária, o próprio dia; para semanal, o dia da semana em que o bloco
  *   ocorre dentro da semana do período (o bloco semanal não "acontece" no
@@ -34,7 +35,7 @@ export type ConnectionWithBlock = Prisma.TaskBlockConnectionGetPayload<{
   include: typeof connectionInclude;
 }>;
 
-type CompletionLike = { periodStart: Date; value: string };
+type CompletionLike = { periodStart: Date; value: string; updatedAt: Date };
 
 function localDateString(utc: Date, tzOffsetMinutes: number): string {
   const local = new Date(utc.getTime() - tzOffsetMinutes * 60_000);
@@ -128,7 +129,30 @@ export function confirmationValueCounts(
   return false;
 }
 
-/** Quantas confirmações satisfazem o dayFilter da conexão (função pura). */
+/** Uma confirmação satisfaz o filtro de dia e o valor do bloco? (função pura). */
+export function confirmationCounts(
+  completion: CompletionLike,
+  dayFilter: DayFilter,
+  mode: EventConfirmation,
+  frequency: Frequency,
+  blockWeekday: number,
+  tzOffsetMinutes: number,
+): boolean {
+  return (
+    confirmationMatchesDayFilter(
+      completion.periodStart,
+      dayFilter,
+      frequency,
+      blockWeekday,
+      tzOffsetMinutes,
+    ) && confirmationValueCounts(completion.value, mode)
+  );
+}
+
+/**
+ * Quantas confirmações satisfazem o dayFilter da conexão a partir da criação
+ * dela (updatedAt >= createdAt): marcações anteriores à conexão não contam.
+ */
 export function countConfirmed(
   connection: ConnectionWithBlock,
   completions: CompletionLike[],
@@ -144,13 +168,47 @@ export function countConfirmed(
 
   return completions.filter(
     (completion) =>
-      confirmationMatchesDayFilter(
-        completion.periodStart,
+      completion.updatedAt >= connection.createdAt &&
+      confirmationCounts(
+        completion,
         dayFilter,
+        mode,
         frequency,
         blockWeekday,
         tzOffsetMinutes,
-      ) && confirmationValueCounts(completion.value, mode),
+      ),
+  ).length;
+}
+
+/**
+ * Quantas confirmações satisfazem o dayFilter MAS foram feitas antes da
+ * criação da conexão (não contam, mas explicam ao usuário por que a contagem
+ * está baixa).
+ */
+export function countBeforeConnection(
+  connection: ConnectionWithBlock,
+  completions: CompletionLike[],
+  tzOffsetMinutes: number,
+): number {
+  const dayFilter = connection.dayFilter as DayFilter;
+  const mode = connection.timeBlock.confirmation as EventConfirmation;
+  const frequency = asFrequency(connection.timeBlock.routine.frequency);
+  const blockWeekday = localWeekday(
+    connection.timeBlock.start,
+    tzOffsetMinutes,
+  );
+
+  return completions.filter(
+    (completion) =>
+      completion.updatedAt < connection.createdAt &&
+      confirmationCounts(
+        completion,
+        dayFilter,
+        mode,
+        frequency,
+        blockWeekday,
+        tzOffsetMinutes,
+      ),
   ).length;
 }
 
@@ -169,7 +227,11 @@ export async function loadCompletionsByBlock(
   const byBlock = new Map<string, CompletionLike[]>();
   for (const completion of completions) {
     const list = byBlock.get(completion.timeBlockId) ?? [];
-    list.push({ periodStart: completion.periodStart, value: completion.value });
+    list.push({
+      periodStart: completion.periodStart,
+      value: completion.value,
+      updatedAt: completion.updatedAt,
+    });
     byBlock.set(completion.timeBlockId, list);
   }
   return byBlock;
@@ -188,6 +250,7 @@ export function toConnectionRow(
   requiredCount: number;
   dayFilter: DayFilter;
   confirmedCount: number;
+  countedBefore: number;
 } {
   return {
     id: connection.id,
@@ -197,6 +260,11 @@ export function toConnectionRow(
     requiredCount: connection.requiredCount,
     dayFilter: connection.dayFilter as DayFilter,
     confirmedCount: countConfirmed(connection, completions, tzOffsetMinutes),
+    countedBefore: countBeforeConnection(
+      connection,
+      completions,
+      tzOffsetMinutes,
+    ),
   };
 }
 

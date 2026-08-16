@@ -237,6 +237,12 @@ function ConnectionOptions({
         {" · "}
         {satisfied ? t("satisfied") : t("pending")}
       </p>
+
+      {!satisfied && connection.countedBefore > 0 && (
+        <p className="text-muted-foreground text-[11px]">
+          {t("countedBefore", { count: connection.countedBefore })}
+        </p>
+      )}
     </div>
   );
 }
