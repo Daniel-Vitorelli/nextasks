@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLocale } from "next-intl";
 import { eventColorStyles } from "./calendar-event-color";
 import { formatEventTimeRange } from "./calendar-event-time";
 import { EventVisual } from "./event-visual";
@@ -21,6 +22,7 @@ export function EventDragGhost({
   isCompact,
   className,
 }: EventDragGhostProps) {
+  const locale = useLocale();
   const styles = eventColorStyles[event.color ?? "green"];
 
   return (
@@ -66,7 +68,7 @@ export function EventDragGhost({
                 "dark:text-white dark:mix-blend-overlay",
               )}
             >
-              {formatEventTimeRange(event)}
+              {formatEventTimeRange(event, locale)}
             </span>
           )}
         </div>

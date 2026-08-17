@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Bot, Cog, Home, LayoutDashboard, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 
 const items = [
   { labelKey: "social", icon: Users, href: "/app/social" },
@@ -20,6 +20,7 @@ const items = [
 
 export function AppDock() {
   const t = useTranslations("app.dock");
+  const pathname = usePathname();
 
   return (
     <Dock
@@ -32,6 +33,8 @@ export function AppDock() {
             <TooltipTrigger asChild>
               <Link
                 href={href}
+                aria-label={t(labelKey)}
+                aria-current={pathname === href ? "page" : undefined}
                 className="flex h-full w-full items-center justify-center"
               >
                 <Icon />

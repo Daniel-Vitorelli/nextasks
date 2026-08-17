@@ -55,6 +55,20 @@ export function WeekViewGrid({
     return () => observer.disconnect();
   }, []);
 
+  // Posicionamento por dia memoizado: recalcula so quando dias, eventos ou
+  // a largura (gap) mudam, nao a cada pointermove.
+  const positionedByDay = React.useMemo(() => {
+    const rightGap = isDayView || gridWidth < 560 ? 2 : 8;
+    const map = new Map<string, ReturnType<typeof calculatePositionedEvents>>();
+    for (const day of days) {
+      map.set(
+        day.date.toISOString(),
+        calculatePositionedEvents(events, day, rightGap),
+      );
+    }
+    return map;
+  }, [days, events, isDayView, gridWidth]);
+
   return (
     <div ref={gridRef} className={cn("relative", className)}>
       {/* Background grid */}
@@ -108,20 +122,8 @@ export function WeekViewGrid({
         style={{ gridTemplateColumns: `repeat(${days.length}, 1fr)` }}
       >
         {days.map((day) => {
-          /**
-           * Day view uses a smaller right gap than week view so events
-           * nearly fill the column but still show a sliver of the grid
-           * line — matching Notion Calendar's day-view styling. On narrow
-           * screens the same small gap is used so overlapping blocks stay
-           * as wide as possible.
-           */
-          const rightGap =
-            isDayView || gridWidth < 560 ? 2 : 8;
-          const positionedEvents = calculatePositionedEvents(
-            events,
-            day,
-            rightGap,
-          );
+          const positionedEvents =
+            positionedByDay.get(day.date.toISOString()) ?? [];
 
           return (
             <DayEventsColumn

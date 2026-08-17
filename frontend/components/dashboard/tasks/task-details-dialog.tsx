@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link2 } from "lucide-react";
 
 import {
@@ -31,6 +31,7 @@ export function TaskDetailsDialog({
   onTaskDoneChange,
 }: TaskDetailsDialogProps) {
   const t = useTranslations("dashboard.tasks");
+  const locale = useLocale();
 
   if (!task) {
     return null;
@@ -44,12 +45,12 @@ export function TaskDetailsDialog({
     ...(task.dueDate
       ? [{
           label: t("details.dueDateLabel"),
-          value: new Date(task.dueDate).toLocaleDateString(undefined, {
+          value: new Intl.DateTimeFormat(locale, {
             weekday: "long",
             day: "numeric",
             month: "long",
             year: "numeric",
-          }),
+          }).format(new Date(task.dueDate)),
         }]
       : []),
     {

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import LogoGrande from "@/public/logo_grande.png";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ export function AuthCard({
   onSubmit,
   children,
 }: AuthCardProps) {
+  const t = useTranslations("home.hero");
+
   return (
     <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
       <form
@@ -41,7 +44,7 @@ export function AuthCard({
       >
         <div className="bg-card -m-px rounded-[calc(var(--radius)+.125rem)] border p-8 pb-6">
           <div className="text-center">
-            <Link href="/" aria-label="go home" className="mx-auto block w-fit">
+            <Link href="/" aria-label={t("homeAria")} className="mx-auto block w-fit">
               <Image
                 src={LogoGrande}
                 alt="NexTasks"

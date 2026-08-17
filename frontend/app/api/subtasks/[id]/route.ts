@@ -110,13 +110,16 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: RouteContext<{ id: string }>,
 ) {
   const { user, response } = await requireUser();
   if (response) return response;
 
   const { id } = await params;
+
+  const url = new URL(request.url);
+  const tzOffsetMinutes = parseTzOffset(url.searchParams.get("tzOffset"));
 
   const existing = await getOwnedSubtask(id, user.id);
   if (!existing) {
@@ -144,9 +147,15 @@ export async function DELETE(
       parentById.set(subtask.id, subtask.parentId);
     }
 
+    const taskDoneBefore = await tx.task.findUnique({
+      where: { id: existing.taskId },
+      select: { done: true },
+    });
+
     const completeIds: string[] = [];
     let currentId = parentById.get(existing.id) ?? null;
     while (currentId) {
+      if (doneById.get(currentId) === true) break;
       const children = childrenByParent.get(currentId) ?? [];
       const allChildrenDone =
         children.length === 0 ||
@@ -162,6 +171,8 @@ export async function DELETE(
       roots.length === 0 ||
       roots.every((root) => doneById.get(root) === true);
 
+    const taskTransitioned = completeTask && taskDoneBefore?.done === false;
+
     if (completeIds.length > 0) {
       await tx.subtask.updateMany({
         where: { id: { in: completeIds }, done: false },
@@ -174,6 +185,17 @@ export async function DELETE(
         where: { id: existing.taskId, done: false },
         data: { done: true },
       });
+    }
+
+    // Entidades que transicionaram para feitas devem auto-confirmar os blocos
+    // conectados no periodo atual (mesma invariante do caminho done:true).
+    if (taskTransitioned || completeIds.length > 0) {
+      await confirmBlocksForDoneEntities(
+        tx,
+        taskTransitioned ? [existing.taskId] : [],
+        completeIds,
+        tzOffsetMinutes,
+      );
     }
   });
 

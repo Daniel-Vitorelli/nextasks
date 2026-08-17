@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Clock, Copy, MoreHorizontal, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ export function EventDetailPanel({
   headerActions,
 }: EventDetailPanelProps) {
   const t = useTranslations("dashboard.routines.calendar");
+  const locale = useLocale();
   const currentColor = event.color ?? "green";
 
   const {
@@ -169,7 +170,7 @@ export function EventDetailPanel({
                 )}
               />
               <span className="shrink-0 text-[#C7C5C1] dark:text-[#595959]">
-                {formatDuration(event.start, event.end)}
+                {formatDuration(event.start, event.end, locale)}
               </span>
             </div>
           </div>
@@ -202,7 +203,8 @@ export function EventDetailPanel({
                 color === currentColor && "ring-ring ring-2 ring-offset-2",
               )}
               onClick={() => onEventChange?.({ ...event, color })}
-              aria-label={color}
+              aria-label={t(`color_${color}`)}
+              aria-pressed={color === currentColor}
             />
           ))}
         </div>
@@ -254,7 +256,7 @@ export function EventDetailPanel({
       {/* Actions */}
       <div className="flex items-center justify-between px-4">
         <span className="text-muted-foreground text-xs">
-          {formatTimeDisplay(event.start)}
+          {formatTimeDisplay(event.start, locale)}
         </span>
         <div className="flex items-center gap-0.5">
           <DropdownMenu>

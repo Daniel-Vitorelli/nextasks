@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
+import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 import { isPast } from "date-fns";
 import {
@@ -98,6 +99,7 @@ export function CalendarEventItem({
   onClosePopover,
   className,
 }: CalendarEventItemProps) {
+  const locale = useLocale();
   const { event, segmentPosition = "full" } = positionedEvent;
   const color = event.color ?? "green";
   const styles = eventColorStyles[color];
@@ -446,7 +448,7 @@ export function CalendarEventItem({
                     ),
               )}
             >
-              {formatEventTimeRange(displayEvent)}
+              {formatEventTimeRange(displayEvent, locale)}
             </span>
           )}
         </div>

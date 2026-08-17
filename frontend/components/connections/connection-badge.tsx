@@ -44,7 +44,6 @@ export function ConnectionBadge({
   return (
     <span
       title={t("badgeTitle", { count: connections.length })}
-      aria-hidden
       className={cn(
         "flex size-4 items-center justify-center rounded-full text-[10px] font-bold leading-none text-white",
         allSatisfied ? "bg-emerald-500" : "bg-muted-foreground/30",
@@ -52,6 +51,9 @@ export function ConnectionBadge({
       )}
     >
       {connections.length}
+      <span className="sr-only">
+        {t("badgeTitle", { count: connections.length })}
+      </span>
     </span>
   );
 }

@@ -285,9 +285,10 @@ export async function confirmBlockForConnection(
 
   const frequency = asFrequency(block.routine.frequency);
   const blockWeekday = localWeekday(block.start, tzOffsetMinutes);
+  const period = periodForFrequency(frequency, now, tzOffsetMinutes);
   if (
     !confirmationMatchesDayFilter(
-      now,
+      period.start,
       connection.dayFilter as DayFilter,
       frequency,
       blockWeekday,
@@ -296,8 +297,6 @@ export async function confirmBlockForConnection(
   ) {
     return;
   }
-
-  const period = periodForFrequency(frequency, now, tzOffsetMinutes);
   const existing = await tx.timeBlockCompletion.findUnique({
     where: {
       timeBlockId_periodStart: {
@@ -431,15 +430,16 @@ export async function completeEntitiesForConnections(
 
   // Só as entidades que transicionaram confirmam blocos: repetir confirmação
   // de bloco num período em que a entidade já estava feita não deve criar
-  // novas confirmações (senão a contagem inflaria com o tempo).
-  const connectionsToConfirm = entityConnections.filter(
-    (connection) =>
-      (connection.taskId !== null && doneTaskIds.has(connection.taskId)) ||
-      (connection.subtaskId !== null && doneSubtaskIds.has(connection.subtaskId)),
+  // novas confirmações (senão a contagem inflaria com o tempo). Recarrega as
+  // conexões de TODAS as entidades concluídas (inclusive sub-tarefas
+  // completadas pela cascata), não só as da entrada.
+  await confirmBlocksForDoneEntities(
+    tx,
+    [...doneTaskIds],
+    [...doneSubtaskIds],
+    tzOffsetMinutes,
+    now,
   );
-  for (const connection of connectionsToConfirm) {
-    await confirmBlockForConnection(tx, connection, tzOffsetMinutes, now);
-  }
 }
 
 /**

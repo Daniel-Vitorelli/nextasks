@@ -32,15 +32,27 @@ export function useHorizontalScroll({
   const [isAnimating, setIsAnimating] = useState(false);
 
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const snapTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const slideTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const accumulatedDelta = useRef(0);
   const onNavigateRef = useRef(onNavigate);
   useEffect(() => {
     onNavigateRef.current = onNavigate;
   }, [onNavigate]);
 
+  const clearSnapTimer = useCallback(() => {
+    if (snapTimer.current) {
+      clearTimeout(snapTimer.current);
+      snapTimer.current = null;
+    }
+  }, []);
+
   const snapAndNavigate = useCallback(
     (offset: number) => {
       if (dayColumnWidth <= 0) return;
+
+      // Um novo snap cancela o anterior (wheel burst durante a animacao).
+      clearSnapTimer();
 
       const daysDelta = Math.round(offset / dayColumnWidth);
 
@@ -48,7 +60,8 @@ export function useHorizontalScroll({
       if (daysDelta === 0) {
         setIsAnimating(true);
         setScrollOffset(0);
-        setTimeout(() => {
+        snapTimer.current = setTimeout(() => {
+          snapTimer.current = null;
           setIsAnimating(false);
           setIsScrolling(false);
         }, SNAP_ANIMATION_MS);
@@ -60,7 +73,8 @@ export function useHorizontalScroll({
       setIsAnimating(true);
       setScrollOffset(targetOffset);
 
-      setTimeout(() => {
+      snapTimer.current = setTimeout(() => {
+        snapTimer.current = null;
         onNavigateRef.current(-daysDelta);
         setScrollOffset(0);
         setIsAnimating(false);
@@ -68,7 +82,7 @@ export function useHorizontalScroll({
         accumulatedDelta.current = 0;
       }, SNAP_ANIMATION_MS);
     },
-    [dayColumnWidth],
+    [dayColumnWidth, clearSnapTimer],
   );
 
   // Programmatic slide animation for button/keyboard navigation
@@ -87,7 +101,8 @@ export function useHorizontalScroll({
         requestAnimationFrame(() => {
           setIsAnimating(true);
           setSlideOffset(0);
-          setTimeout(() => {
+          slideTimer.current = setTimeout(() => {
+            slideTimer.current = null;
             setIsAnimating(false);
           }, SNAP_ANIMATION_MS);
         });
@@ -95,6 +110,16 @@ export function useHorizontalScroll({
     },
     [dayColumnWidth, isAnimating, isScrolling],
   );
+
+  // Limpa os timers de snap/slide no unmount.
+  useEffect(() => {
+    return () => {
+      clearSnapTimer();
+      if (slideTimer.current) {
+        clearTimeout(slideTimer.current);
+      }
+    };
+  }, [clearSnapTimer]);
 
   useEffect(() => {
     const container = containerRef.current;

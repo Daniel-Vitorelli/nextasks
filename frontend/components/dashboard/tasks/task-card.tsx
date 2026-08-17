@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   CalendarClock,
   CircleEllipsis,
@@ -39,6 +39,7 @@ export function TaskCard({
   onToggleDone,
 }: TaskCardProps) {
   const t = useTranslations("dashboard.tasks");
+  const locale = useLocale();
 
   const handleDetails = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -98,7 +99,7 @@ export function TaskCard({
           {task.dueDate && (
             <span className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs">
               <CalendarClock className="size-3" />
-              {new Date(task.dueDate).toLocaleDateString()}
+              {new Intl.DateTimeFormat(locale).format(new Date(task.dueDate))}
             </span>
           )}
           {task.done && (

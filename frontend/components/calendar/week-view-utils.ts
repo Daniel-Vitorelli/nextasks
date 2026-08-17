@@ -98,12 +98,13 @@ export function markIsToday(days: Omit<WeekDay, "isToday">[]): WeekDay[] {
  * Generates an array of HourSlot objects for all 24 hours
  */
 export function generateHours(locale?: Locale): HourSlot[] {
+  const hour24 = locale?.code?.toLowerCase().startsWith("pt") ?? false;
   return Array.from({ length: 24 }, (_, i) => {
     const dateWithHour = new Date();
     dateWithHour.setHours(i, 0, 0, 0);
     return {
       hour: i,
-      label: format(dateWithHour, "h a", { locale }),
+      label: format(dateWithHour, hour24 ? "H" : "h a", { locale }),
     };
   });
 }

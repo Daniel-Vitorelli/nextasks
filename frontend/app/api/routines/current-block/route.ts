@@ -7,6 +7,8 @@ import {
   periodForFrequency,
 } from "@/lib/server/completions";
 import { asFrequency, parseTzOffset, requireUser } from "@/lib/server/api";
+import { confirmationValueCounts } from "@/lib/server/connections";
+import type { EventConfirmation } from "@/types/domain";
 
 export async function GET(request: Request) {
   const { user, response } = await requireUser();
@@ -46,8 +48,21 @@ export async function GET(request: Request) {
     },
   });
 
+  // So completions que contam como confirmacao (checklist true / score >= 1)
+  // removem o bloco da lista; marcar "false" nao esconde o bloco.
+  const confirmationByBlock = new Map(
+    timeBlocks.map((block) => [block.id, block.confirmation] as const),
+  );
   const completedBlockIds = new Set(
-    completions.map((completion) => completion.timeBlockId),
+    completions
+      .filter((completion) =>
+        confirmationValueCounts(
+          completion.value,
+          (confirmationByBlock.get(completion.timeBlockId) ??
+            "checklist") as EventConfirmation,
+        ),
+      )
+      .map((completion) => completion.timeBlockId),
   );
 
   // Rotina diaria vale todos os dias; semanal so no dia da semana do bloco.

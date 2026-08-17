@@ -80,7 +80,10 @@ export function WeekView({
     [currentDate, VISIBLE_DAYS, locale],
   );
 
-  const days: WeekDay[] = markIsToday(baseDays);
+  const days: WeekDay[] = React.useMemo(
+    () => markIsToday(baseDays),
+    [baseDays],
+  );
 
   const hours = React.useMemo(() => generateHours(locale), [locale]);
 
@@ -419,6 +422,7 @@ export function WeekView({
                 scrollDays={bufferedDays}
                 scrollStyle={scrollStyle}
                 behindSelection={!!selectedEventId}
+                locale={locale?.code ?? "en"}
               />
             )}
           </div>

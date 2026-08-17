@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useLocale } from "next-intl";
 import { formatEventTimeRange } from "./calendar-event-time";
 import { EventVisual } from "./event-visual";
 import type { CSSProperties } from "react";
@@ -34,6 +35,7 @@ export function EventDragCopy({
   fixedHeight,
   className,
 }: EventDragCopyProps) {
+  const locale = useLocale();
   const durationMinutes =
     (displayEvent.end.getTime() - displayEvent.start.getTime()) / 60000;
   const heightPx = fixedHeight ?? (durationMinutes / 60) * hourHeight;
@@ -86,7 +88,7 @@ export function EventDragCopy({
           </span>
           {heightPx >= 40 && (
             <span className="text-[0.625rem] whitespace-nowrap text-white dark:text-white">
-              {formatEventTimeRange(displayEvent)}
+              {formatEventTimeRange(displayEvent, locale)}
             </span>
           )}
         </div>

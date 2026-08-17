@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocale } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const t = useTranslations("login");
+  const locale = useLocale();
 
   const loginSchema = useMemo(() => createLoginSchema(t), [t]);
 
@@ -48,7 +50,7 @@ export default function LoginPage() {
       {
         email: data.email,
         password: data.pwd,
-        callbackURL: "/app/home",
+        callbackURL: `/${locale}/app/home`,
       },
       {
         onError: (ctx) => {
@@ -84,7 +86,7 @@ export default function LoginPage() {
             htmlFor="email"
             className="block text-sm font-jetbrainsMono"
           >
-            Email
+            {t("email")}
           </FieldLabel>
           <Input
             type="email"

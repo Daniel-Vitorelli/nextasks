@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Task, TaskFormValues } from "@/types/domain";
 import { sortTasksForList } from "@/lib/task-ordering";
 import { CONNECTIONS_CHANGED_EVENT } from "@/components/connections/connections-provider";
@@ -12,6 +12,7 @@ export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const inFlightToggles = useRef(new Set<string>());
 
   const loadTasks = useCallback(async () => {
     try {
@@ -68,6 +69,20 @@ export function useTasks() {
   );
 
   const toggleTaskDone = useCallback(async (task: Task) => {
+    // Ignora cliques enquanto um toggle da mesma tarefa esta em voo
+    // (dois cliques rapidos nao enviam dois PATCH identicos).
+    if (inFlightToggles.current.has(task.id)) return;
+    inFlightToggles.current.add(task.id);
+
+    const targetDone = !task.done;
+
+    // Otimista: a checkbox responde na hora; rollback em caso de falha.
+    setTasks((current) =>
+      current
+        .map((item) => (item.id === task.id ? { ...item, done: targetDone } : item))
+        .sort(sortTasksForList),
+    );
+
     try {
       const tzOffsetMinutes = new Date().getTimezoneOffset();
       const response = await fetch(
@@ -75,7 +90,7 @@ export function useTasks() {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ done: !task.done }),
+          body: JSON.stringify({ done: targetDone }),
         },
       );
 
@@ -94,6 +109,15 @@ export function useTasks() {
       });
     } catch (error) {
       console.error(error);
+      setTasks((current) =>
+        current
+          .map((item) =>
+            item.id === task.id ? { ...item, done: task.done } : item,
+          )
+          .sort(sortTasksForList),
+      );
+    } finally {
+      inFlightToggles.current.delete(task.id);
     }
   }, []);
 

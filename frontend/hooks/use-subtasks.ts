@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   completeAncestors,
   insertNode,
@@ -18,6 +18,10 @@ import type { Subtask, SubtaskFormValues } from "@/types/domain";
 export function useSubtasks(taskId: string | null) {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Snapshot da arvore antes de cada mutacao otimista, para rollback fiel
+  // (capturado dentro do updater, sem closure stale).
+  const rollbackRef = useRef<Subtask[] | null>(null);
+  const inFlightToggles = useRef(new Set<string>());
 
   const loadSubtasks = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -99,8 +103,11 @@ export function useSubtasks(taskId: string | null) {
     async (id: string, values: SubtaskFormValues) => {
       if (!taskId) return;
 
-      const previous = subtasks;
-      setSubtasks((current) => updateNode(current, id, values));
+      rollbackRef.current = null;
+      setSubtasks((current) => {
+        rollbackRef.current = current;
+        return updateNode(current, id, values);
+      });
 
       try {
         const response = await fetch(`/api/subtasks/${id}`, {
@@ -114,25 +121,32 @@ export function useSubtasks(taskId: string | null) {
         }
       } catch (error) {
         console.error(error);
-        setSubtasks(previous);
+        if (rollbackRef.current) {
+          setSubtasks(rollbackRef.current);
+        }
       }
     },
-    [taskId, subtasks],
+    [taskId],
   );
 
   const toggleSubtaskDone = useCallback(
     async (id: string, done: boolean) => {
       if (!taskId) return;
 
-      const previous = subtasks;
+      // Ignora cliques enquanto um toggle do mesmo no esta em voo.
+      if (inFlightToggles.current.has(id)) return;
+      inFlightToggles.current.add(id);
+
+      rollbackRef.current = null;
       // Concluir uma sub-tarefa conclui a sub-árvore abaixo dela e sobe a
       // cadeia: ancestrais com todos os filhos feitos também ficam feitos.
       // Reabrir desmarca o nó e toda a cadeia de ancestrais.
-      setSubtasks((current) =>
-        done
+      setSubtasks((current) => {
+        rollbackRef.current = current;
+        return done
           ? completeAncestors(markSubtreeDone(current, id), id)
-          : unmarkPath(current, id),
-      );
+          : unmarkPath(current, id);
+      });
 
       try {
         const tzOffsetMinutes = new Date().getTimezoneOffset();
@@ -148,22 +162,34 @@ export function useSubtasks(taskId: string | null) {
         if (!response.ok) {
           throw new Error("Failed to update subtask");
         }
+
+        // Reconcilia com a resposta do servidor (o nó pode ter sido
+        // concluído server-side por conexões no mesmo período).
+        const saved = (await response.json()) as Subtask;
+        setSubtasks((current) => updateNode(current, id, { done: saved.done }));
       } catch (error) {
         console.error(error);
-        setSubtasks(previous);
+        if (rollbackRef.current) {
+          setSubtasks(rollbackRef.current);
+        }
+      } finally {
+        inFlightToggles.current.delete(id);
       }
     },
-    [taskId, subtasks],
+    [taskId],
   );
 
   const deleteSubtask = useCallback(
     async (id: string) => {
       if (!taskId) return;
 
-      const previous = subtasks;
+      rollbackRef.current = null;
       // Excluir recalcula os ancestrais: sem filhos pendentes, o ancestral
       // volta a ficar feito (subindo a cadeia).
-      setSubtasks((current) => removeAndRecomplete(current, id) ?? current);
+      setSubtasks((current) => {
+        rollbackRef.current = current;
+        return removeAndRecomplete(current, id) ?? current;
+      });
 
       try {
         const response = await fetch(`/api/subtasks/${id}`, {
@@ -175,10 +201,12 @@ export function useSubtasks(taskId: string | null) {
         }
       } catch (error) {
         console.error(error);
-        setSubtasks(previous);
+        if (rollbackRef.current) {
+          setSubtasks(rollbackRef.current);
+        }
       }
     },
-    [taskId, subtasks],
+    [taskId],
   );
 
   return {

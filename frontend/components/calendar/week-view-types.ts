@@ -166,6 +166,8 @@ export interface WeekViewTimeIndicatorProps {
   scrollStyle?: React.CSSProperties;
   /** Whether to render behind selected events */
   behindSelection?: boolean;
+  /** App locale (e.g. "pt", "en") for 12/24h formatting */
+  locale?: string;
   /** Optional className */
   className?: string;
 }

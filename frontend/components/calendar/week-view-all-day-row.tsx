@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { isSameDay } from "date-fns";
@@ -42,7 +43,10 @@ export function WeekViewAllDayRow({
   highlightedDate,
   className,
 }: WeekViewAllDayRowProps) {
-  const allEventRows = calculateAllDayEventRows(allDayEvents, days);
+  const allEventRows = React.useMemo(
+    () => calculateAllDayEventRows(allDayEvents, days),
+    [allDayEvents, days],
+  );
 
   // Filter out events entirely within buffer columns so they don't peek
   // through due to sub-pixel rendering at the scroll boundary.

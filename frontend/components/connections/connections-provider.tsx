@@ -36,6 +36,7 @@ export function ConnectionsProvider({
 }) {
   const [data, setData] = React.useState<ConnectionsResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const rollbackRef = React.useRef<TaskBlockConnection | null>(null);
 
   const reload = React.useCallback(async () => {
     const tzOffsetMinutes = new Date().getTimezoneOffset();
@@ -94,10 +95,24 @@ export function ConnectionsProvider({
       const existing = data?.connections.find(
         (connection) =>
           connection.timeBlockId === params.timeBlockId &&
+          !connection.id.startsWith("pending-") &&
           (params.taskId
             ? connection.taskId === params.taskId
             : connection.subtaskId === params.subtaskId),
       );
+
+      const pendingExists = data?.connections.some(
+        (connection) =>
+          connection.id.startsWith("pending-") &&
+          connection.timeBlockId === params.timeBlockId &&
+          (params.taskId
+            ? connection.taskId === params.taskId
+            : connection.subtaskId === params.subtaskId),
+      );
+
+      // Um POST ja esta em voo para esta entidade + bloco: ignora o clique
+      // (a UI ja reflete a conexao pendente).
+      if (pendingExists) return;
 
       if (existing) {
         setData(
@@ -121,7 +136,7 @@ export function ConnectionsProvider({
         }
       } else {
         const pending: TaskBlockConnection = {
-          id: `pending-${params.timeBlockId}`,
+          id: `pending-${params.timeBlockId}-${params.taskId ?? params.subtaskId}`,
           taskId: params.taskId ?? null,
           subtaskId: params.subtaskId ?? null,
           timeBlockId: params.timeBlockId,
@@ -179,18 +194,22 @@ export function ConnectionsProvider({
 
   const updateConnection = React.useCallback(
     async (id: string, patch: ConnectionPatch) => {
-      const previous = data?.connections.find((connection) => connection.id === id);
-      if (!previous) return;
+      rollbackRef.current = null;
 
-      setData(
-        (current) =>
-          current && {
-            ...current,
-            connections: current.connections.map((connection) =>
-              connection.id === id ? { ...connection, ...patch } : connection,
-            ),
-          },
-      );
+      setData((current) => {
+        if (!current) return current;
+        const previous = current.connections.find(
+          (connection) => connection.id === id,
+        );
+        if (!previous) return current;
+        rollbackRef.current = previous;
+        return {
+          ...current,
+          connections: current.connections.map((connection) =>
+            connection.id === id ? { ...connection, ...patch } : connection,
+          ),
+        };
+      });
 
       const tzOffsetMinutes = new Date().getTimezoneOffset();
 
@@ -224,19 +243,22 @@ export function ConnectionsProvider({
         notifyChanged();
       } catch (error) {
         console.error(error);
-        setData(
-          (current) =>
-            current && {
-              ...current,
-              connections: current.connections.map((item) =>
-                item.id === id ? previous : item,
-              ),
-            },
-        );
+        const previous = rollbackRef.current;
+        if (previous) {
+          setData(
+            (current) =>
+              current && {
+                ...current,
+                connections: current.connections.map((item) =>
+                  item.id === id ? previous : item,
+                ),
+              },
+          );
+        }
         await reload();
       }
     },
-    [data, reload, notifyChanged],
+    [reload, notifyChanged],
   );
 
   const value = React.useMemo(

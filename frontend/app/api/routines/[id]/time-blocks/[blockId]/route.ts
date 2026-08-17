@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/server/prisma";
 import { parseTimeBlockPatch } from "@/lib/validation/time-blocks";
-import { badRequest, notFound, requireUser, type RouteContext } from "@/lib/server/api";
+import {
+  badRequest,
+  notFound,
+  parseTzOffset,
+  requireUser,
+  type RouteContext,
+} from "@/lib/server/api";
+import { localWeekday } from "@/lib/server/completions";
+import { isDayFilterSatisfiable } from "@/lib/server/connections";
+import type { DayFilter, Frequency } from "@/types/domain";
 
 async function getOwnedBlock(id: string, blockId: string, userId: string) {
   return prisma.timeBlock.findFirst({
@@ -32,6 +41,9 @@ export async function PATCH(
     return badRequest("Invalid time block");
   }
 
+  const url = new URL(request.url);
+  const tzOffsetMinutes = parseTzOffset(url.searchParams.get("tzOffset"));
+
   // Desligar a confirmação com conexões ativas criaria conexões impossíveis
   // de satisfazer (nunca confirmáveis).
   if (patch.confirmation === "none") {
@@ -40,6 +52,39 @@ export async function PATCH(
     });
     if (connections > 0) {
       return badRequest("Block has connections; remove them first");
+    }
+  }
+
+  // Mover um bloco semanal de dia pode tornar os dayFilters das conexões
+  // existentes impossíveis de satisfazer (weekday:N de outro dia).
+  if (patch.start) {
+    const routine = await prisma.routine.findUnique({
+      where: { id },
+      select: { frequency: true },
+    });
+    if (!routine) {
+      return notFound("Routine not found");
+    }
+    if (routine.frequency === "weekly") {
+      const newBlockWeekday = localWeekday(patch.start, tzOffsetMinutes);
+      const connections = await prisma.taskBlockConnection.findMany({
+        where: { timeBlockId: blockId },
+        select: { dayFilter: true },
+      });
+      const broken = connections.find(
+        (connection) =>
+          !isDayFilterSatisfiable(
+            connection.dayFilter as DayFilter,
+            "weekly" as Frequency,
+            newBlockWeekday,
+            tzOffsetMinutes,
+          ),
+      );
+      if (broken) {
+        return badRequest(
+          "Moving the block breaks existing connections' day filters",
+        );
+      }
     }
   }
 

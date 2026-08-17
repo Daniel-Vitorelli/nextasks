@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useTranslations } from "next-intl";
 import { ListChecks } from "lucide-react";
 
@@ -31,8 +32,18 @@ function selectCurrent(tasks: Task[]): {
 export function TasksSection() {
   const t = useTranslations("app.home.tasks");
   const { tasks, isLoading, toggleTaskDone, setTaskDone } = useTasks();
-  const { current, upcoming } = selectCurrent(tasks);
+  const { current, upcoming } = React.useMemo(
+    () => selectCurrent(tasks),
+    [tasks],
+  );
   const { subtasks, toggleSubtaskDone } = useSubtasks(current?.id ?? null);
+
+  // Sempre a arvore mais recente (o closure do render pode estar stale se
+  // dois toggles acontecerem antes de um re-render).
+  const subtasksRef = React.useRef(subtasks);
+  React.useEffect(() => {
+    subtasksRef.current = subtasks;
+  }, [subtasks]);
 
   const handleSubtaskToggle = (subtask: Subtask, done: boolean) => {
     if (!current) return;
@@ -44,7 +55,7 @@ export function TasksSection() {
     }
     // Concluir o último filho pendente conclui a tarefa (mesma regra do painel).
     const updated = completeAncestors(
-      markSubtreeDone(subtasks, subtask.id),
+      markSubtreeDone(subtasksRef.current, subtask.id),
       subtask.id,
     );
     setTaskDone(

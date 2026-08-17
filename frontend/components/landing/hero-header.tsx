@@ -46,7 +46,7 @@ export const HeroHeader = () => {
             <div className="flex w-full justify-between lg:w-auto">
               <Link
                 href="/"
-                aria-label="home"
+                aria-label={t("homeAria")}
                 className="flex items-center space-x-2"
               >
                 <Image
@@ -59,7 +59,8 @@ export const HeroHeader = () => {
 
               <button
                 onClick={() => setMenuState(!menuState)}
-                aria-label={menuState == true ? "Close Menu" : "Open Menu"}
+                aria-label={menuState ? t("closeMenu") : t("openMenu")}
+                aria-expanded={menuState}
                 className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden"
               >
                 <Menu className="in-data-[state=active]:rotate-180 in-data-[state=active]:scale-0 in-data-[state=active]:opacity-0 m-auto size-6 duration-200" />

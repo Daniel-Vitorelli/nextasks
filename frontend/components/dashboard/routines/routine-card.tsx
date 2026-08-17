@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   CalendarClock,
   CalendarDays,
@@ -37,11 +37,12 @@ export function RoutineCard({
   onToggleActive,
 }: RoutineCardProps) {
   const t = useTranslations("dashboard.routines");
+  const locale = useLocale();
 
   const durationLabel =
     routine.duration === "until" && routine.endDate
       ? t("dialog.untilWithDate", {
-          date: new Date(routine.endDate).toLocaleDateString(),
+          date: new Intl.DateTimeFormat(locale).format(new Date(routine.endDate)),
         })
       : t("dialog.indefinite");
 
@@ -73,6 +74,16 @@ export function RoutineCard({
   return (
     <li
       onClick={() => onOpen(routine)}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(routine);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={routine.name}
       className="border-border/60 flex cursor-pointer flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/25"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">

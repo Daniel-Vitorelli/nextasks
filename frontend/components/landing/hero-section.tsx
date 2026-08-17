@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { TextEffect } from "@/components/motion-primitives/text-effect";
 import { AnimatedGroup } from "@/components/motion-primitives/animated-group";
 import { HeroHeader } from "@/components/landing/hero-header";
+import { HeroAppMock } from "@/components/landing/hero-app-mock";
 import { useTranslations } from "next-intl";
 import scrollToElement from "@/lib/scrollToElement";
 
@@ -133,21 +133,17 @@ export default function HeroSection() {
               }}
             >
               <div className="mask-b-from-55% relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
-                  <Image
-                    className="bg-background aspect-15/8 relative hidden rounded-2xl dark:block"
-                    src="https://tailark.com/_next/image?url=%2Fmail2.png&w=3840&q=75&dpl=dpl_CK7ZTeahr3Qtk2yZ2rqpmuUBMmWT"
-                    alt="app screen"
-                    width="2700"
-                    height="1440"
-                  />
-                  <Image
-                    className="z-2 border-border/25 aspect-15/8 relative rounded-2xl border dark:hidden"
-                    src="https://tailark.com/_next/image?url=%2Fmail2.png&w=3840&q=75&dpl=dpl_CK7ZTeahr3Qtk2yZ2rqpmuUBMmWT"
-                    alt="app screen"
-                    width="2700"
-                    height="1440"
-                  />
+                <div
+                  role="img"
+                  aria-label={t("appScreen")}
+                  className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1"
+                >
+                  <div className="bg-muted/40 relative aspect-15/8 hidden overflow-hidden rounded-2xl p-4 dark:block">
+                    <HeroAppMock />
+                  </div>
+                  <div className="bg-muted/40 z-2 border-border/25 relative aspect-15/8 overflow-hidden rounded-2xl border p-4 dark:hidden">
+                    <HeroAppMock />
+                  </div>
                 </div>
               </div>
             </AnimatedGroup>

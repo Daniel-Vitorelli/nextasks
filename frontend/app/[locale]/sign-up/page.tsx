@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import z from "zod";
@@ -23,6 +23,7 @@ import { authClient } from "@/lib/auth-client";
 
 export default function SignUpPage() {
   const t = useTranslations("sign-up");
+  const locale = useLocale();
 
   const signUpSchema = useMemo(() => createSignUpSchema(t), [t]);
 
@@ -49,11 +50,11 @@ export default function SignUpPage() {
         email: data.email,
         name: data.name,
         password: data.pwd,
-        callbackURL: "/app/home",
+        callbackURL: `/${locale}/app/home`,
       },
       {
         onSuccess: () => {
-          window.location.href = "/app/home";
+          window.location.href = `/${locale}/app/home`;
         },
         onError: (ctx) => {
           if (ctx.error.code === "USER_ALREADY_EXISTS") {
@@ -105,7 +106,7 @@ export default function SignUpPage() {
             htmlFor="email"
             className="block text-sm font-jetbrainsMono"
           >
-            Email
+            {t("email")}
           </FieldLabel>
           <Input
             type="email"

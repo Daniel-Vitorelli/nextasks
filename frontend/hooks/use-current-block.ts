@@ -44,8 +44,26 @@ export function useCurrentBlock() {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     void loadCurrentBlock();
-    const interval = setInterval(loadCurrentBlock, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
+
+    const interval = setInterval(() => {
+      // Nao faz polling com a aba oculta (o navegador pode congelar timers
+      // de qualquer forma; evita trabalho desnecessario).
+      if (!document.hidden) {
+        void loadCurrentBlock();
+      }
+    }, REFRESH_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        void loadCurrentBlock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [loadCurrentBlock]);
   /* eslint-enable react-hooks/set-state-in-effect */
 

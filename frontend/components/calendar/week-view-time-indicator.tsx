@@ -19,6 +19,7 @@ export function WeekViewTimeIndicator({
   scrollDays,
   scrollStyle,
   behindSelection,
+  locale,
   className,
 }: WeekViewTimeIndicatorProps) {
   const [currentTime, setCurrentTime] = React.useState(() => new Date());
@@ -48,8 +49,11 @@ export function WeekViewTimeIndicator({
   const topPosition =
     (minutesSinceMidnight / totalMinutesInDay) * totalGridHeight;
 
-  // Format time as "H:MMAM/PM" (e.g., "5:48PM")
-  const formattedTime = format(currentTime, "h:mma").toUpperCase();
+  // Format time as "14:48" (pt, 24h) or "5:48PM" (en)
+  const hour24 = locale?.toLowerCase().startsWith("pt") ?? false;
+  const formattedTime = hour24
+    ? format(currentTime, "HH:mm")
+    : format(currentTime, "h:mma").toUpperCase();
 
   const lineDays = scrollDays ?? days;
   const lineTodayIndex = lineDays.findIndex((d) => d.isToday);
