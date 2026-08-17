@@ -12,7 +12,7 @@ export function startOfDayUtc(date: Date, tzOffsetMinutes = 0): Date {
     local.getUTCMonth(),
     local.getUTCDate(),
   );
-  return new Date(localStart - tzOffsetMinutes * 60_000);
+  return new Date(localStart + tzOffsetMinutes * 60_000);
 }
 
 /** Inicio da semana local (domingo 00:00) como instante UTC. */
