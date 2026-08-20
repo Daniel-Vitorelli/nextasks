@@ -102,12 +102,25 @@
     }
   },
   "app": {
-    "dock": {
+"dock": {
       "dashboard": "Dashboard",
       "social": "Social",
       "home": "Home",
+      "calendar": "Calendar",
       "ai": "AI",
-      "config": "Config"
+      "config": "Settings"
+    },
+    "calendar": {
+      "eyebrow": "Calendar",
+      "title": "Calendar",
+      "subtitle": "Your routine schedule",
+      "today": "Today",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week",
+      "weekView": "Week",
+      "dayView": "Day",
+      "empty": "No activities scheduled for this period.",
+      "loadError": "Could not load the calendar."
     },
     "home": {
       "eyebrow": "Home",
@@ -132,6 +145,19 @@
         "title": "No active routine",
         "description": "Activate a routine in the dashboard to see your progress and current schedule here."
       },
+      "streak": {
+        "title": "Consistency",
+        "subtitle": "Routine streak and consistency",
+        "current": "Current streak",
+        "longest": "Longest streak",
+        "lastFullDay": "Last full day",
+        "daysLabel": "{count, plural, one {# day} other {# days}}",
+        "none": "None yet",
+        "less": "Less",
+        "more": "More",
+        "noData": "No data",
+        "percent": "{value}%"
+      },
       "emptyRoutine": {
         "title": "Nothing to show yet",
         "description": "Add time blocks to your routine in the dashboard to track your progress and see your schedule here."
@@ -153,6 +179,60 @@
         "emptyDescription": "Create tasks in the dashboard to see them here.",
         "upcomingTitle": "Upcoming",
         "subtasksLabel": "Subtasks"
+      }
+    },
+    "config": {
+      "eyebrow": "Settings",
+      "title": "Settings",
+      "subtitle": "Your account, preferences and data.",
+      "profile": {
+        "title": "Profile",
+        "description": "Display name, email and password.",
+        "nameLabel": "Name",
+        "save": "Save",
+        "saved": "Changes saved.",
+        "saveError": "Could not save. Try again.",
+        "emailLabel": "Email",
+        "currentPassword": "Current password",
+        "newPassword": "New password",
+        "changePassword": "Change password",
+        "passwordChanged": "Password changed.",
+        "changeError": "Could not change the password.",
+        "dangerTitle": "Danger zone",
+        "deleteAccount": "Delete account",
+        "deleteTitle": "Delete account?",
+        "deleteDescription": "All your data (routines, tasks, history) will be permanently erased. This action cannot be undone.",
+        "cancel": "Cancel",
+        "deleteConfirm": "Delete"
+      },
+      "appearance": {
+        "title": "Appearance",
+        "description": "Switch between light and dark theme.",
+        "toggleLabel": "Toggle theme"
+      },
+      "language": {
+        "title": "Language",
+        "description": "Language displayed in the app.",
+        "selectLabel": "Select language"
+      },
+      "timezone": {
+        "title": "Timezone",
+        "description": "Used to compute days, periods and the current block. Without a setting, the browser timezone is used.",
+        "selectLabel": "Timezone",
+        "auto": "Automatic (browser, {offset})",
+        "save": "Save",
+        "saved": "Timezone updated.",
+        "saveError": "Could not save. Try again."
+      },
+      "data": {
+        "title": "Data",
+        "description": "Export a JSON backup or restore data from a previously exported file. Import recreates routines, time blocks, tasks, subtasks, connections and completions.",
+        "export": "Export",
+        "exportDone": "Backup downloaded.",
+        "exportError": "Could not export.",
+        "import": "Import",
+        "importDone": "Import complete: {routines} routine(s), {blocks} block(s), {tasks} task(s) and {subtasks} subtask(s).",
+        "importError": "Invalid file or could not import."
       }
     }
   },
@@ -354,6 +434,8 @@
         "recurrenceDaily": "Every day",
         "recurrenceWeekly": "Every {day}",
         "noConfirmation": "No confirmation mode",
+        "routineInactive": "Inactive routine",
+        "dateCountHint": "A specific date requires 1 confirmation",
         "occurs": "Occurs {recurrence}",
         "filterImpossible": "This filter can never match: the block only occurs on {day}.",
         "fixFilter": "Use {day}",

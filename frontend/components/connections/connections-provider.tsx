@@ -7,9 +7,21 @@ import type {
   ConnectionsResponse,
   TaskBlockConnection,
 } from "@/types/domain";
+import {
+  notifyDataChanged,
+  useDataSync,
+  type DataResource,
+} from "@/lib/client/data-events";
+import { useTzOffset } from "@/lib/client/use-tz-offset";
 
-/** Disparado após qualquer mutação de conexão (hooks de tarefas recarregam). */
-export const CONNECTIONS_CHANGED_EVENT = "nexasks:connections-changed";
+const AFTER_CONNECTION_CHANGE: DataResource[] = [
+  "connections",
+  "tasks",
+  "subtasks",
+  "time-blocks",
+  "progress",
+  "current-block",
+];
 
 interface ToggleParams {
   taskId?: string | null;
@@ -38,8 +50,9 @@ export function ConnectionsProvider({
   const [isLoading, setIsLoading] = React.useState(true);
   const rollbackRef = React.useRef<TaskBlockConnection | null>(null);
 
+  const tzOffsetMinutes = useTzOffset();
+
   const reload = React.useCallback(async () => {
-    const tzOffsetMinutes = new Date().getTimezoneOffset();
     try {
       const response = await fetch(
         `/api/connections?tzOffset=${tzOffsetMinutes}`,
@@ -55,13 +68,12 @@ export function ConnectionsProvider({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tzOffsetMinutes]);
 
   React.useEffect(() => {
     let active = true;
 
     (async () => {
-      const tzOffsetMinutes = new Date().getTimezoneOffset();
       try {
         const response = await fetch(
           `/api/connections?tzOffset=${tzOffsetMinutes}`,
@@ -84,11 +96,17 @@ export function ConnectionsProvider({
     return () => {
       active = false;
     };
-  }, []);
+  }, [tzOffsetMinutes]);
 
   const notifyChanged = React.useCallback(() => {
-    window.dispatchEvent(new Event(CONNECTIONS_CHANGED_EVENT));
+    notifyDataChanged(AFTER_CONNECTION_CHANGE);
   }, []);
+
+  // Confirmações de blocos, tarefas e sub-tarefas mudam os contadores de
+  // confirmação server-side: recarrega quando qualquer um deles muda.
+  useDataSync(["tasks", "subtasks", "time-blocks"], () => {
+    void reload();
+  });
 
   const toggleConnection = React.useCallback(
     async (params: ToggleParams) => {
@@ -154,7 +172,6 @@ export function ConnectionsProvider({
             },
         );
 
-        const tzOffsetMinutes = new Date().getTimezoneOffset();
         const response = await fetch(
           `/api/connections?tzOffset=${tzOffsetMinutes}`,
           {
@@ -189,7 +206,7 @@ export function ConnectionsProvider({
 
       notifyChanged();
     },
-    [data, reload, notifyChanged],
+    [data, reload, notifyChanged, tzOffsetMinutes],
   );
 
   const updateConnection = React.useCallback(
@@ -210,8 +227,6 @@ export function ConnectionsProvider({
           ),
         };
       });
-
-      const tzOffsetMinutes = new Date().getTimezoneOffset();
 
       try {
         const response = await fetch(
@@ -258,7 +273,7 @@ export function ConnectionsProvider({
         await reload();
       }
     },
-    [reload, notifyChanged],
+    [reload, notifyChanged, tzOffsetMinutes],
   );
 
   const value = React.useMemo(

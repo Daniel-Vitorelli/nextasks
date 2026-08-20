@@ -35,12 +35,14 @@ export function ProgressChart({
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
+    timeZone: "UTC",
   });
 
   const tooltipDateFormatter = new Intl.DateTimeFormat(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
+    timeZone: "UTC",
   });
 
   const chartData = data.map((item) => ({

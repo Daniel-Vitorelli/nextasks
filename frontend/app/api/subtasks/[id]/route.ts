@@ -10,7 +10,10 @@ import {
   type RouteContext,
 } from "@/lib/server/api";
 import { markSubtaskDoneCascade } from "@/lib/server/subtask-cascade";
-import { confirmBlocksForDoneEntities } from "@/lib/server/connections";
+import {
+  confirmBlocksForDoneEntities,
+  reversePropagateForEntities,
+} from "@/lib/server/connections";
 
 async function getOwnedSubtask(id: string, userId: string) {
   return prisma.subtask.findFirst({
@@ -76,7 +79,7 @@ export async function PATCH(
     // auto-confirma os blocos conectados no período atual.
     if (patch.done === true) {
       const { completedSubtaskIds, completedTask } =
-        await markSubtaskDoneCascade(tx, existing.taskId, id);
+        await markSubtaskDoneCascade(tx, existing.taskId, id, existing.done);
 
       if (completedTask || completedSubtaskIds.length > 0) {
         await confirmBlocksForDoneEntities(
@@ -103,6 +106,25 @@ export async function PATCH(
       });
     }
 
+    // Reabrir propaga no sentido reverso: remove as auto-confirmações das
+    // entidades reabertas (nó, ancestrais e tarefa) e reavalia as entidades
+    // conectadas aos mesmos blocos.
+    if (patch.done === false) {
+      await reversePropagateForEntities(
+        tx,
+        user.id,
+        [
+          { taskId: null, subtaskId: id },
+          ...ancestorIds.map((ancestorId) => ({
+            taskId: null as string | null,
+            subtaskId: ancestorId,
+          })),
+          { taskId: existing.taskId, subtaskId: null },
+        ],
+        tzOffsetMinutes,
+      );
+    }
+
     return updated;
   });
 
@@ -127,6 +149,35 @@ export async function DELETE(
   }
 
   await prisma.$transaction(async (tx) => {
+    // A exclusão remove toda a sub-árvore abaixo do nó (cascade): captura
+    // os descendentes e os blocos conectados antes de excluir.
+    const siblingsBefore = await tx.subtask.findMany({
+      where: { taskId: existing.taskId },
+      select: { id: true, parentId: true },
+    });
+    const childrenByParentBefore = new Map<string | null, string[]>();
+    for (const sibling of siblingsBefore) {
+      const children = childrenByParentBefore.get(sibling.parentId) ?? [];
+      children.push(sibling.id);
+      childrenByParentBefore.set(sibling.parentId, children);
+    }
+    const descendantIds: string[] = [];
+    const stack = [...(childrenByParentBefore.get(existing.id) ?? [])];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      descendantIds.push(current);
+      stack.push(...(childrenByParentBefore.get(current) ?? []));
+    }
+    const affectedEntityIds = [existing.id, ...descendantIds];
+
+    const removedConnections = await tx.taskBlockConnection.findMany({
+      where: { subtaskId: { in: affectedEntityIds } },
+      select: { timeBlockId: true },
+    });
+    const removedBlockIds = [
+      ...new Set(removedConnections.map((connection) => connection.timeBlockId)),
+    ];
+
     // Exclui a sub-tarefa e toda a sub-árvore abaixo dela (cascade).
     await tx.subtask.delete({ where: { id } });
 
@@ -197,6 +248,19 @@ export async function DELETE(
         tzOffsetMinutes,
       );
     }
+
+    // As entidades excluídas não existem mais: remove as auto-confirmações
+    // que cada uma originou e reavalia as entidades conectadas aos blocos.
+    await reversePropagateForEntities(
+      tx,
+      user.id,
+      affectedEntityIds.map((subtaskId) => ({
+        taskId: null as string | null,
+        subtaskId,
+      })),
+      tzOffsetMinutes,
+      removedBlockIds,
+    );
   });
 
   return NextResponse.json({ ok: true });

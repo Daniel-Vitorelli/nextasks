@@ -128,6 +128,7 @@ function ConnectionOptions({
             type="button"
             size="icon-xs"
             variant="outline"
+            disabled={isDate}
             onClick={() =>
               onUpdate({
                 requiredCount: Math.min(99, connection.requiredCount + 1),
@@ -139,6 +140,9 @@ function ConnectionOptions({
           </Button>
         </div>
       </div>
+      {isDate && (
+        <p className="text-[11px] text-muted-foreground">{t("dateCountHint")}</p>
+      )}
 
       <select
         value={currentValid ? (isDate ? "date:" : connection.dayFilter) : "all"}
@@ -437,14 +441,17 @@ export function ConnectionPopover({
             ) : (
               filteredBlocks?.map((block: ConnectionCatalogBlock) => {
                 const connection = findConnection(block.id);
-                const disabled = block.confirmation === "none";
+                const disabled =
+                  block.confirmation === "none" || !block.routineActive;
                 return (
                   <ConnectionRow
                     key={block.id}
                     title={block.title}
                     subtitle={
                       disabled
-                        ? t("noConfirmation")
+                        ? !block.routineActive
+                          ? t("routineInactive")
+                          : t("noConfirmation")
                         : `${block.routineName} · ${blockRecurrence(
                             block.frequency,
                             block.weekday,
@@ -489,8 +496,13 @@ export function ConnectionPopover({
                   <ConnectionRow
                     key={task.id}
                     title={task.title}
-                    subtitle={t("taskBadge")}
+                    subtitle={
+                      !anchorBlock?.routineActive
+                        ? t("routineInactive")
+                        : t("taskBadge")
+                    }
                     connection={connection}
+                    disabled={!anchorBlock?.routineActive}
                     frequency={anchorBlock?.frequency ?? "daily"}
                     blockWeekday={anchorBlock?.weekday ?? 0}
                     onToggle={() =>
@@ -513,8 +525,13 @@ export function ConnectionPopover({
                   <ConnectionRow
                     key={subtask.id}
                     title={subtask.title}
-                    subtitle={subtask.taskTitle}
+                    subtitle={
+                      !anchorBlock?.routineActive
+                        ? t("routineInactive")
+                        : subtask.taskTitle
+                    }
                     connection={connection}
+                    disabled={!anchorBlock?.routineActive}
                     frequency={anchorBlock?.frequency ?? "daily"}
                     blockWeekday={anchorBlock?.weekday ?? 0}
                     onToggle={() =>

@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/server/prisma";
 import { periodForFrequency } from "@/lib/server/completions";
-import { completeEntitiesForBlock } from "@/lib/server/connections";
+import {
+  completeEntitiesForBlock,
+  reversePropagateForBlock,
+} from "@/lib/server/connections";
 import {
   asFrequency,
   badRequest,
@@ -74,20 +77,32 @@ export async function POST(
         periodStart: period.start,
         periodEnd: period.end,
         value: validValue,
+        source: "explicit",
+        sourceEntityId: null,
       },
       update: {
         value: validValue,
+        source: "explicit",
+        sourceEntityId: null,
       },
     });
 
-    // Bloco confirmado propaga para as entidades conectadas (quando todas
-    // as conexões da entidade estiverem satisfeitas).
-    await completeEntitiesForBlock(
-      tx,
-      user.id,
-      timeBlock.id,
-      tzOffsetMinutes,
-    );
+    // Confirmação do usuário (mesmo que desmarque) é sempre decisão
+    // explícita: converte auto-confirmações do período em explícitas.
+    if (validValue === "false") {
+      // Desmarcar propaga no sentido reverso: reavalia as entidades
+      // conectadas e reabre as que ficaram com conexões insatisfeitas.
+      await reversePropagateForBlock(tx, user.id, timeBlock.id, tzOffsetMinutes);
+    } else {
+      // Bloco confirmado propaga para as entidades conectadas (quando todas
+      // as conexões da entidade estiverem satisfeitas).
+      await completeEntitiesForBlock(
+        tx,
+        user.id,
+        timeBlock.id,
+        tzOffsetMinutes,
+      );
+    }
 
     return saved;
   });

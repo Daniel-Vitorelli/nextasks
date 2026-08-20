@@ -18,7 +18,7 @@ export default async function Layout({
   }
 
   return (
-    <SessionProvider value={{ user }}>
+    <SessionProvider initialUser={user}>
       <ConnectionsProvider>
         <div className="relative min-h-screen">
           <main className="pb-8">{children}</main>

@@ -7,9 +7,10 @@ import {
   startOfDayUtc,
 } from "@/lib/server/completions";
 import { asFrequency, parseTzOffset, requireUser } from "@/lib/server/api";
-import type { DailyProgress } from "@/types/domain";
+import { computeStreak } from "@/lib/streak";
+import type { DailyProgress, StreakStats } from "@/types/domain";
 
-const ALLOWED_DAYS = [7, 15, 30, 60];
+const ALLOWED_DAYS = [7, 15, 30, 60, 365];
 
 export async function GET(request: Request) {
   const { user, response } = await requireUser();
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       routine: null,
       progress: [],
+      streak: { current: 0, longest: 0, lastFullDay: null } satisfies StreakStats,
       period: null,
       daysWithRecords: 0,
     });
@@ -156,6 +158,7 @@ export async function GET(request: Request) {
     routine,
     confirmableBlockCount,
     progress,
+    streak: computeStreak(progress, today),
     period: periodForFrequency(frequency, today, tzOffsetMinutes),
     daysWithRecords,
   });

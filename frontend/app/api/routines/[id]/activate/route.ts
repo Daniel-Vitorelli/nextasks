@@ -24,8 +24,10 @@ export async function POST(
     return notFound("Routine not found");
   }
 
-  const body = (await request.json()) as { isActive?: unknown };
-  const isActive = body.isActive === true;
+  const body = (await request.json().catch(() => ({}))) as {
+    isActive?: unknown;
+  };
+  const isActive = body.isActive !== false;
 
   let routine;
   if (isActive) {

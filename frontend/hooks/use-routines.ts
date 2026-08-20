@@ -2,6 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Routine, RoutineFormValues } from "@/types/domain";
+import {
+  notifyDataChanged,
+  useDataSync,
+  type DataResource,
+} from "@/lib/client/data-events";
+
+const AFTER_ROUTINE_CHANGE: DataResource[] = [
+  "routines",
+  "time-blocks",
+  "connections",
+  "progress",
+  "current-block",
+];
 
 /**
  * Loads and mutates the user's routines with optimistic updates.
@@ -30,6 +43,10 @@ export function useRoutines() {
     void loadRoutines();
   }, [loadRoutines]);
 
+  // Ativação/inativação pode mudar quais blocos aceitam conexões e o que é
+  // exibido: recarrega quando outra tela muda a rotina ativa.
+  useDataSync(["routines"], loadRoutines);
+
   const saveRoutine = useCallback(
     async (values: RoutineFormValues, routine: Routine | null) => {
       const endpoint = routine
@@ -54,6 +71,7 @@ export function useRoutines() {
           ? current.map((item) => (item.id === saved.id ? saved : item))
           : [saved, ...current],
       );
+      notifyDataChanged(AFTER_ROUTINE_CHANGE);
     },
     [],
   );
@@ -85,6 +103,7 @@ export function useRoutines() {
             ...current.slice(insertAt),
           ];
         });
+        notifyDataChanged(AFTER_ROUTINE_CHANGE);
       } catch (error) {
         console.error(error);
       }
@@ -121,6 +140,7 @@ export function useRoutines() {
         }
         return [saved, ...updated.filter((item) => item.id !== saved.id)];
       });
+      notifyDataChanged(AFTER_ROUTINE_CHANGE);
     } catch (error) {
       console.error(error);
     }
@@ -142,6 +162,7 @@ export function useRoutines() {
       setRoutines((current) =>
         current.filter((item) => item.id !== routine.id),
       );
+      notifyDataChanged(AFTER_ROUTINE_CHANGE);
     } catch (error) {
       console.error(error);
     } finally {

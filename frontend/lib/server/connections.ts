@@ -7,21 +7,24 @@ import { markSubtaskDoneCascade, markTaskDoneCascade } from "./subtask-cascade";
 /**
  * Conexões entre tarefas/sub-tarefas e blocos de tempo (direção server-side).
  *
- * Regras (definidas com o usuário):
+ * Regras:
  * - Bloco confirmado -> completa a entidade conectada quando TODAS as
  *   conexões dela estiverem satisfeitas (confirmedCount >= requiredCount).
  * - Entidade que transiciona para concluída (por qualquer via) auto-confirma
  *   os blocos conectados no período atual (checklist "true", score "10"),
- *   respeitando o dayFilter — sem sobrescrever confirmações explícitas do
- *   período e sem inflar contagens de entidades já concluídas.
- * - Desmarcar NÃO propaga: a cascata só acontece na direção de concluir.
+ *   respeitando o dayFilter e o horário do bloco (só confirma se o bloco já
+ *   começou no período) — sem sobrescrever confirmações explícitas do período
+ *   e sem inflar contagens de entidades já concluídas.
+ * - Propagação reversível: reabrir entidade remove as auto-confirmações que
+ *   ela originou e reavalia as entidades conectadas aos mesmos blocos;
+ *   desconfirmar um bloco reabre as entidades cujas conexões ficaram
+ *   insatisfeitas. Explicitação do usuário sempre vence.
  * - requiredCount conta apenas as confirmações do bloco feitas A PARTIR da
  *   criação da conexão (updatedAt >= createdAt): marcações anteriores à
  *   conexão não contam, só a partir do momento em que ela existe.
  * - O dayFilter é avaliado sobre o DIA APLICÁVEL da confirmação: para rotina
  *   diária, o próprio dia; para semanal, o dia da semana em que o bloco
- *   ocorre dentro da semana do período (o bloco semanal não "acontece" no
- *   domingo só porque o período começa lá).
+ *   ocorre dentro da semana do período.
  * - Ciclos são seguros: upserts idempotentes + propagação só em transição.
  */
 
@@ -36,6 +39,15 @@ export type ConnectionWithBlock = Prisma.TaskBlockConnectionGetPayload<{
 }>;
 
 type CompletionLike = { periodStart: Date; value: string; updatedAt: Date };
+
+type EntityRef = { taskId: string | null; subtaskId: string | null };
+
+const DAY_MS = 86_400_000;
+
+/** Chave canônica de uma entidade, usada em sourceEntityId das auto-confirmações. */
+function entityKey(taskId: string | null, subtaskId: string | null): string {
+  return taskId ? `task:${taskId}` : `subtask:${subtaskId}`;
+}
 
 function localDateString(utc: Date, tzOffsetMinutes: number): string {
   const local = new Date(utc.getTime() - tzOffsetMinutes * 60_000);
@@ -56,7 +68,7 @@ export function applicableDayUtc(
   blockWeekday: number,
 ): Date {
   return frequency === "weekly"
-    ? new Date(periodStart.getTime() + blockWeekday * 86_400_000)
+    ? new Date(periodStart.getTime() + blockWeekday * DAY_MS)
     : periodStart;
 }
 
@@ -114,6 +126,18 @@ export function isDayFilterSatisfiable(
     localDateWeekday(dayFilter.slice("date:".length), tzOffsetMinutes) ===
     blockWeekday
   );
+}
+
+/**
+ * A quantidade exigida é alcançável com o filtro? Um filtro date: só casa
+ * com uma única data/período: exigir mais de 1 confirmação é impossível.
+ */
+export function isRequiredCountReachable(
+  requiredCount: number,
+  dayFilter: DayFilter,
+): boolean {
+  if (dayFilter.startsWith("date:")) return requiredCount === 1;
+  return true;
 }
 
 /** Uma confirmação conta como "bloco feito"? Checklist: só "true"; score: nota >= 1. */
@@ -183,7 +207,8 @@ export function countConfirmed(
 /**
  * Quantas confirmações satisfazem o dayFilter MAS foram feitas antes da
  * criação da conexão (não contam, mas explicam ao usuário por que a contagem
- * está baixa).
+ * está baixa). Só considera confirmações desde a conexão mais antiga do bloco
+ * (janela carregada), mantendo a consulta com volume limitado.
  */
 export function countBeforeConnection(
   connection: ConnectionWithBlock,
@@ -212,16 +237,33 @@ export function countBeforeConnection(
   ).length;
 }
 
-/** Carrega as confirmações de vários blocos de uma vez, agrupadas por bloco. */
+/**
+ * Carrega as confirmações dos blocos de uma vez, agrupadas por bloco, mas só
+ * as que são relevantes para as conexões informadas: a partir da confirmação
+ * mais antiga criada (por bloco). Confirmações anteriores à conexão mais
+ * antiga não afetam confirmedCount de nenhuma conexão e são irrelevantes para
+ * a satisfação.
+ */
 export async function loadCompletionsByBlock(
   tx: Tx,
-  blockIds: string[],
+  connections: { timeBlockId: string; createdAt: Date }[],
 ): Promise<Map<string, CompletionLike[]>> {
-  const distinct = [...new Set(blockIds)];
-  if (distinct.length === 0) return new Map();
+  const minCreatedByBlock = new Map<string, Date>();
+  for (const connection of connections) {
+    const current = minCreatedByBlock.get(connection.timeBlockId);
+    if (!current || connection.createdAt < current) {
+      minCreatedByBlock.set(connection.timeBlockId, connection.createdAt);
+    }
+  }
+  if (minCreatedByBlock.size === 0) return new Map();
+
+  const ors: Prisma.TimeBlockCompletionWhereInput[] = [];
+  for (const [blockId, minCreated] of minCreatedByBlock) {
+    ors.push({ timeBlockId: blockId, updatedAt: { gte: minCreated } });
+  }
 
   const completions = await tx.timeBlockCompletion.findMany({
-    where: { timeBlockId: { in: distinct } },
+    where: { OR: ors },
   });
 
   const byBlock = new Map<string, CompletionLike[]>();
@@ -269,10 +311,35 @@ export function toConnectionRow(
 }
 
 /**
+ * Início da ocorrência do bloco no período: para diária, o próprio dia no
+ * horário do bloco; para semanal, o dia da semana do bloco dentro da semana
+ * do período, no horário do bloco. Blocos "all day" começam à meia-noite.
+ */
+function occurrenceStartForPeriod(
+  block: { start: Date; isAllDay: boolean },
+  periodStart: Date,
+  frequency: Frequency,
+  tzOffsetMinutes: number,
+): Date {
+  const blockWeekday = localWeekday(block.start, tzOffsetMinutes);
+  const occurrenceDay =
+    frequency === "weekly"
+      ? new Date(periodStart.getTime() + blockWeekday * DAY_MS)
+      : periodStart;
+  if (block.isAllDay) return occurrenceDay;
+  const timeOfDayMs =
+    ((block.start.getTime() - tzOffsetMinutes * 60_000) % DAY_MS + DAY_MS) %
+    DAY_MS;
+  return new Date(occurrenceDay.getTime() + timeOfDayMs);
+}
+
+/**
  * Auto-confirma um bloco conectado no período atual quando a entidade é
  * concluída. Respeita o dayFilter (avaliado sobre o dia aplicável do período
- * atual) e NUNCA sobrescreve uma confirmação explícita do período: se o
- * usuário já confirmou/desconfirmou o bloco, a decisão dele prevalece.
+ * atual), o horário do bloco (só confirma se o bloco já começou) e NUNCA
+ * sobrescreve uma confirmação existente do período (explícita ou auto de
+ * outra entidade): a decisão que já existe prevalece. A gravação é atômica
+ * (upsert), sem janela de corrida entre verificar e criar.
  */
 export async function confirmBlockForConnection(
   tx: Tx,
@@ -297,24 +364,34 @@ export async function confirmBlockForConnection(
   ) {
     return;
   }
-  const existing = await tx.timeBlockCompletion.findUnique({
+
+  const occurrenceStart = occurrenceStartForPeriod(
+    block,
+    period.start,
+    frequency,
+    tzOffsetMinutes,
+  );
+  if (now.getTime() < occurrenceStart.getTime()) return;
+
+  const sourceEntityId = entityKey(connection.taskId, connection.subtaskId);
+
+  await tx.timeBlockCompletion.upsert({
     where: {
       timeBlockId_periodStart: {
         timeBlockId: block.id,
         periodStart: period.start,
       },
     },
-  });
-  if (existing) return;
-
-  await tx.timeBlockCompletion.create({
-    data: {
+    create: {
       timeBlockId: block.id,
       userId: connection.userId,
       periodStart: period.start,
       periodEnd: period.end,
       value: block.confirmation === "checklist" ? "true" : "10",
+      source: "auto",
+      sourceEntityId,
     },
+    update: {},
   });
 }
 
@@ -385,7 +462,7 @@ export async function completeEntitiesForConnections(
   });
   const completionsByBlock = await loadCompletionsByBlock(
     tx,
-    entityConnections.map((c) => c.timeBlockId),
+    entityConnections,
   );
 
   const satisfied = (connection: ConnectionWithBlock) =>
@@ -469,4 +546,258 @@ export async function completeEntitiesForBlock(
     tzOffsetMinutes,
     now,
   );
+}
+
+/** A entidade existe e está concluída? (entidades removidas = não concluídas) */
+async function isEntityDone(tx: Tx, entity: EntityRef): Promise<boolean> {
+  if (entity.taskId) {
+    const task = await tx.task.findUnique({
+      where: { id: entity.taskId },
+      select: { done: true },
+    });
+    return task?.done ?? false;
+  }
+  const subtask = await tx.subtask.findUnique({
+    where: { id: entity.subtaskId! },
+    select: { done: true },
+  });
+  return subtask?.done ?? false;
+}
+
+/**
+ * Reabre uma entidade e, para sub-tarefas, sobe a cadeia de ancestrais e a
+ * tarefa (mesma invariante do caminho done:false das rotas). Retorna todas as
+ * entidades que foram reabertas para que a propagação reversa remova as
+ * auto-confirmações que cada uma originou.
+ */
+async function reopenEntityCascade(
+  tx: Tx,
+  taskId: string | null,
+  subtaskId: string | null,
+): Promise<EntityRef[]> {
+  const reopened: EntityRef[] = [];
+  if (subtaskId) {
+    if (taskId) {
+      const siblings = await tx.subtask.findMany({
+        where: { taskId },
+        select: { id: true, parentId: true },
+      });
+      const parentById = new Map<string, string | null>();
+      for (const sibling of siblings) {
+        parentById.set(sibling.id, sibling.parentId);
+      }
+      await tx.subtask.update({
+        where: { id: subtaskId },
+        data: { done: false },
+      });
+      reopened.push({ taskId: null, subtaskId });
+      let currentId = parentById.get(subtaskId) ?? null;
+      while (currentId) {
+        await tx.subtask.update({
+          where: { id: currentId },
+          data: { done: false },
+        });
+        reopened.push({ taskId: null, subtaskId: currentId });
+        currentId = parentById.get(currentId) ?? null;
+      }
+      await tx.task.updateMany({
+        where: { id: taskId, done: true },
+        data: { done: false },
+      });
+      reopened.push({ taskId, subtaskId: null });
+    } else {
+      await tx.subtask.update({
+        where: { id: subtaskId },
+        data: { done: false },
+      });
+      reopened.push({ taskId: null, subtaskId });
+    }
+  } else if (taskId) {
+    await tx.task.update({ where: { id: taskId }, data: { done: false } });
+    reopened.push({ taskId, subtaskId: null });
+  }
+  return reopened;
+}
+
+/** Todas as conexões de uma entidade. */
+async function loadConnectionsOf(
+  tx: Tx,
+  userId: string,
+  entity: EntityRef,
+): Promise<ConnectionWithBlock[]> {
+  return tx.taskBlockConnection.findMany({
+    where: {
+      userId,
+      OR: entity.taskId
+        ? [{ taskId: entity.taskId }]
+        : [{ subtaskId: entity.subtaskId }],
+    },
+    include: connectionInclude,
+  });
+}
+
+/**
+ * Propagação reversa (desfazer). Recebe entidades recém-reabertas (ou em
+ * reavaliação) e um conjunto extra de blocos afetados (ex.: quando a entidade
+ * foi excluída e suas conexões já sumiram). Para cada entidade:
+ * 1. remove as auto-confirmações que ela originou (sourceEntityId);
+ * 2. marca os blocos dela como pendentes de reavaliação.
+ * Em seguida, para cada bloco pendente, reavalia TODAS as entidades nele
+ * conectadas: as que estão concluídas mas com alguma conexão insatisfeita são
+ * reabertas (cascata na árvore), reiniciando o ciclo até estabilizar.
+ * Entidades concluídas e ainda satisfeitas não são tocadas.
+ */
+export async function reversePropagate(
+  tx: Tx,
+  userId: string,
+  entities: EntityRef[],
+  tzOffsetMinutes: number,
+  extraBlockIds: string[] = [],
+): Promise<void> {
+  const queue: EntityRef[] = [...entities];
+  const autosRemoved = new Set<string>();
+  let pendingBlocks = new Set<string>(extraBlockIds);
+
+  while (queue.length > 0 || pendingBlocks.size > 0) {
+    // 1. Processa fila de entidades.
+    while (queue.length > 0) {
+      const current = queue.pop()!;
+      const key = entityKey(current.taskId, current.subtaskId);
+
+      const done = await isEntityDone(tx, current);
+      if (done) {
+        // Ainda concluída: só age se as conexões ficaram insatisfeitas.
+        const conns = await loadConnectionsOf(tx, userId, current);
+        if (conns.length === 0) continue;
+        const completions = await loadCompletionsByBlock(tx, conns);
+        const satisfied = conns.every(
+          (connection) =>
+            countConfirmed(
+              connection,
+              completions.get(connection.timeBlockId) ?? [],
+              tzOffsetMinutes,
+            ) >= connection.requiredCount,
+        );
+        if (satisfied) continue;
+        const reopened = await reopenEntityCascade(
+          tx,
+          current.taskId,
+          current.subtaskId,
+        );
+        queue.push(...reopened);
+        continue;
+      }
+
+      // Não concluída (reaberta ou excluída): remove auto-confirmações dela.
+      if (autosRemoved.has(key)) continue;
+      autosRemoved.add(key);
+      await tx.timeBlockCompletion.deleteMany({
+        where: { source: "auto", sourceEntityId: key },
+      });
+      const conns = await loadConnectionsOf(tx, userId, current);
+      for (const connection of conns) {
+        pendingBlocks.add(connection.timeBlockId);
+      }
+    }
+
+    // 2. Reavalia blocos afetados.
+    if (pendingBlocks.size === 0) break;
+    const blockIds = [...pendingBlocks];
+    pendingBlocks = new Set();
+
+    const blockConnections = await tx.taskBlockConnection.findMany({
+      where: { userId, timeBlockId: { in: blockIds } },
+      include: connectionInclude,
+    });
+    if (blockConnections.length === 0) continue;
+
+    const entitiesOnBlocks: EntityRef[] = [];
+    const seen = new Set<string>();
+    for (const connection of blockConnections) {
+      const key = connection.taskId ?? connection.subtaskId;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      entitiesOnBlocks.push({
+        taskId: connection.taskId,
+        subtaskId: connection.subtaskId,
+      });
+    }
+
+    const allConnections = await tx.taskBlockConnection.findMany({
+      where: {
+        userId,
+        OR: entitiesOnBlocks.map((entity) =>
+          entity.taskId
+            ? { taskId: entity.taskId }
+            : { subtaskId: entity.subtaskId },
+        ),
+      },
+      include: connectionInclude,
+    });
+    const completionsByBlock = await loadCompletionsByBlock(
+      tx,
+      allConnections,
+    );
+
+    for (const entity of entitiesOnBlocks) {
+      const key = entityKey(entity.taskId, entity.subtaskId);
+      if (autosRemoved.has(key)) continue;
+      const entityConnections = allConnections.filter(
+        (connection) =>
+          entity.taskId
+            ? connection.taskId === entity.taskId
+            : connection.subtaskId === entity.subtaskId,
+      );
+      if (entityConnections.length === 0) continue;
+      const satisfied = entityConnections.every(
+        (connection) =>
+          countConfirmed(
+            connection,
+            completionsByBlock.get(connection.timeBlockId) ?? [],
+            tzOffsetMinutes,
+          ) >= connection.requiredCount,
+      );
+      if (satisfied) continue;
+      const done = await isEntityDone(tx, entity);
+      if (!done) continue;
+      const reopened = await reopenEntityCascade(
+        tx,
+        entity.taskId,
+        entity.subtaskId,
+      );
+      queue.push(...reopened);
+    }
+  }
+}
+
+/** Propagação reversa a partir de todas as entidades conectadas a um bloco. */
+export async function reversePropagateForBlock(
+  tx: Tx,
+  userId: string,
+  blockId: string,
+  tzOffsetMinutes: number,
+): Promise<void> {
+  const blockConnections = await tx.taskBlockConnection.findMany({
+    where: { userId, timeBlockId: blockId },
+    select: { taskId: true, subtaskId: true },
+  });
+  if (blockConnections.length === 0) return;
+  await reversePropagate(tx, userId, blockConnections, tzOffsetMinutes);
+}
+
+/**
+ * Propagação reversa para entidades recém-reabertas, removendo também as
+ * auto-confirmações que elas originaram e reavaliando os blocos afetados.
+ * `removedBlockIds` cobre o caso de exclusão: as conexões da entidade já
+ * foram removidas, então os blocos precisam ser informados explicitamente.
+ */
+export async function reversePropagateForEntities(
+  tx: Tx,
+  userId: string,
+  entities: EntityRef[],
+  tzOffsetMinutes: number,
+  removedBlockIds: string[] = [],
+): Promise<void> {
+  if (entities.length === 0 && removedBlockIds.length === 0) return;
+  await reversePropagate(tx, userId, entities, tzOffsetMinutes, removedBlockIds);
 }

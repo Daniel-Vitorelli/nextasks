@@ -21,10 +21,14 @@ export interface MarkSubtaskDoneResult {
 /**
  * Marca uma tarefa e todas as suas sub-tarefas pendentes como concluídas.
  * Retorna as sub-tarefas que transicionaram e se a tarefa transicionou.
+ * `wasDone` indica o estado anterior da tarefa (as rotas já gravaram done:true
+ * antes de chamar a cascata; sem ele, a leitura no banco não detectaria a
+ * transição recém-ocorrida).
  */
 export async function markTaskDoneCascade(
   tx: Prisma.TransactionClient,
   taskId: string,
+  wasDone?: boolean,
 ): Promise<{ completedSubtaskIds: string[]; taskCompleted: boolean }> {
   const task = await tx.task.findUnique({
     where: { id: taskId },
@@ -44,20 +48,25 @@ export async function markTaskDoneCascade(
     });
   }
 
+  const wasAlreadyDone = wasDone ?? task?.done === true;
   return {
     completedSubtaskIds: undone.map((item) => item.id),
-    taskCompleted: task?.done === false,
+    taskCompleted: !wasAlreadyDone,
   };
 }
 
 /**
  * Marca uma sub-tarefa e sua sub-árvore como concluídas, subindo a cadeia.
  * Retorna apenas as entidades que transicionaram (pendente -> concluída).
+ * `wasDone` informa o estado anterior da sub-tarefa (as rotas já gravaram
+ * done:true antes de chamar a cascata); sem ele, a leitura no banco não
+ * detectaria a transição recém-ocorrida do próprio nó.
  */
 export async function markSubtaskDoneCascade(
   tx: Prisma.TransactionClient,
   taskId: string,
   subtaskId: string,
+  wasDone?: boolean,
 ): Promise<MarkSubtaskDoneResult> {
   const siblings = await tx.subtask.findMany({
     where: { taskId },
@@ -83,7 +92,7 @@ export async function markSubtaskDoneCascade(
   }
 
   const doneById = new Map(preDone);
-  const nodeWasDone = doneById.get(subtaskId) === true;
+  const nodeWasDone = wasDone ?? doneById.get(subtaskId) === true;
   doneById.set(subtaskId, true);
   for (const id of descendantIds) {
     doneById.set(id, true);

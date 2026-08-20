@@ -4,6 +4,18 @@ import { useCallback, useState } from "react";
 import type { CalendarEvent } from "@/types/calendar";
 import type { TimeBlock } from "@/types/domain";
 import { fromCalendarEvent } from "@/lib/time-blocks";
+import {
+  notifyDataChanged,
+  useDataSync,
+  type DataResource,
+} from "@/lib/client/data-events";
+
+const AFTER_BLOCK_CHANGE: DataResource[] = [
+  "time-blocks",
+  "connections",
+  "progress",
+  "current-block",
+];
 
 /**
  * Loads and mutates the time blocks of a routine template with optimistic
@@ -30,6 +42,11 @@ export function useRoutineTimeBlocks(routineId: string | null) {
       setIsLoading(false);
     }
   }, []);
+
+  // Rotinas e blocos podem mudar em outras telas: recarrega quando eles mudam.
+  useDataSync(["time-blocks", "routines"], () => {
+    if (routineId) void loadBlocks(routineId);
+  });
 
   const createBlock = useCallback(
     async (payload: {
@@ -58,6 +75,7 @@ export function useRoutineTimeBlocks(routineId: string | null) {
         const saved = (await response.json()) as TimeBlock;
         setTimeBlocks((current) => [...current, saved]);
         setSelectedEventId(saved.id);
+        notifyDataChanged(AFTER_BLOCK_CHANGE);
         return saved;
       } catch (error) {
         console.error(error);
@@ -102,6 +120,7 @@ export function useRoutineTimeBlocks(routineId: string | null) {
         if (!response.ok) {
           throw new Error("Failed to update time block");
         }
+        notifyDataChanged(AFTER_BLOCK_CHANGE);
       } catch (error) {
         console.error(error);
         setTimeBlocks(previous);
@@ -127,6 +146,7 @@ export function useRoutineTimeBlocks(routineId: string | null) {
         if (!response.ok) {
           throw new Error("Failed to delete time block");
         }
+        notifyDataChanged(AFTER_BLOCK_CHANGE);
       } catch (error) {
         console.error(error);
         setTimeBlocks(previous);
@@ -156,6 +176,7 @@ export function useRoutineTimeBlocks(routineId: string | null) {
         const saved = (await response.json()) as TimeBlock;
         setTimeBlocks((current) => [...current, saved]);
         setSelectedEventId(saved.id);
+        notifyDataChanged(AFTER_BLOCK_CHANGE);
       } catch (error) {
         console.error(error);
       }

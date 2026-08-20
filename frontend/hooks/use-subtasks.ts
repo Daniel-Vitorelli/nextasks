@@ -9,8 +9,23 @@ import {
   unmarkPath,
   updateNode,
 } from "@/lib/subtask-tree";
-import { CONNECTIONS_CHANGED_EVENT } from "@/components/connections/connections-provider";
+import {
+  notifyDataChanged,
+  useDataSync,
+  type DataResource,
+} from "@/lib/client/data-events";
 import type { Subtask, SubtaskFormValues } from "@/types/domain";
+import { useTzOffset } from "@/lib/client/use-tz-offset";
+
+const AFTER_DONE_CHANGE: DataResource[] = [
+  "tasks",
+  "subtasks",
+  "connections",
+  "time-blocks",
+  "progress",
+  "current-block",
+];
+const AFTER_STRUCTURE_CHANGE: DataResource[] = ["subtasks", "tasks"];
 
 /**
  * Loads and mutates the subtask tree of a task.
@@ -22,6 +37,8 @@ export function useSubtasks(taskId: string | null) {
   // (capturado dentro do updater, sem closure stale).
   const rollbackRef = useRef<Subtask[] | null>(null);
   const inFlightToggles = useRef(new Set<string>());
+
+  const tzOffsetMinutes = useTzOffset();
 
   const loadSubtasks = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -40,6 +57,7 @@ export function useSubtasks(taskId: string | null) {
     }
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (taskId) {
       void loadSubtasks(taskId);
@@ -47,16 +65,13 @@ export function useSubtasks(taskId: string | null) {
       setSubtasks([]);
     }
   }, [taskId, loadSubtasks]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Conexões (bloco -> sub-tarefa) podem concluir nós server-side:
-  // recarrega a árvore quando qualquer conexão muda.
-  useEffect(() => {
-    const handle = () => {
-      if (taskId) void loadSubtasks(taskId);
-    };
-    window.addEventListener(CONNECTIONS_CHANGED_EVENT, handle);
-    return () => window.removeEventListener(CONNECTIONS_CHANGED_EVENT, handle);
-  }, [taskId, loadSubtasks]);
+  // Conexões, tarefas e blocos (bloco -> sub-tarefa) podem mudar a árvore
+  // server-side: recarrega quando qualquer um deles muda.
+  useDataSync(["subtasks", "tasks", "connections", "time-blocks"], () => {
+    if (taskId) void loadSubtasks(taskId);
+  });
 
   const createSubtask = useCallback(
     async (values: SubtaskFormValues, parentId: string | null = null) => {
@@ -90,6 +105,7 @@ export function useSubtasks(taskId: string | null) {
             ? unmarkPath(updated, saved.parentId)
             : updated;
         });
+        notifyDataChanged(AFTER_STRUCTURE_CHANGE);
         return node;
       } catch (error) {
         console.error(error);
@@ -119,6 +135,7 @@ export function useSubtasks(taskId: string | null) {
         if (!response.ok) {
           throw new Error("Failed to update subtask");
         }
+        notifyDataChanged(AFTER_STRUCTURE_CHANGE);
       } catch (error) {
         console.error(error);
         if (rollbackRef.current) {
@@ -149,7 +166,6 @@ export function useSubtasks(taskId: string | null) {
       });
 
       try {
-        const tzOffsetMinutes = new Date().getTimezoneOffset();
         const response = await fetch(
           `/api/subtasks/${id}?tzOffset=${tzOffsetMinutes}`,
           {
@@ -167,6 +183,7 @@ export function useSubtasks(taskId: string | null) {
         // concluído server-side por conexões no mesmo período).
         const saved = (await response.json()) as Subtask;
         setSubtasks((current) => updateNode(current, id, { done: saved.done }));
+        notifyDataChanged(AFTER_DONE_CHANGE);
       } catch (error) {
         console.error(error);
         if (rollbackRef.current) {
@@ -176,7 +193,7 @@ export function useSubtasks(taskId: string | null) {
         inFlightToggles.current.delete(id);
       }
     },
-    [taskId],
+    [taskId, tzOffsetMinutes],
   );
 
   const deleteSubtask = useCallback(
@@ -199,6 +216,7 @@ export function useSubtasks(taskId: string | null) {
         if (!response.ok) {
           throw new Error("Failed to delete subtask");
         }
+        notifyDataChanged(AFTER_STRUCTURE_CHANGE);
       } catch (error) {
         console.error(error);
         if (rollbackRef.current) {

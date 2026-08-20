@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { Period, Routine, TimeBlock } from "@/types/domain";
+import { useDataSync } from "@/lib/client/data-events";
+import { useTzOffset } from "@/lib/client/use-tz-offset";
 
 /** Resposta do endpoint /api/routines/current-block. */
 export interface CurrentBlockResponse {
@@ -21,7 +23,7 @@ export function useCurrentBlock() {
   const [current, setCurrent] = useState<CurrentBlockResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const tzOffsetMinutes = new Date().getTimezoneOffset();
+  const tzOffsetMinutes = useTzOffset();
 
   const loadCurrentBlock = useCallback(async () => {
     try {
@@ -66,6 +68,15 @@ export function useCurrentBlock() {
     };
   }, [loadCurrentBlock]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Mudanças de blocos, conexões, tarefas ou rotinas podem alterar o bloco
+  // atual (ou seus estados de confirmação): recarrega imediatamente.
+  useDataSync(
+    ["current-block", "time-blocks", "connections", "tasks", "subtasks", "routines"],
+    () => {
+      void loadCurrentBlock();
+    },
+  );
 
   /** Remove um bloco confirmado da lista local. */
   const removeBlock = useCallback((blockId: string) => {

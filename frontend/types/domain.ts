@@ -110,6 +110,16 @@ export interface DailyProgress {
   confirmedValue: number;
 }
 
+/** Sequência de dias 100% completos (streak). */
+export interface StreakStats {
+  /** Dias 100% consecutivos terminando em hoje/ontem (0 se a sequência quebrou). */
+  current: number;
+  /** Maior sequência de dias 100% já alcançada. */
+  longest: number;
+  /** Data (ISO, início do dia local) do último dia 100% completo, ou null. */
+  lastFullDay: string | null;
+}
+
 /** Response of the routine progress endpoint */
 export interface ProgressResponse {
   routine: Routine | null;
@@ -118,6 +128,7 @@ export interface ProgressResponse {
   /** Quantos dias no passado têm ao menos um bloco confirmável aplicável. */
   daysWithRecords: number;
   progress: DailyProgress[];
+  streak: StreakStats;
   period: Period | null;
 }
 
@@ -219,6 +230,8 @@ export interface ConnectionCatalogBlock {
   confirmation: EventConfirmation;
   /** Dia da semana local do início do bloco (0-6). */
   weekday: number;
+  /** A rotina do bloco está ativa? (blocos de rotinas inativas não aceitam novas conexões). */
+  routineActive: boolean;
 }
 
 /** Tarefa listada no catálogo de conexões. */
@@ -258,4 +271,112 @@ export interface ConnectionInput {
 export interface ConnectionPatch {
   requiredCount?: number;
   dayFilter?: DayFilter;
+}
+
+export interface UserPatch {
+  name?: string;
+  /** Minutos a oeste de UTC (null = usar o fuso do navegador). */
+  timezoneOffset?: number | null;
+}
+
+/** Formato do backup JSON exportado/importado em /app/config. */
+export interface DataExport {
+  version: number;
+  exportedAt: string;
+  routines: DataExportRoutine[];
+  timeBlocks: DataExportTimeBlock[];
+  tasks: DataExportTask[];
+  subtasks: DataExportSubtask[];
+  connections: DataExportConnection[];
+  completions: DataExportCompletion[];
+}
+
+export interface DataExportRoutine {
+  id: string;
+  name: string;
+  description: string | null;
+  frequency: Frequency;
+  duration: Duration;
+  endDate: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface DataExportTimeBlock {
+  id: string;
+  routineId: string;
+  title: string;
+  description: string | null;
+  start: string;
+  end: string;
+  isAllDay: boolean;
+  color: EventColor;
+  confirmation: EventConfirmation;
+}
+
+export interface DataExportTask {
+  id: string;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  priority: number;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface DataExportSubtask {
+  id: string;
+  taskId: string;
+  parentId: string | null;
+  title: string;
+  description: string | null;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface DataExportConnection {
+  taskId: string | null;
+  subtaskId: string | null;
+  timeBlockId: string;
+  requiredCount: number;
+  dayFilter: DayFilter;
+  createdAt: string;
+}
+
+export interface DataExportCompletion {
+  timeBlockId: string;
+  periodStart: string;
+  periodEnd: string;
+  value: string;
+  source: string;
+  sourceEntityId: string | null;
+  updatedAt: string;
+}
+
+export interface ImportResult {
+  routines: number;
+  timeBlocks: number;
+  tasks: number;
+  subtasks: number;
+  connections: number;
+  completions: number;
+}
+
+/**
+ * Ocorrência materializada de um bloco de rotina numa data concreta do
+ * calendário (uma rotina diária gera uma ocorrência por dia; uma semanal,
+ * uma por semana no dia correspondente).
+ */
+export interface ScheduledOccurrence {
+  id: string;
+  title: string;
+  description: string | null;
+  start: string;
+  end: string;
+  isAllDay: boolean;
+  color: EventColor;
+  confirmation: EventConfirmation;
+  routineId: string;
+  routineName: string;
+  blockId: string;
 }

@@ -13,19 +13,20 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  routines      Routine[]
-  tasks         Task[]
-  completions   TimeBlockCompletion[]
-  connections   TaskBlockConnection[]
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
+  image          String?
+  timezoneOffset Int? // minutos em relação a UTC (null = fuso do navegador)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  routines       Routine[]
+  tasks          Task[]
+  completions    TimeBlockCompletion[]
+  connections    TaskBlockConnection[]
 }
 
 model Routine {
@@ -100,20 +101,28 @@ model TimeBlock {
 }
 
 model TimeBlockCompletion {
-  id          String   @id @default(cuid())
-  timeBlockId String
-  userId      String
-  periodStart DateTime
-  periodEnd   DateTime
-  value       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  timeBlockId    String
+  userId         String
+  periodStart    DateTime
+  periodEnd      DateTime
+  value          String
+  // Origem da confirmação: "explicit" (decisão do usuário) ou "auto"
+  // (propagada quando uma entidade conectada foi concluída).
+  source         String   @default("explicit")
+  // Id da entidade (pref. "task:" ou "subtask:") que originou uma
+  // confirmação "auto". Null para confirmações explícitas.
+  sourceEntityId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   timeBlock  TimeBlock @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([timeBlockId, periodStart])
   @@index([userId, periodStart])
+  @@index([timeBlockId, updatedAt])
+  @@index([source, sourceEntityId])
 }
 
 /**
@@ -140,6 +149,8 @@ model TaskBlockConnection {
 
   // Como exatamente um de taskId/subtaskId é preenchido, os dois índices
   // juntos garantem unicidade por (entidade, bloco) mesmo com NULLs.
+  // (CHECK constraint não é suportado pelo Prisma no datasource MySQL;
+  // a exclusividade XOR é garantida pela validação da aplicação.)
   @@unique([taskId, timeBlockId])
   @@unique([subtaskId, timeBlockId])
   @@index([userId])

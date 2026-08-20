@@ -6,7 +6,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Bot, Cog, Home, LayoutDashboard, Users } from "lucide-react";
+import {
+  Bot,
+  CalendarDays,
+  Cog,
+  Home,
+  LayoutDashboard,
+  Users,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
@@ -14,6 +21,7 @@ const items = [
   { labelKey: "social", icon: Users, href: "/app/social" },
   { labelKey: "dashboard", icon: LayoutDashboard, href: "/app/dashboard" },
   { labelKey: "home", icon: Home, href: "/app/home" },
+  { labelKey: "calendar", icon: CalendarDays, href: "/app/calendar" },
   { labelKey: "ai", icon: Bot, href: "/app/ai" },
   { labelKey: "config", icon: Cog, href: "/app/config" },
 ];

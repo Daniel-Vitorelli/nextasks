@@ -106,8 +106,21 @@
       "dashboard": "Painel",
       "social": "Social",
       "home": "Início",
+      "calendar": "Calendário",
       "ai": "IA",
       "config": "Configurações"
+    },
+    "calendar": {
+      "eyebrow": "Calendário",
+      "title": "Calendário",
+      "subtitle": "Sua programação de rotinas",
+      "today": "Hoje",
+      "prevWeek": "Semana anterior",
+      "nextWeek": "Próxima semana",
+      "weekView": "Semana",
+      "dayView": "Dia",
+      "empty": "Nenhuma atividade agendada para este período.",
+      "loadError": "Não foi possível carregar o calendário."
     },
     "home": {
       "eyebrow": "Início",
@@ -132,6 +145,19 @@
         "title": "Nenhuma rotina ativa",
         "description": "Ative uma rotina no painel para ver seu progresso e sua programação atual aqui."
       },
+      "streak": {
+        "title": "Consistência",
+        "subtitle": "Sequência e constância da rotina",
+        "current": "Sequência atual",
+        "longest": "Maior sequência",
+        "lastFullDay": "Último dia completo",
+        "daysLabel": "{count, plural, one {# dia} other {# dias}}",
+        "none": "Nenhum ainda",
+        "less": "Menos",
+        "more": "Mais",
+        "noData": "Sem dados",
+        "percent": "{value}%"
+      },
       "emptyRoutine": {
         "title": "Nenhuma atividade para mostrar",
         "description": "Adicione blocos de tempo à sua rotina no painel para acompanhar seu progresso e ver sua programação aqui."
@@ -153,6 +179,60 @@
         "emptyDescription": "Crie tarefas no painel para vê-las aqui.",
         "upcomingTitle": "Próximas",
         "subtasksLabel": "Sub-tarefas"
+      }
+    },
+    "config": {
+      "eyebrow": "Configurações",
+      "title": "Configurações",
+      "subtitle": "Sua conta, preferências e dados.",
+      "profile": {
+        "title": "Perfil",
+        "description": "Nome exibido no app, e-mail e senha.",
+        "nameLabel": "Nome",
+        "save": "Salvar",
+        "saved": "Alterações salvas.",
+        "saveError": "Não foi possível salvar. Tente novamente.",
+        "emailLabel": "E-mail",
+        "currentPassword": "Senha atual",
+        "newPassword": "Nova senha",
+        "changePassword": "Alterar senha",
+        "passwordChanged": "Senha alterada.",
+        "changeError": "Não foi possível alterar a senha.",
+        "dangerTitle": "Zona de perigo",
+        "deleteAccount": "Excluir conta",
+        "deleteTitle": "Excluir conta?",
+        "deleteDescription": "Todos os seus dados (rotinas, tarefas, histórico) serão apagados permanentemente. Essa ação não pode ser desfeita.",
+        "cancel": "Cancelar",
+        "deleteConfirm": "Excluir"
+      },
+      "appearance": {
+        "title": "Aparência",
+        "description": "Alternar entre o tema claro e escuro.",
+        "toggleLabel": "Alternar tema"
+      },
+      "language": {
+        "title": "Idioma",
+        "description": "Idioma exibido no app.",
+        "selectLabel": "Selecionar idioma"
+      },
+      "timezone": {
+        "title": "Fuso horário",
+        "description": "Usado para calcular dias, períodos e o bloco atual. Sem configuração, o fuso do navegador é usado.",
+        "selectLabel": "Fuso horário",
+        "auto": "Automático (navegador, {offset})",
+        "save": "Salvar",
+        "saved": "Fuso horário atualizado.",
+        "saveError": "Não foi possível salvar. Tente novamente."
+      },
+      "data": {
+        "title": "Dados",
+        "description": "Exporte um backup JSON ou restaure dados de um arquivo exportado anteriormente. A importação recria rotinas, blocos, tarefas, sub-tarefas, conexões e confirmações.",
+        "export": "Exportar",
+        "exportDone": "Backup baixado.",
+        "exportError": "Não foi possível exportar.",
+        "import": "Importar",
+        "importDone": "Importação concluída: {routines} rotina(s), {blocks} bloco(s), {tasks} tarefa(s) e {subtasks} sub-tarefa(s).",
+        "importError": "Arquivo inválido ou não foi possível importar."
       }
     }
   },
@@ -354,6 +434,8 @@
         "recurrenceDaily": "Todos os dias",
         "recurrenceWeekly": "Toda {day}",
         "noConfirmation": "Sem modo de confirmação",
+        "routineInactive": "Rotina inativa",
+        "dateCountHint": "Data específica exige 1 confirmação",
         "occurs": "Ocorre {recurrence}",
         "filterImpossible": "Este filtro nunca será satisfeito: o bloco só ocorre em {day}.",
         "fixFilter": "Usar {day}",

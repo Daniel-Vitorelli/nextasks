@@ -50,6 +50,8 @@ export interface CalendarEvent {
   confirmation?: EventConfirmation;
   /** Optional description */
   description?: string;
+  /** Routine that owns this occurrence (when materialized from a schedule) */
+  routineId?: string;
 }
 
 /** Represents a positioned event for rendering in the grid */

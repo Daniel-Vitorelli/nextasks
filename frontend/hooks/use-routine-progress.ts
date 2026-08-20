@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ProgressResponse } from "@/types/domain";
+import { useDataSync } from "@/lib/client/data-events";
+import { useTzOffset } from "@/lib/client/use-tz-offset";
 
 /**
  * Loads the daily progress of the active routine for the given number of days.
@@ -11,11 +13,12 @@ export function useRoutineProgress(days: number) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const tzOffsetMinutes = useTzOffset();
+
   const fetchProgress = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const tzOffsetMinutes = new Date().getTimezoneOffset();
       const response = await fetch(
         `/api/routines/progress?days=${days}&tzOffset=${tzOffsetMinutes}`,
       );
@@ -31,11 +34,18 @@ export function useRoutineProgress(days: number) {
     } finally {
       setIsLoading(false);
     }
-  }, [days]);
+  }, [days, tzOffsetMinutes]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     void fetchProgress();
   }, [fetchProgress]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Confirmações de blocos, conexões e rotinas mudam o progresso: recarrega.
+  useDataSync(["progress", "time-blocks", "connections", "routines"], () => {
+    void fetchProgress();
+  });
 
   return { data, isLoading, error, refetch: fetchProgress };
 }

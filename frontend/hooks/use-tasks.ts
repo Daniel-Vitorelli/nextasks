@@ -3,7 +3,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Task, TaskFormValues } from "@/types/domain";
 import { sortTasksForList } from "@/lib/task-ordering";
-import { CONNECTIONS_CHANGED_EVENT } from "@/components/connections/connections-provider";
+import {
+  notifyDataChanged,
+  useDataSync,
+  type DataResource,
+} from "@/lib/client/data-events";
+import { useTzOffset } from "@/lib/client/use-tz-offset";
+
+const AFTER_DONE_CHANGE: DataResource[] = [
+  "tasks",
+  "subtasks",
+  "connections",
+  "time-blocks",
+  "progress",
+  "current-block",
+];
+const AFTER_STRUCTURE_CHANGE: DataResource[] = ["tasks", "connections"];
 
 /**
  * Loads and mutates the user's tasks with optimistic updates.
@@ -13,6 +28,8 @@ export function useTasks() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const inFlightToggles = useRef(new Set<string>());
+
+  const tzOffsetMinutes = useTzOffset();
 
   const loadTasks = useCallback(async () => {
     try {
@@ -32,15 +49,9 @@ export function useTasks() {
     void loadTasks();
   }, [loadTasks]);
 
-  // Conexões (bloco -> tarefa) podem concluir tarefas server-side:
-  // recarrega a lista quando qualquer conexão muda.
-  useEffect(() => {
-    const handle = () => {
-      void loadTasks();
-    };
-    window.addEventListener(CONNECTIONS_CHANGED_EVENT, handle);
-    return () => window.removeEventListener(CONNECTIONS_CHANGED_EVENT, handle);
-  }, [loadTasks]);
+  // Conexões, sub-tarefas e blocos (bloco -> tarefa) podem mudar o estado das
+  // tarefas server-side: recarrega quando qualquer um deles muda.
+  useDataSync(["tasks", "subtasks", "connections", "time-blocks"], loadTasks);
 
   const saveTask = useCallback(
     async (values: TaskFormValues, task: Task | null) => {
@@ -64,6 +75,7 @@ export function useTasks() {
           ? current.map((item) => (item.id === saved.id ? saved : item))
           : [saved, ...current],
       );
+      notifyDataChanged(AFTER_STRUCTURE_CHANGE);
     },
     [],
   );
@@ -84,7 +96,6 @@ export function useTasks() {
     );
 
     try {
-      const tzOffsetMinutes = new Date().getTimezoneOffset();
       const response = await fetch(
         `/api/tasks/${task.id}?tzOffset=${tzOffsetMinutes}`,
         {
@@ -107,6 +118,7 @@ export function useTasks() {
         // Concluidas ficam no fim da lista.
         return updated.sort(sortTasksForList);
       });
+      notifyDataChanged(AFTER_DONE_CHANGE);
     } catch (error) {
       console.error(error);
       setTasks((current) =>
@@ -119,7 +131,7 @@ export function useTasks() {
     } finally {
       inFlightToggles.current.delete(task.id);
     }
-  }, []);
+  }, [tzOffsetMinutes]);
 
   /** Define o estado de conclusão de uma tarefa (usado quando sub-tarefas são reabertas). */
   const setTaskDone = useCallback((id: string, done: boolean) => {
@@ -149,6 +161,7 @@ export function useTasks() {
 
         const copy = (await response.json()) as Task;
         setTasks((current) => [copy, ...current]);
+        notifyDataChanged(AFTER_STRUCTURE_CHANGE);
       } catch (error) {
         console.error(error);
       }
@@ -170,6 +183,7 @@ export function useTasks() {
       }
 
       setTasks((current) => current.filter((item) => item.id !== task.id));
+      notifyDataChanged(AFTER_STRUCTURE_CHANGE);
     } catch (error) {
       console.error(error);
     } finally {

@@ -8,12 +8,15 @@ import { useSession } from "@/components/app/session-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
 import { EmptyStateCard } from "@/components/app/home/empty-state-card";
+import { Heatmap } from "@/components/app/home/heatmap";
 import { PeriodSelector } from "@/components/app/home/period-selector";
 import { ProgressChart } from "@/components/app/home/progress-chart";
+import { StreakCard } from "@/components/app/home/streak-card";
 import { TasksSection } from "@/components/app/home/tasks-section";
 import { useCurrentBlock } from "@/hooks/use-current-block";
 import { useRoutineProgress } from "@/hooks/use-routine-progress";
-import { CONNECTIONS_CHANGED_EVENT } from "@/components/connections/connections-provider";
+import { useTzOffset } from "@/lib/client/use-tz-offset";
+import { notifyDataChanged } from "@/lib/client/data-events";
 
 const DEFAULT_DAYS = 30;
 
@@ -35,7 +38,7 @@ export default function HomePage() {
     minute: "2-digit",
   });
 
-  const tzOffsetMinutes = new Date().getTimezoneOffset();
+  const tzOffsetMinutes = useTzOffset();
 
   const { current, isLoading, removeBlock } = useCurrentBlock();
   const [selectedDays, setSelectedDays] = useState(DEFAULT_DAYS);
@@ -46,6 +49,9 @@ export default function HomePage() {
     error: progressError,
     refetch: refetchProgress,
   } = useRoutineProgress(selectedDays);
+
+  // Heatmap de 12 meses: o endpoint permite 365 dias para o histórico anual.
+  const { data: yearlyProgress } = useRoutineProgress(365);
 
   const blocks = current?.blocks ?? [];
   const routine = current?.routine ?? progress?.routine ?? null;
@@ -59,23 +65,19 @@ export default function HomePage() {
     !showProgressChart &&
     blocks.length === 0;
 
-  // Períodos do seletor limitados aos dias registrados: sem histórico
-  // suficiente, opções maiores que o registro não fazem sentido.
-  const maxAvailablePeriod = Math.max(
-    ...[7, 15, 30, 60].filter((days) => days <= (progress?.daysWithRecords ?? 0)),
-    0,
-  );
-  const effectiveDays =
-    maxAvailablePeriod > 0
-      ? Math.min(selectedDays, maxAvailablePeriod)
-      : selectedDays;
-
   const handleConfirmed = (blockId: string) => {
     removeBlock(blockId);
     void refetchProgress();
     // Confirmar um bloco pode concluir tarefas/sub-tarefas conectadas
-    // server-side: avisa os hooks de tarefas para recarregarem.
-    window.dispatchEvent(new Event(CONNECTIONS_CHANGED_EVENT));
+    // server-side: avisa os hooks de dados para recarregarem.
+    notifyDataChanged([
+      "current-block",
+      "time-blocks",
+      "connections",
+      "tasks",
+      "subtasks",
+      "progress",
+    ]);
   };
 
   return (
@@ -126,7 +128,7 @@ export default function HomePage() {
               </div>
               {showProgressChart && (
                 <PeriodSelector
-                  value={effectiveDays}
+                  value={selectedDays}
                   onChange={setSelectedDays}
                   maxDays={progress?.daysWithRecords}
                 />
@@ -157,6 +159,31 @@ export default function HomePage() {
               </div>
             )}
           </section>
+
+          {progress && progress.confirmableBlockCount > 0 && (
+            <section className="space-y-3">
+              <div className="space-y-0.5">
+                <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">
+                  {t("streak.title")}
+                </p>
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  {t("streak.subtitle")}
+                </h2>
+              </div>
+
+              <StreakCard streak={progress.streak} locale={locale} />
+
+              {yearlyProgress && yearlyProgress.progress.length > 0 && (
+                <div className="overflow-x-auto rounded-xl border border-border/60 bg-card p-4">
+                  <Heatmap
+                    data={yearlyProgress.progress}
+                    locale={locale}
+                    tzOffsetMinutes={tzOffsetMinutes}
+                  />
+                </div>
+              )}
+            </section>
+          )}
 
           <section className="space-y-3">
             <p className="font-jetbrainsMono text-xs text-muted-foreground uppercase tracking-[0.2em]">

@@ -1,5 +1,5 @@
 import type { CalendarEvent, CalendarEventPatch } from "@/types/calendar";
-import type { ParsedTime, TimeBlock } from "@/types/domain";
+import type { ParsedTime, ScheduledOccurrence, TimeBlock } from "@/types/domain";
 
 export function toCalendarEvent(block: TimeBlock): CalendarEvent {
   return {
@@ -23,6 +23,23 @@ export function fromCalendarEvent(event: CalendarEvent): CalendarEventPatch {
     isAllDay: event.isAllDay ?? false,
     color: event.color ?? "green",
     confirmation: event.confirmation ?? "none",
+  };
+}
+
+/** Converte uma ocorrência materializada do cronograma em evento do calendário. */
+export function occurrenceToEvent(
+  occurrence: ScheduledOccurrence,
+): CalendarEvent {
+  return {
+    id: occurrence.id,
+    title: occurrence.title,
+    description: occurrence.description ?? undefined,
+    start: new Date(occurrence.start),
+    end: new Date(occurrence.end),
+    isAllDay: occurrence.isAllDay,
+    color: occurrence.color,
+    confirmation: occurrence.confirmation,
+    routineId: occurrence.routineId,
   };
 }
 

@@ -6,12 +6,14 @@ import {
   completeEntitiesForConnections,
   connectionInclude,
   isDayFilterSatisfiable,
+  isRequiredCountReachable,
   loadCompletionsByBlock,
+  reversePropagateForEntities,
   toConnectionRow,
 } from "@/lib/server/connections";
 import { localWeekday } from "@/lib/server/completions";
 import { parseConnectionPatch } from "@/lib/validation/connections";
-import type { Frequency } from "@/types/domain";
+import type { DayFilter, Frequency } from "@/types/domain";
 
 export async function PATCH(
   request: Request,
@@ -59,6 +61,13 @@ export async function PATCH(
     }
   }
 
+  // A combinação resultante (existing + patch) precisa ser alcançável.
+  const effectiveRequiredCount = patch.requiredCount ?? existing.requiredCount;
+  const effectiveDayFilter = (patch.dayFilter ?? existing.dayFilter) as DayFilter;
+  if (!isRequiredCountReachable(effectiveRequiredCount, effectiveDayFilter)) {
+    return badRequest("Required count is unreachable with this day filter");
+  }
+
   const updated = await prisma.$transaction(async (tx) => {
     const connection = await tx.taskBlockConnection.update({
       where: { id },
@@ -75,12 +84,19 @@ export async function PATCH(
       tzOffsetMinutes,
     );
 
+    // Ajuste no sentido contrário (requiredCount aumentado ou filtro mais
+    // restrito) pode deixar a entidade insatisfeita: reavalia e reabre.
+    await reversePropagateForEntities(
+      tx,
+      user.id,
+      [{ taskId: existing.taskId, subtaskId: existing.subtaskId }],
+      tzOffsetMinutes,
+    );
+
     return connection;
   });
 
-  const completionsByBlock = await loadCompletionsByBlock(prisma, [
-    updated.timeBlockId,
-  ]);
+  const completionsByBlock = await loadCompletionsByBlock(prisma, [updated]);
 
   return NextResponse.json({
     connection: toConnectionRow(

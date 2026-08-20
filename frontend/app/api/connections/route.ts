@@ -12,7 +12,9 @@ import {
   completeEntitiesForBlock,
   connectionInclude,
   isDayFilterSatisfiable,
+  isRequiredCountReachable,
   loadCompletionsByBlock,
+  reversePropagateForEntities,
   toConnectionRow,
 } from "@/lib/server/connections";
 import { localWeekday } from "@/lib/server/completions";
@@ -50,7 +52,9 @@ export async function GET(request: Request) {
     }),
     prisma.timeBlock.findMany({
       where: { routine: { userId: user.id } },
-      include: { routine: { select: { id: true, name: true, frequency: true } } },
+      include: {
+        routine: { select: { id: true, name: true, frequency: true, isActive: true } },
+      },
       orderBy: { start: "asc" },
     }),
     prisma.taskBlockConnection.findMany({
@@ -59,10 +63,7 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  const completionsByBlock = await loadCompletionsByBlock(
-    prisma,
-    connections.map((connection) => connection.timeBlockId),
-  );
+  const completionsByBlock = await loadCompletionsByBlock(prisma, connections);
 
   const catalogBlocks: ConnectionCatalogBlock[] = blocks.map((block) => ({
     id: block.id,
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
     frequency: block.routine.frequency as Frequency,
     confirmation: block.confirmation as EventConfirmation,
     weekday: localWeekday(block.start, tzOffsetMinutes),
+    routineActive: block.routine.isActive,
   }));
 
   const result: ConnectionsResponse = {
@@ -110,7 +112,7 @@ export async function POST(request: Request) {
 
   const timeBlock = await prisma.timeBlock.findFirst({
     where: { id: input.timeBlockId, routine: { userId: user.id } },
-    include: { routine: { select: { frequency: true } } },
+    include: { routine: { select: { frequency: true, isActive: true } } },
   });
   if (!timeBlock) {
     return notFound("Time block not found");
@@ -119,6 +121,16 @@ export async function POST(request: Request) {
   // Bloco sem modo de confirmação nunca pode satisfazer uma conexão.
   if (timeBlock.confirmation === "none") {
     return badRequest("Block has no confirmation mode");
+  }
+
+  // Rotinas inativas nunca geram confirmações: conexões para elas seriam mortas.
+  if (!timeBlock.routine.isActive) {
+    return badRequest("Routine is not active");
+  }
+
+  // A quantidade exigida precisa ser alcançável com o filtro.
+  if (!isRequiredCountReachable(input.requiredCount, input.dayFilter)) {
+    return badRequest("Required count is unreachable with this day filter");
   }
 
   // O dayFilter precisa ser possível de satisfazer para este bloco
@@ -185,12 +197,19 @@ export async function POST(request: Request) {
         tzOffsetMinutes,
       );
 
+      // Conexão nova insatisfeita numa entidade já concluída: a entidade
+      // deixa de cumprir "todas as conexões satisfeitas" e é reaberta.
+      await reversePropagateForEntities(
+        tx,
+        user.id,
+        [{ taskId: input.taskId, subtaskId: input.subtaskId }],
+        tzOffsetMinutes,
+      );
+
       return connection;
     });
 
-    const completionsByBlock = await loadCompletionsByBlock(prisma, [
-      created.timeBlockId,
-    ]);
+    const completionsByBlock = await loadCompletionsByBlock(prisma, [created]);
 
     return NextResponse.json(
       {
