@@ -17,11 +17,12 @@ import {
   reversePropagateForEntities,
   toConnectionRow,
 } from "@/lib/server/connections";
-import { localWeekday } from "@/lib/server/completions";
+import { localMinutesOfDay, localWeekday } from "@/lib/server/completions";
 import { parseConnectionInput } from "@/lib/validation/connections";
 import type {
   ConnectionCatalogBlock,
   ConnectionsResponse,
+  EventColor,
   EventConfirmation,
   Frequency,
 } from "@/types/domain";
@@ -72,6 +73,8 @@ export async function GET(request: Request) {
     routineName: block.routine.name,
     frequency: block.routine.frequency as Frequency,
     confirmation: block.confirmation as EventConfirmation,
+    color: block.color as EventColor,
+    startMinutes: localMinutesOfDay(block.start, tzOffsetMinutes),
     weekday: localWeekday(block.start, tzOffsetMinutes),
     routineActive: block.routine.isActive,
   }));
@@ -141,7 +144,6 @@ export async function POST(request: Request) {
       input.dayFilter,
       timeBlock.routine.frequency as Frequency,
       blockWeekday,
-      tzOffsetMinutes,
     )
   ) {
     return badRequest("Day filter never matches this block");

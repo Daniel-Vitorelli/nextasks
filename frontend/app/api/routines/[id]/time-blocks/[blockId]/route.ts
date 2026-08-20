@@ -77,7 +77,6 @@ export async function PATCH(
             connection.dayFilter as DayFilter,
             "weekly" as Frequency,
             newBlockWeekday,
-            tzOffsetMinutes,
           ),
       );
       if (broken) {

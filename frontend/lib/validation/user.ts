@@ -3,6 +3,9 @@ import type { UserPatch } from "@/types/domain";
 const NAME_MAX_LENGTH = 50;
 const TZ_OFFSET_MIN = -12 * 60;
 const TZ_OFFSET_MAX = 14 * 60;
+// Avatar PNG data URL (base64): ~1MB de imagem -> ~1.37MB de string.
+const IMAGE_DATA_URL_MAX_LENGTH = 1536 * 1024;
+const IMAGE_DATA_URL_PATTERN = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
 /**
  * Valida o payload de PATCH /api/user. Campos ausentes são ignorados;
@@ -34,7 +37,26 @@ export function parseUserPatch(value: unknown): UserPatch | null {
     }
   }
 
-  if (patch.name === undefined && patch.timezoneOffset === undefined) {
+  if (body.image !== undefined) {
+    if (body.image === null) {
+      patch.image = null;
+    } else if (
+      typeof body.image !== "string" ||
+      body.image.length === 0 ||
+      body.image.length > IMAGE_DATA_URL_MAX_LENGTH ||
+      !IMAGE_DATA_URL_PATTERN.test(body.image)
+    ) {
+      return null;
+    } else {
+      patch.image = body.image;
+    }
+  }
+
+  if (
+    patch.name === undefined &&
+    patch.timezoneOffset === undefined &&
+    patch.image === undefined
+  ) {
     return null;
   }
 

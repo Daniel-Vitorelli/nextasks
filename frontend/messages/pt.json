@@ -192,6 +192,12 @@
         "save": "Salvar",
         "saved": "Alterações salvas.",
         "saveError": "Não foi possível salvar. Tente novamente.",
+        "avatarChange": "Alterar foto",
+        "avatarRemove": "Remover foto",
+        "avatarFileTooLarge": "Arquivo muito grande. Escolha uma imagem de até 10 MB.",
+        "avatarDialogTitle": "Ajustar foto",
+        "avatarDialogDescription": "Posicione e dimensione o recorte. A foto é salva em PNG.",
+        "avatarApply": "Aplicar",
         "emailLabel": "E-mail",
         "currentPassword": "Senha atual",
         "newPassword": "Nova senha",
@@ -447,8 +453,50 @@
         "weekday_3": "Quarta-feira",
         "weekday_4": "Quinta-feira",
         "weekday_5": "Sexta-feira",
-        "weekday_6": "Sábado"
+        "weekday_6": "Sábado",
+        "weekdayShort_0": "D",
+        "weekdayShort_1": "S",
+        "weekdayShort_2": "T",
+        "weekdayShort_3": "Q",
+        "weekdayShort_4": "Q",
+        "weekdayShort_5": "S",
+        "weekdayShort_6": "S"
       }
+    },
+    "connections": {
+      "title": "Conexões",
+      "description": "Vincule tarefas e sub-tarefas a blocos de tempo: ao confirmar o bloco o número de vezes necessário, a entidade conectada conclui automaticamente.",
+      "manage": "Gerenciar conexões",
+      "empty": {
+        "title": "Nenhuma conexão ainda",
+        "description": "Conecte tarefas e sub-tarefas a blocos de tempo para automatizar a conclusão de ambos.",
+        "flowTask": "Tarefa",
+        "flowBlock": "Bloco",
+        "flowDone": "Concluída"
+      },
+      "stats": {
+        "total": "Conexões",
+        "satisfied": "Satisfeitas",
+        "pending": "Pendentes",
+        "entities": "Entidades conectadas"
+      },
+      "dialog": {
+        "title": "Conexões",
+        "description": "Veja e gerencie todas as conexões entre tarefas, sub-tarefas e blocos de tempo."
+      },
+      "how": {
+        "connectTitle": "1. Conecte",
+        "connectDescription": "Vincule uma tarefa ou sub-tarefa a um bloco de tempo — ou o contrário.",
+        "fulfillTitle": "2. Cumpra",
+        "fulfillDescription": "Cada confirmação do bloco conta para a conexão; atingindo o necessário, a entidade conclui.",
+        "automateTitle": "3. Automatize",
+        "automateDescription": "Entidade concluída confirma o bloco no período atual. As confirmações contam a partir da conexão.",
+        "flowTask": "Tarefa conectada",
+        "flowBlock": "Bloco confirmado ×N",
+        "flowDone": "Tarefa concluída"
+      },
+      "tabBlocks": "Por bloco",
+      "tabEntities": "Por tarefa"
     }
   },
   "sign-up": {

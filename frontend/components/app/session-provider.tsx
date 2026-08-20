@@ -10,6 +10,7 @@ export interface SessionUser {
   name?: string;
   email?: string;
   timezoneOffset?: number | null;
+  image?: string | null;
 }
 
 interface SessionContextValue {

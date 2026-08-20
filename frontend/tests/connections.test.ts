@@ -43,10 +43,20 @@ function pastBlock(
 
 describe("helpers puros", () => {
   it("isDayFilterSatisfiable: bloco semanal só aceita o próprio dia", () => {
-    expect(isDayFilterSatisfiable("weekday:3", "weekly", 3, 0)).toBe(true);
-    expect(isDayFilterSatisfiable("weekday:4", "weekly", 3, 0)).toBe(false);
+    expect(isDayFilterSatisfiable("weekday:3", "weekly", 3)).toBe(true);
+    expect(isDayFilterSatisfiable("weekday:4", "weekly", 3)).toBe(false);
     // Bloco diário aceita qualquer filtro.
-    expect(isDayFilterSatisfiable("weekday:4", "daily", 3, 0)).toBe(true);
+    expect(isDayFilterSatisfiable("weekday:4", "daily", 3)).toBe(true);
+  });
+
+  it("isDayFilterSatisfiable: data específica usa o dia local, sem depender do fuso", () => {
+    // 2026-08-20 é uma quinta-feira local (o fuso do usuário não muda o dia
+    // nominal da data; antes o offset deslocava o cálculo em um dia para
+    // fusos a oeste de UTC e rejeitava filtros válidos).
+    expect(isDayFilterSatisfiable("date:2026-08-20", "weekly", 4)).toBe(true);
+    expect(isDayFilterSatisfiable("date:2026-08-20", "weekly", 3)).toBe(false);
+    expect(isDayFilterSatisfiable("date:2026-08-20", "daily", 4)).toBe(true);
+    expect(isDayFilterSatisfiable("date:2026-08-19", "weekly", 3)).toBe(true);
   });
 
   it("isRequiredCountReachable: filtro date só permite 1", () => {

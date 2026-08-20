@@ -54,7 +54,6 @@ export async function PATCH(
         patch.dayFilter,
         block.routine.frequency as Frequency,
         blockWeekday,
-        tzOffsetMinutes,
       )
     ) {
       return badRequest("Day filter never matches this block");

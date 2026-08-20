@@ -94,16 +94,12 @@ export function confirmationMatchesDayFilter(
   );
 }
 
-/** Dia da semana (0-6) de uma data local "YYYY-MM-DD" no fuso do usuário. */
-export function localDateWeekday(
-  dateString: string,
-  tzOffsetMinutes: number,
-): number {
+/** Dia da semana (0-6) de uma data local "YYYY-MM-DD". */
+export function localDateWeekday(dateString: string): number {
   const [year, month, day] = dateString.split("-").map(Number);
-  return localWeekday(
-    new Date(Date.UTC(year, month - 1, day)),
-    tzOffsetMinutes,
-  );
+  // A string já é a data local do usuário: o dia da semana é o nominal,
+  // independente do fuso (meia-noite local expressa em UTC muda, o dia não).
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 }
 
 /**
@@ -116,16 +112,12 @@ export function isDayFilterSatisfiable(
   dayFilter: DayFilter,
   frequency: Frequency,
   blockWeekday: number,
-  tzOffsetMinutes: number,
 ): boolean {
   if (dayFilter === "all" || frequency === "daily") return true;
   if (dayFilter.startsWith("weekday:")) {
     return Number(dayFilter.slice("weekday:".length)) === blockWeekday;
   }
-  return (
-    localDateWeekday(dayFilter.slice("date:".length), tzOffsetMinutes) ===
-    blockWeekday
-  );
+  return localDateWeekday(dayFilter.slice("date:".length)) === blockWeekday;
 }
 
 /**

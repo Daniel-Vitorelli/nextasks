@@ -12,6 +12,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  blockRecurrence,
+  dateWeekday,
+  dayFilterDate,
+  isDateFilter,
+  isDayFilterSatisfiable,
+  nextDateForWeekday,
+  todayLocal,
+} from "./connection-utils";
 import { useConnections } from "./connections-provider";
 import type {
   ConnectionCatalogBlock,
@@ -31,51 +40,6 @@ interface ConnectionPopoverProps {
   children: React.ReactNode;
 }
 
-function todayLocal(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
-function formatLocalDate(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-/** Próxima data local cujo dia da semana seja `weekday` (hoje incluso). */
-function nextDateForWeekday(weekday: number): string {
-  const date = new Date();
-  while (date.getDay() !== weekday) {
-    date.setDate(date.getDate() + 1);
-  }
-  return formatLocalDate(date);
-}
-
-/** Dia da semana (0-6) de uma data local "YYYY-MM-DD". */
-function dateWeekday(dateString: string): number {
-  const [year, month, day] = dateString.split("-").map(Number);
-  return new Date(year, month - 1, day).getDay();
-}
-
-/**
- * O dayFilter é possível de satisfazer para este bloco? Blocos semanais só
- * ocorrem no próprio dia da semana: weekday de outro dia ou data em outro
- * dia da semana nunca casam. Blocos diários aceitam qualquer filtro.
- */
-function isDayFilterSatisfiable(
-  dayFilter: DayFilter,
-  frequency: Frequency,
-  blockWeekday: number,
-): boolean {
-  if (dayFilter === "all" || frequency === "daily") return true;
-  if (dayFilter.startsWith("weekday:")) {
-    return Number(dayFilter.slice("weekday:".length)) === blockWeekday;
-  }
-  return dateWeekday(dayFilter.slice("date:".length)) === blockWeekday;
-}
-
 /** Opções de uma conexão: contagem necessária, filtro de dia e progresso. */
 function ConnectionOptions({
   connection,
@@ -89,7 +53,7 @@ function ConnectionOptions({
   onUpdate: (patch: ConnectionPatch) => void;
 }) {
   const t = useTranslations("dashboard.tasks.connections");
-  const isDate = connection.dayFilter.startsWith("date:");
+  const isDate = isDateFilter(connection.dayFilter);
   const [dateError, setDateError] = React.useState(false);
 
   const currentValid = isDayFilterSatisfiable(
@@ -154,7 +118,8 @@ function ConnectionOptions({
               frequency === "weekly"
                 ? nextDateForWeekday(blockWeekday)
                 : todayLocal();
-            onUpdate({ dayFilter: `date:${date}` });
+            // Filtro de data exige exatamente 1 confirmação (isRequiredCountReachable).
+            onUpdate({ dayFilter: `date:${date}`, requiredCount: 1 });
           } else {
             onUpdate({ dayFilter: value as DayFilter });
           }
@@ -175,7 +140,7 @@ function ConnectionOptions({
         <>
           <Input
             type="date"
-            value={connection.dayFilter.slice("date:".length)}
+            value={dayFilterDate(connection.dayFilter)}
             onChange={(event) => {
               const value = event.target.value;
               if (!value) return;
@@ -306,17 +271,6 @@ function ConnectionRow({
       )}
     </div>
   );
-}
-
-/** Rótulo da recorrência de um bloco ("Todos os dias" / "Toda quarta-feira"). */
-function blockRecurrence(
-  frequency: Frequency,
-  weekday: number,
-  t: ReturnType<typeof useTranslations>,
-): string {
-  return frequency === "weekly"
-    ? t("recurrenceWeekly", { day: t(`weekday_${weekday}`) })
-    : t("recurrenceDaily");
 }
 
 export function ConnectionPopover({

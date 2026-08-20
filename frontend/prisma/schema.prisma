@@ -17,7 +17,7 @@ model User {
   name           String
   email          String    @unique
   emailVerified  Boolean   @default(false)
-  image          String?
+  image          String?   @db.MediumText // avatar PNG data URL
   timezoneOffset Int? // minutos em relação a UTC (null = fuso do navegador)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

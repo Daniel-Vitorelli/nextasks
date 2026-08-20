@@ -228,6 +228,9 @@ export interface ConnectionCatalogBlock {
   routineName: string;
   frequency: Frequency;
   confirmation: EventConfirmation;
+  color: EventColor;
+  /** Minutos do início do bloco no fuso do usuário (0-1439). */
+  startMinutes: number;
   /** Dia da semana local do início do bloco (0-6). */
   weekday: number;
   /** A rotina do bloco está ativa? (blocos de rotinas inativas não aceitam novas conexões). */
@@ -277,6 +280,8 @@ export interface UserPatch {
   name?: string;
   /** Minutos a oeste de UTC (null = usar o fuso do navegador). */
   timezoneOffset?: number | null;
+  /** Avatar como PNG data URL (null = remover a foto). */
+  image?: string | null;
 }
 
 /** Formato do backup JSON exportado/importado em /app/config. */

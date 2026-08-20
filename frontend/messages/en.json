@@ -192,6 +192,12 @@
         "save": "Save",
         "saved": "Changes saved.",
         "saveError": "Could not save. Try again.",
+        "avatarChange": "Change photo",
+        "avatarRemove": "Remove photo",
+        "avatarFileTooLarge": "File too large. Choose an image up to 10 MB.",
+        "avatarDialogTitle": "Adjust photo",
+        "avatarDialogDescription": "Position and size the crop. The photo is saved as PNG.",
+        "avatarApply": "Apply",
         "emailLabel": "Email",
         "currentPassword": "Current password",
         "newPassword": "New password",
@@ -447,8 +453,50 @@
         "weekday_3": "Wednesday",
         "weekday_4": "Thursday",
         "weekday_5": "Friday",
-        "weekday_6": "Saturday"
+        "weekday_6": "Saturday",
+        "weekdayShort_0": "S",
+        "weekdayShort_1": "M",
+        "weekdayShort_2": "T",
+        "weekdayShort_3": "W",
+        "weekdayShort_4": "T",
+        "weekdayShort_5": "F",
+        "weekdayShort_6": "S"
       }
+    },
+    "connections": {
+      "title": "Connections",
+      "description": "Link tasks and subtasks to time blocks: once the block is confirmed the required number of times, the connected entity is completed automatically.",
+      "manage": "Manage connections",
+      "empty": {
+        "title": "No connections yet",
+        "description": "Link tasks and subtasks to time blocks to automate completing both.",
+        "flowTask": "Task",
+        "flowBlock": "Block",
+        "flowDone": "Done"
+      },
+      "stats": {
+        "total": "Connections",
+        "satisfied": "Satisfied",
+        "pending": "Pending",
+        "entities": "Linked entities"
+      },
+      "dialog": {
+        "title": "Connections",
+        "description": "View and manage all connections between tasks, subtasks and time blocks."
+      },
+      "how": {
+        "connectTitle": "1. Connect",
+        "connectDescription": "Link a task or subtask to a time block — or the other way around.",
+        "fulfillTitle": "2. Fulfill",
+        "fulfillDescription": "Each block confirmation counts toward the connection; once the target is reached, the entity is completed.",
+        "automateTitle": "3. Automate",
+        "automateDescription": "A completed entity confirms the block in the current period. Confirmations count from the moment the connection is created.",
+        "flowTask": "Linked task",
+        "flowBlock": "Block confirmed ×N",
+        "flowDone": "Task completed"
+      },
+      "tabBlocks": "By block",
+      "tabEntities": "By task"
     }
   },
   "sign-up": {

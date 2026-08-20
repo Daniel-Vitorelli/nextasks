@@ -49,6 +49,25 @@ describe("parseUserPatch", () => {
     expect(parseUserPatch({ timezoneOffset: "180" })).toBeNull();
   });
 
+  it("aceita image PNG data URL e null (remover foto)", () => {
+    const dataUrl = "data:image/png;base64,iVBORw0KGgo=";
+    expect(parseUserPatch({ image: dataUrl })).toEqual({ image: dataUrl });
+    expect(parseUserPatch({ image: null })).toEqual({ image: null });
+  });
+
+  it("rejeita image inválida", () => {
+    expect(parseUserPatch({ image: "" })).toBeNull();
+    expect(parseUserPatch({ image: 42 })).toBeNull();
+    expect(parseUserPatch({ image: "https://example.com/a.png" })).toBeNull();
+    expect(
+      parseUserPatch({ image: "data:image/jpeg;base64,aGVsbG8=" }),
+    ).toBeNull();
+    expect(
+      parseUserPatch({ image: "data:image/png;base64,not valid!" }),
+    ).toBeNull();
+    expect(parseUserPatch({ image: "x".repeat(1536 * 1024 + 1) })).toBeNull();
+  });
+
   it("rejeita payload vazio", () => {
     expect(parseUserPatch({})).toBeNull();
     expect(parseUserPatch(null)).toBeNull();
