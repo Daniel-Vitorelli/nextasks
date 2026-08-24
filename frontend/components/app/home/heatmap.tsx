@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { DailyProgress } from "@/types/domain";
+import type { DailyProgress, EventColor } from "@/types/domain";
 
 const DAY_MS = 86_400_000;
 const TOTAL_DAYS = 365;
@@ -10,6 +10,8 @@ interface HeatmapProps {
   data: DailyProgress[];
   locale: string;
   tzOffsetMinutes: number;
+  /** Cor de destaque dos níveis (padrão: escala esmeralda da rotina). */
+  color?: EventColor;
 }
 
 interface Cell {
@@ -46,7 +48,16 @@ function levelClass(value: number | null): string {
   return "bg-emerald-500";
 }
 
-export function Heatmap({ data, locale, tzOffsetMinutes }: HeatmapProps) {
+/** Intensidade (%) da cor do hábito para o nível do valor informado. */
+function levelOpacity(value: number): number {
+  if (value < 25) return 30;
+  if (value < 50) return 50;
+  if (value < 75) return 70;
+  if (value < 100) return 90;
+  return 100;
+}
+
+export function Heatmap({ data, locale, tzOffsetMinutes, color }: HeatmapProps) {
   const t = useTranslations("app.home.streak");
 
   const today = startOfLocalDay(tzOffsetMinutes);
@@ -56,6 +67,24 @@ export function Heatmap({ data, locale, tzOffsetMinutes }: HeatmapProps) {
       item.value,
     ]),
   );
+
+  const cellBackground = (value: number | null) => {
+    if (color === undefined) {
+      return { className: levelClass(value), style: undefined };
+    }
+    if (value === null || value === 0) {
+      return {
+        className: value === null ? "bg-transparent" : "bg-muted",
+        style: undefined,
+      };
+    }
+    return {
+      className: "",
+      style: {
+        backgroundColor: `color-mix(in oklab, var(--event-${color}) ${levelOpacity(value)}%, transparent)`,
+      },
+    };
+  };
 
   // Últimos 365 dias, do mais antigo ao mais recente.
   const cells: Cell[] = [];
@@ -153,7 +182,13 @@ export function Heatmap({ data, locale, tzOffsetMinutes }: HeatmapProps) {
                   title={`${dateFormatter.format(cell.date)} — ${
                     cell.value === null ? t("noData") : t("percent", { value: cell.value })
                   }`}
-                  className={`size-3 rounded-[3px] ${levelClass(cell.value)}`}
+                  {...(() => {
+                    const { className, style } = cellBackground(cell.value);
+                    return {
+                      className: `size-3 rounded-[3px] ${className}`,
+                      style,
+                    };
+                  })()}
                 />
               ) : (
                 <div key={row} className="size-3" />
@@ -165,9 +200,19 @@ export function Heatmap({ data, locale, tzOffsetMinutes }: HeatmapProps) {
 
       <div className="flex items-center justify-end gap-1.5 pl-4">
         <span className="text-[10px] text-muted-foreground">{t("less")}</span>
-        {legendLevels.map((className) => (
-          <div key={className} className={`size-3 rounded-[3px] ${className}`} />
-        ))}
+        {color === undefined
+          ? legendLevels.map((className) => (
+              <div key={className} className={`size-3 rounded-[3px] ${className}`} />
+            ))
+          : [30, 50, 70, 90, 100].map((opacity) => (
+              <div
+                key={opacity}
+                className="size-3 rounded-[3px]"
+                style={{
+                  backgroundColor: `color-mix(in oklab, var(--event-${color}) ${opacity}%, transparent)`,
+                }}
+              />
+            ))}
         <span className="text-[10px] text-muted-foreground">{t("more")}</span>
       </div>
     </div>

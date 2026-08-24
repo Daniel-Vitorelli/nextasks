@@ -64,7 +64,7 @@ export function DataSection() {
       });
       if (!response.ok) throw new Error("Import failed");
       const result = (await response.json()) as ImportResult;
-      // O import cria rotinas/blocos/tarefas: recarrega as telas que
+      // O import cria rotinas/blocos/tarefas/hábitos: recarrega as telas que
       // mantêm esses dados em cache (dashboard, calendário etc.).
       notifyDataChanged([
         "routines",
@@ -73,6 +73,7 @@ export function DataSection() {
         "subtasks",
         "connections",
         "progress",
+        "habits",
       ]);
       setFeedback({
         kind: "success",
@@ -81,6 +82,7 @@ export function DataSection() {
           blocks: result.timeBlocks,
           tasks: result.tasks,
           subtasks: result.subtasks,
+          habits: result.habits,
         }),
       });
     } catch {

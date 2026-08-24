@@ -179,6 +179,20 @@
         "emptyDescription": "Crie tarefas no painel para vê-las aqui.",
         "upcomingTitle": "Próximas",
         "subtasksLabel": "Sub-tarefas"
+      },
+      "habits": {
+        "title": "Hábitos de hoje",
+        "description": "Confirme seus hábitos do dia",
+        "emptyTitle": "Nada para confirmar hoje",
+        "emptyDescription": "Você não tem hábitos agendados para hoje.",
+        "confirm": "Confirmar",
+        "done": "Concluído",
+        "showDetails": "Ver histórico",
+        "hideDetails": "Ocultar histórico",
+        "period": {
+          "daily": "hoje",
+          "weekly": "esta semana"
+        }
       }
     },
     "config": {
@@ -237,7 +251,7 @@
         "exportDone": "Backup baixado.",
         "exportError": "Não foi possível exportar.",
         "import": "Importar",
-        "importDone": "Importação concluída: {routines} rotina(s), {blocks} bloco(s), {tasks} tarefa(s) e {subtasks} sub-tarefa(s).",
+        "importDone": "Importação concluída: {routines} rotina(s), {blocks} bloco(s), {tasks} tarefa(s), {subtasks} sub-tarefa(s) e {habits} hábito(s).",
         "importError": "Arquivo inválido ou não foi possível importar."
       }
     }
@@ -497,6 +511,81 @@
       },
       "tabBlocks": "Por bloco",
       "tabEntities": "Por tarefa"
+    },
+    "habits": {
+      "title": "Hábitos",
+      "description": "Crie e acompanhe seus hábitos com frequência personalizada.",
+      "create": "Novo hábito",
+      "empty": {
+        "title": "Nenhum hábito ainda",
+        "description": "Crie seu primeiro hábito para começar."
+      },
+      "dialog": {
+        "title": "Criar novo hábito",
+        "description": "Defina o nome, frequência e meta do seu hábito.",
+        "editTitle": "Editar hábito",
+        "editDescription": "Atualize os dados do seu hábito.",
+        "nameLabel": "Nome",
+        "namePlaceholder": "Ex.: Beber água, exercitar-se",
+        "nameRequired": "Digite um nome para o hábito.",
+        "descriptionLabel": "Descrição",
+        "descriptionPlaceholder": "Ex.: Beber 2L de água por dia.",
+        "iconLabel": "Ícone",
+        "iconSearchPlaceholder": "Buscar ícone...",
+        "iconEmpty": "Nenhum ícone encontrado.",
+        "iconRequired": "Selecione um ícone.",
+        "colorLabel": "Cor",
+        "color_red": "Vermelho",
+        "color_orange": "Laranja",
+        "color_yellow": "Amarelo",
+        "color_green": "Verde",
+        "color_blue": "Azul",
+        "color_purple": "Roxo",
+        "color_gray": "Cinza",
+        "frequencyLabel": "Frequência",
+        "daily": "Diário (escolha os dias)",
+        "weekly": "Semanal (prazo de uma semana)",
+        "dailyDescription": "Selecione os dias da semana em que o hábito deve ser feito",
+        "weeklyDescription": "O hábito deve ser completado uma vez por semana",
+        "daysLabel": "Dias da semana",
+        "domingo": "Domingo",
+        "segunda": "Segunda",
+        "terca": "Terça",
+        "quarta": "Quarta",
+        "quinta": "Quinta",
+        "sexta": "Sexta",
+        "sabado": "Sábado",
+        "targetCountLabel": "Confirmações necessárias por período",
+        "targetCountRequired": "O número de confirmações deve ser pelo menos 1.",
+        "daysRequired": "Selecione pelo menos um dia da semana para hábitos diários.",
+        "cancel": "Cancelar",
+        "submit": "Criar",
+        "submitEdit": "Salvar"
+      },
+      "actions": {
+        "edit": "Editar",
+        "delete": "Excluir",
+        "more": "Mais opções"
+      },
+      "frequency": {
+        "daily": "Diário ({days})",
+        "weekly": "Semanal"
+      },
+      "weekdayShort_0": "D",
+      "weekdayShort_1": "S",
+      "weekdayShort_2": "T",
+      "weekdayShort_3": "Q",
+      "weekdayShort_4": "Q",
+      "weekdayShort_5": "S",
+      "weekdayShort_6": "S",
+      "showAll": "Ver todos ({count})",
+      "showLess": "Ver menos",
+      "deleteDialog": {
+        "title": "Excluir hábito",
+        "description": "Tem certeza que deseja excluir \"{name}\"? Essa ação não pode ser desfeita.",
+        "cancel": "Cancelar",
+        "confirm": "Excluir"
+      }
     }
   },
   "sign-up": {

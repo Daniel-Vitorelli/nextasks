@@ -16,7 +16,8 @@ export type DataResource =
   | "routines"
   | "time-blocks"
   | "progress"
-  | "current-block";
+  | "current-block"
+  | "habits";
 
 const listeners = new Map<DataResource, Set<() => void>>();
 

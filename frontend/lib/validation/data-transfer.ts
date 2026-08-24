@@ -2,6 +2,8 @@ import type {
   DataExport,
   DataExportCompletion,
   DataExportConnection,
+  DataExportHabit,
+  DataExportHabitCompletion,
   DataExportRoutine,
   DataExportSubtask,
   DataExportTask,
@@ -227,6 +229,9 @@ function parseCompletion(value: unknown): DataExportCompletion | null {
  * Valida o payload de importação/exportação JSON. Garante a forma básica de
  * cada registro e que as referências entre entidades são resolvíveis dentro
  * do próprio arquivo. Retorna null se qualquer item for inválido.
+ *
+ * `habits`/`habitCompletions` são opcionais: backups antigos (v1) não os
+ * incluíam e continuam importáveis.
  */
 export function parseDataExport(value: unknown): DataExport | null {
   if (!isRecord(value) || value.version !== EXPORT_VERSION) return null;
@@ -243,6 +248,11 @@ export function parseDataExport(value: unknown): DataExport | null {
   for (const key of Object.keys(arrays)) {
     if (!Array.isArray(arrays[key as keyof typeof arrays])) return null;
   }
+
+  const habitsRaw = Array.isArray(value.habits) ? value.habits : [];
+  const habitCompletionsRaw = Array.isArray(value.habitCompletions)
+    ? value.habitCompletions
+    : [];
 
   const routines: DataExportRoutine[] = [];
   for (const item of arrays.routines as unknown[]) {
@@ -302,6 +312,23 @@ export function parseDataExport(value: unknown): DataExport | null {
     completions.push(parsed);
   }
 
+  const habits: DataExportHabit[] = [];
+  const habitIds = new Set<string>();
+  for (const item of habitsRaw) {
+    const parsed = parseHabit(item);
+    if (!parsed) return null;
+    habits.push(parsed);
+    habitIds.add(parsed.id);
+  }
+
+  const habitCompletions: DataExportHabitCompletion[] = [];
+  for (const item of habitCompletionsRaw) {
+    const parsed = parseHabitCompletion(item);
+    if (!parsed) return null;
+    if (!habitIds.has(parsed.habitId)) return null;
+    habitCompletions.push(parsed);
+  }
+
   return {
     version: EXPORT_VERSION,
     exportedAt:
@@ -315,5 +342,78 @@ export function parseDataExport(value: unknown): DataExport | null {
     subtasks,
     connections,
     completions,
+    habits,
+    habitCompletions,
   };
+}
+
+function parseHabit(value: unknown): DataExportHabit | null {
+  if (!isRecord(value)) return null;
+  const name = requiredString(value.name, 200);
+  if (!name) return null;
+
+  const frequency: DataExportHabit["frequency"] =
+    value.frequency === "weekly" ? "weekly" : "daily";
+
+  let daysOfWeek = "[]";
+  if (typeof value.daysOfWeek === "string") {
+    try {
+      const parsed = JSON.parse(value.daysOfWeek);
+      if (Array.isArray(parsed)) {
+        daysOfWeek = JSON.stringify(
+          parsed
+            .map(Number)
+            .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6),
+        );
+      }
+    } catch {
+      // Mantém "[]".
+    }
+  } else if (Array.isArray(value.daysOfWeek)) {
+    daysOfWeek = JSON.stringify(
+      value.daysOfWeek
+        .map(Number)
+        .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6),
+    );
+  }
+
+  const targetCount =
+    typeof value.targetCount === "number" &&
+    Number.isInteger(value.targetCount) &&
+    value.targetCount >= 1 &&
+    value.targetCount <= 99
+      ? value.targetCount
+      : 1;
+
+  const color: EventColor = EVENT_COLORS.includes(value.color as EventColor)
+    ? (value.color as EventColor)
+    : "green";
+
+  return {
+    id: requiredString(value.id, 100) ?? "",
+    name,
+    description: optionalString(value.description, 2000),
+    icon: requiredString(value.icon, 100) ?? "CheckCircle2",
+    color,
+    frequency,
+    daysOfWeek,
+    targetCount,
+  };
+}
+
+function parseHabitCompletion(value: unknown): DataExportHabitCompletion | null {
+  if (!isRecord(value)) return null;
+  const habitId = requiredString(value.habitId, 100);
+  const date = requiredDate(value.date);
+  if (!habitId || !date) return null;
+
+  const count =
+    typeof value.count === "number" &&
+    Number.isInteger(value.count) &&
+    value.count >= 1 &&
+    value.count <= 999
+      ? value.count
+      : 1;
+
+  return { habitId, date, count };
 }

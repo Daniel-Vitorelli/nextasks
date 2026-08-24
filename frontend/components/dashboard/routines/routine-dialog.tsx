@@ -247,7 +247,7 @@ function RadioOption({
   label: string;
 }) {
   return (
-    <label className="border-border/60 hover:border-primary/50 hover:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors has-data-checked:border-primary has-data-checked:bg-primary/5">
+    <label className="border-border/60 hover:border-primary/50 hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors">
       <RadioGroupItem value={value} id={id} />
       <span className="text-sm font-medium">{label}</span>
     </label>

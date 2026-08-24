@@ -28,19 +28,29 @@ function textOrNull(value: string | null): string | null {
 }
 
 export async function buildDataExport(userId: string): Promise<DataExport> {
-  const [routines, timeBlocks, tasks, subtasks, connections, completions] =
-    await Promise.all([
-      prisma.routine.findMany({ where: { userId } }),
-      prisma.timeBlock.findMany({
-        where: { routine: { userId } },
-      }),
-      prisma.task.findMany({ where: { userId } }),
-      prisma.subtask.findMany({
-        where: { task: { userId } },
-      }),
-      prisma.taskBlockConnection.findMany({ where: { userId } }),
-      prisma.timeBlockCompletion.findMany({ where: { userId } }),
-    ]);
+  const [
+    routines,
+    timeBlocks,
+    tasks,
+    subtasks,
+    connections,
+    completions,
+    habits,
+    habitCompletions,
+  ] = await Promise.all([
+    prisma.routine.findMany({ where: { userId } }),
+    prisma.timeBlock.findMany({
+      where: { routine: { userId } },
+    }),
+    prisma.task.findMany({ where: { userId } }),
+    prisma.subtask.findMany({
+      where: { task: { userId } },
+    }),
+    prisma.taskBlockConnection.findMany({ where: { userId } }),
+    prisma.timeBlockCompletion.findMany({ where: { userId } }),
+    prisma.habit.findMany({ where: { userId } }),
+    prisma.habitCompletion.findMany({ where: { userId } }),
+  ]);
 
   return {
     version: EXPORT_VERSION,
@@ -101,6 +111,21 @@ export async function buildDataExport(userId: string): Promise<DataExport> {
       source: row.source,
       sourceEntityId: row.sourceEntityId,
       updatedAt: row.updatedAt.toISOString(),
+    })),
+    habits: habits.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: textOrNull(row.description),
+      icon: row.icon,
+      color: row.color as DataExport["habits"][number]["color"],
+      frequency: row.frequency as DataExport["habits"][number]["frequency"],
+      daysOfWeek: row.daysOfWeek,
+      targetCount: row.targetCount,
+    })),
+    habitCompletions: habitCompletions.map((row) => ({
+      habitId: row.habitId,
+      date: row.date.toISOString(),
+      count: row.count,
     })),
   };
 }
@@ -260,6 +285,38 @@ export async function importDataExport(
       });
     }
 
+    const habitIds = new Map<string, string>();
+    for (const habit of payload.habits) {
+      const id = randomUUID();
+      habitIds.set(habit.id, id);
+      await tx.habit.create({
+        data: {
+          id,
+          userId,
+          name: habit.name,
+          description: habit.description,
+          icon: habit.icon,
+          color: habit.color,
+          frequency: habit.frequency,
+          daysOfWeek: habit.daysOfWeek,
+          targetCount: habit.targetCount,
+        },
+      });
+    }
+
+    for (const completion of payload.habitCompletions) {
+      const habitId = habitIds.get(completion.habitId);
+      if (!habitId) throw new Error("Habit reference not found");
+      await tx.habitCompletion.create({
+        data: {
+          habitId,
+          userId,
+          date: new Date(completion.date),
+          count: completion.count,
+        },
+      });
+    }
+
     return {
       routines: payload.routines.length,
       timeBlocks: payload.timeBlocks.length,
@@ -267,6 +324,8 @@ export async function importDataExport(
       subtasks: payload.subtasks.length,
       connections: payload.connections.length,
       completions: payload.completions.length,
+      habits: payload.habits.length,
+      habitCompletions: payload.habitCompletions.length,
     };
   });
 }

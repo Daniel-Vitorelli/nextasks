@@ -3,14 +3,17 @@
 import { useTranslations } from "next-intl";
 import { Flame, Medal, Trophy } from "lucide-react";
 
-import type { StreakStats } from "@/types/domain";
+import type { StreakStats, EventColor } from "@/types/domain";
+import { blockTextClass } from "@/components/connections/connection-colors";
 
 interface StreakCardProps {
   streak: StreakStats;
   locale: string;
+  /** Cor de destaque do valor principal (padrão: laranja). */
+  accentColor?: EventColor;
 }
 
-export function StreakCard({ streak, locale }: StreakCardProps) {
+export function StreakCard({ streak, locale, accentColor }: StreakCardProps) {
   const t = useTranslations("app.home.streak");
 
   const lastFullDay = streak.lastFullDay
@@ -23,7 +26,15 @@ export function StreakCard({ streak, locale }: StreakCardProps) {
 
   const stats = [
     {
-      icon: <Flame className="size-5 text-orange-500" />,
+      icon: (
+        <Flame
+          className={
+            accentColor
+              ? `size-5 ${blockTextClass(accentColor)}`
+              : "size-5 text-orange-500"
+          }
+        />
+      ),
       label: t("current"),
       value: t("daysLabel", { count: streak.current }),
       highlight: true,
@@ -53,7 +64,9 @@ export function StreakCard({ streak, locale }: StreakCardProps) {
             <p
               className={
                 stat.highlight
-                  ? "font-jetbrainsMono text-2xl font-bold text-orange-500"
+                  ? accentColor
+                    ? `font-jetbrainsMono text-2xl font-bold ${blockTextClass(accentColor)}`
+                    : "font-jetbrainsMono text-2xl font-bold text-orange-500"
                   : "truncate text-lg font-semibold tabular-nums"
               }
             >

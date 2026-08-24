@@ -8,6 +8,7 @@ import { useSession } from "@/components/app/session-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
 import { EmptyStateCard } from "@/components/app/home/empty-state-card";
+import { HabitsCheckIn } from "@/components/app/home/habits-check-in";
 import { Heatmap } from "@/components/app/home/heatmap";
 import { PeriodSelector } from "@/components/app/home/period-selector";
 import { ProgressChart } from "@/components/app/home/progress-chart";
@@ -213,6 +214,8 @@ export default function HomePage() {
           </section>
         </>
       )}
+
+      <HabitsCheckIn />
 
       <TasksSection />
     </main>

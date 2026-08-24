@@ -196,3 +196,39 @@ export async function createCompletion(
     },
   });
 }
+
+/** Cria um hábito para o usuário. */
+export async function createHabit(
+  userId: string,
+  overrides: {
+    name?: string;
+    color?: string;
+    frequency?: "daily" | "weekly";
+    daysOfWeek?: string;
+    targetCount?: number;
+  } = {},
+) {
+  return testPrisma().habit.create({
+    data: {
+      userId,
+      name: overrides.name ?? "Beber água",
+      icon: "CheckCircle2",
+      color: overrides.color ?? "green",
+      frequency: overrides.frequency ?? "daily",
+      daysOfWeek: overrides.daysOfWeek ?? JSON.stringify([1, 3, 5]),
+      targetCount: overrides.targetCount ?? 1,
+    },
+  });
+}
+
+/** Cria uma conclusão de hábito num dia (chave: meia-noite UTC do dia local). */
+export async function createHabitCompletion(
+  userId: string,
+  habitId: string,
+  date: Date,
+  count = 1,
+) {
+  return testPrisma().habitCompletion.create({
+    data: { userId, habitId, date, count },
+  });
+}

@@ -207,7 +207,7 @@ function PriorityOption({
   badgeClassName: string;
 }) {
   return (
-    <label className="border-border/60 hover:border-primary/50 hover:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors has-data-checked:border-primary has-data-checked:bg-primary/5">
+    <label className="border-border/60 hover:border-primary/50 hover:bg-primary/5 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors">
       <RadioGroupItem value={String(value)} />
       <span className={cn("size-2.5 shrink-0 rounded-full", badgeClassName)} />
       <span className="text-sm font-medium">{label}</span>

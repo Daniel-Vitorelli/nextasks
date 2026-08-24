@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseConnectionInput, parseConnectionPatch } from "@/lib/validation/connections";
+import { parseHabitInput, parseHabitPatch } from "@/lib/validation/habits";
 import { parseRoutineInput } from "@/lib/validation/routines";
 import { parseSubtaskInput, parseSubtaskPatch } from "@/lib/validation/subtasks";
 import { parseTaskInput, parseTaskPatch } from "@/lib/validation/tasks";
@@ -172,5 +173,96 @@ describe("parseTimeBlockPatch", () => {
         end: "2024-01-10T10:00:00.000Z",
       }),
     ).toBeNull();
+  });
+});
+
+describe("parseHabitInput", () => {
+  it("hábito diário exige ao menos um dia", () => {
+    const result = parseHabitInput({ name: "Correr", frequency: "daily", daysOfWeek: [] });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/day of week/i);
+    }
+  });
+
+  it("aceita diário com dias e serializa daysOfWeek", () => {
+    const result = parseHabitInput({
+      name: "  Correr  ",
+      frequency: "daily",
+      daysOfWeek: [1, 3],
+      targetCount: 2,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.name).toBe("Correr");
+      expect(result.data.daysOfWeek).toBe("[1,3]");
+      expect(result.data.targetCount).toBe(2);
+    }
+  });
+
+  it("semanal limpa os dias e aceita qualquer target", () => {
+    const result = parseHabitInput({
+      name: "Lavar roupa",
+      frequency: "weekly",
+      daysOfWeek: [1, 2, 3],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.daysOfWeek).toBe("[]");
+      expect(result.data.targetCount).toBe(1);
+    }
+  });
+
+  it("ícone inválido cai no default do catálogo", () => {
+    const result = parseHabitInput({ name: "X", icon: "", daysOfWeek: [1] });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.icon).toBe("CheckCircle2");
+    }
+  });
+  it("targetCount abaixo de 1 cai no default", () => {
+    const result = parseHabitInput({ name: "X", daysOfWeek: [1], targetCount: 0.5 });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.targetCount).toBe(1);
+    }
+  });
+});
+
+describe("parseHabitPatch", () => {
+  it("mudar para daily exige daysOfWeek não vazio", () => {
+    expect(parseHabitPatch({ frequency: "daily" }).ok).toBe(false);
+    expect(parseHabitPatch({ frequency: "daily", daysOfWeek: [] }).ok).toBe(false);
+    expect(
+      parseHabitPatch({ frequency: "daily", daysOfWeek: [1] }).ok,
+    ).toBe(true);
+  });
+
+  it("não permite limpar os dias sem mudar a frequência", () => {
+    const result = parseHabitPatch({ daysOfWeek: [] });
+    expect(result.ok).toBe(false);
+  });
+
+  it("mudar para weekly descarta os dias enviados", () => {
+    const toWeekly = parseHabitPatch({ frequency: "weekly", daysOfWeek: [1, 3] });
+    expect(toWeekly.ok).toBe(true);
+    if (toWeekly.ok) {
+      expect(toWeekly.data.daysOfWeek).toBe("[]");
+      expect(toWeekly.data.frequency).toBe("weekly");
+    }
+  });
+
+  it("patch parcial ignora targetCount inválido", () => {
+    const result = parseHabitPatch({ targetCount: 0.5 });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.targetCount).toBeUndefined();
+    }
+
+    const valid = parseHabitPatch({ targetCount: 3 });
+    expect(valid.ok).toBe(true);
+    if (valid.ok) {
+      expect(valid.data.targetCount).toBe(3);
+    }
   });
 });

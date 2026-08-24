@@ -176,9 +176,23 @@
         "title": "Tasks",
         "description": "One task at a time",
         "emptyTitle": "No pending tasks",
-        "emptyDescription": "Create tasks in the dashboard to see them here.",
+        "emptyDescription": "Create tasks on the dashboard to see them here.",
         "upcomingTitle": "Upcoming",
         "subtasksLabel": "Subtasks"
+      },
+      "habits": {
+        "title": "Today's habits",
+        "description": "Check in your habits for the day",
+        "emptyTitle": "Nothing to check in today",
+        "emptyDescription": "You have no habits scheduled for today.",
+        "confirm": "Check in",
+        "done": "Done",
+        "showDetails": "View history",
+        "hideDetails": "Hide history",
+        "period": {
+          "daily": "today",
+          "weekly": "this week"
+        }
       }
     },
     "config": {
@@ -237,7 +251,7 @@
         "exportDone": "Backup downloaded.",
         "exportError": "Could not export.",
         "import": "Import",
-        "importDone": "Import complete: {routines} routine(s), {blocks} block(s), {tasks} task(s) and {subtasks} subtask(s).",
+        "importDone": "Import complete: {routines} routine(s), {blocks} block(s), {tasks} task(s), {subtasks} subtask(s) and {habits} habit(s).",
         "importError": "Invalid file or could not import."
       }
     }
@@ -497,6 +511,81 @@
       },
       "tabBlocks": "By block",
       "tabEntities": "By task"
+    },
+    "habits": {
+      "title": "Habits",
+      "description": "Create and track your habits with custom frequency.",
+      "create": "New habit",
+      "empty": {
+        "title": "No habits yet",
+        "description": "Create your first habit to get started."
+      },
+      "dialog": {
+        "title": "Create new habit",
+        "description": "Define the name, frequency, and target for your habit.",
+        "editTitle": "Edit habit",
+        "editDescription": "Update your habit details.",
+        "nameLabel": "Name",
+        "namePlaceholder": "E.g., Drink water, exercise",
+        "nameRequired": "Enter a name for the habit.",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "E.g., Drink 2L of water daily.",
+        "iconLabel": "Icon",
+        "iconSearchPlaceholder": "Search icons...",
+        "iconEmpty": "No icons found.",
+        "iconRequired": "Select an icon.",
+        "colorLabel": "Color",
+        "color_red": "Red",
+        "color_orange": "Orange",
+        "color_yellow": "Yellow",
+        "color_green": "Green",
+        "color_blue": "Blue",
+        "color_purple": "Purple",
+        "color_gray": "Gray",
+        "frequencyLabel": "Frequency",
+        "daily": "Daily (choose days)",
+        "weekly": "Weekly (weekly deadline)",
+        "dailyDescription": "Select the days of the week when the habit should be done",
+        "weeklyDescription": "The habit must be completed once per week",
+        "daysLabel": "Days of week",
+        "domingo": "Sunday",
+        "segunda": "Monday",
+        "terca": "Tuesday",
+        "quarta": "Wednesday",
+        "quinta": "Thursday",
+        "sexta": "Friday",
+        "sabado": "Saturday",
+        "targetCountLabel": "Required confirmations per period",
+        "targetCountRequired": "Target count must be at least 1.",
+        "daysRequired": "Select at least one day of the week for daily habits.",
+        "cancel": "Cancel",
+        "submit": "Create",
+        "submitEdit": "Save"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "more": "More options"
+      },
+      "frequency": {
+        "daily": "Daily ({days})",
+        "weekly": "Weekly"
+      },
+      "weekdayShort_0": "S",
+      "weekdayShort_1": "M",
+      "weekdayShort_2": "T",
+      "weekdayShort_3": "W",
+      "weekdayShort_4": "T",
+      "weekdayShort_5": "F",
+      "weekdayShort_6": "S",
+      "showAll": "View all ({count})",
+      "showLess": "Show less",
+      "deleteDialog": {
+        "title": "Delete habit",
+        "description": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
     }
   },
   "sign-up": {

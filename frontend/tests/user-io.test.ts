@@ -11,6 +11,8 @@ import {
   createBlock,
   createCompletion,
   createConnection,
+  createHabit,
+  createHabitCompletion,
   createRoutine,
   createSubtask,
   createTask,
@@ -136,6 +138,8 @@ function minimalExport(): DataExport {
         updatedAt: "2024-01-03T00:00:00.000Z",
       },
     ],
+    habits: [],
+    habitCompletions: [],
   };
 }
 
@@ -230,6 +234,52 @@ describe("parseDataExport", () => {
     expect(parsed!.timeBlocks[0].color).toBe("green");
     expect(parsed!.tasks[0].priority).toBe(3);
   });
+
+  it("aceita backups antigos sem hábitos e valida referências novas", () => {
+    const legacy = minimalExport();
+    delete (legacy as { habits?: unknown }).habits;
+    delete (legacy as { habitCompletions?: unknown }).habitCompletions;
+    expect(parseDataExport(legacy)).not.toBeNull();
+
+    const withHabits = {
+      ...minimalExport(),
+      habits: [
+        {
+          id: "h1",
+          name: "Beber água",
+          description: null,
+          icon: "CheckCircle2",
+          color: "blue",
+          frequency: "daily",
+          daysOfWeek: "[1,3]",
+          targetCount: 2,
+        },
+      ],
+      habitCompletions: [
+        { habitId: "h1", date: "2024-01-10T00:00:00.000Z", count: 1 },
+      ],
+    };
+    const parsed = parseDataExport(withHabits);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.habits).toHaveLength(1);
+    expect(parsed!.habits[0].daysOfWeek).toBe("[1,3]");
+
+    // Conclusão apontando para hábito inexistente é rejeitada.
+    const orphan = {
+      ...withHabits,
+      habitCompletions: [
+        { habitId: "nao-existe", date: "2024-01-10T00:00:00.000Z", count: 1 },
+      ],
+    };
+    expect(parseDataExport(orphan)).toBeNull();
+
+    // Hábito sem nome é rejeitado.
+    const unnamed = {
+      ...withHabits,
+      habits: [{ ...withHabits.habits[0], name: "   " }],
+    };
+    expect(parseDataExport(unnamed)).toBeNull();
+  });
 });
 
 describe("export/import round-trip", () => {
@@ -261,6 +311,13 @@ describe("export/import round-trip", () => {
       source: "auto",
       sourceEntityId: `subtask:${child.id}`,
     });
+    const habit = await createHabit(source.id, { targetCount: 2 });
+    await createHabitCompletion(
+      source.id,
+      habit.id,
+      new Date("2024-01-10T00:00:00.000Z"),
+      2,
+    );
 
     const exported = await buildDataExport(source.id);
     expect(parseDataExport(exported)).not.toBeNull();
@@ -268,6 +325,7 @@ describe("export/import round-trip", () => {
     expect(exported.subtasks).toHaveLength(2);
     expect(exported.connections).toHaveLength(1);
     expect(exported.completions).toHaveLength(1);
+    expect(exported.habits).toHaveLength(1);
 
     const target = await createUser({ name: "Destino" });
     const result = await importDataExport(target.id, exported);
@@ -278,6 +336,8 @@ describe("export/import round-trip", () => {
       subtasks: 2,
       connections: 1,
       completions: 1,
+      habits: 1,
+      habitCompletions: 1,
     });
 
     const prisma = testPrisma();
@@ -321,6 +381,18 @@ describe("export/import round-trip", () => {
     expect(completions[0].value).toBe("9");
     expect(completions[0].source).toBe("auto");
     expect(completions[0].sourceEntityId).toBe(`subtask:${importedChild.id}`);
+
+    const habits = await prisma.habit.findMany({ where: { userId: target.id } });
+    expect(habits).toHaveLength(1);
+    expect(habits[0].name).toBe("Beber água");
+    expect(habits[0].targetCount).toBe(2);
+
+    const habitCompletions = await prisma.habitCompletion.findMany({
+      where: { userId: target.id },
+    });
+    expect(habitCompletions).toHaveLength(1);
+    expect(habitCompletions[0].habitId).toBe(habits[0].id);
+    expect(habitCompletions[0].count).toBe(2);
 
     // Nenhum id do arquivo original é reutilizado.
     expect(routines[0].id).not.toBe(exported.routines[0].id);

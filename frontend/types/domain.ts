@@ -261,6 +261,134 @@ export interface ConnectionsResponse {
   connections: TaskBlockConnection[];
 }
 
+/** Habit frequency type */
+export type HabitFrequency = "daily" | "weekly";
+
+/** Habit model (as stored in database - daysOfWeek is JSON string) */
+export interface Habit {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: EventColor;
+  frequency: HabitFrequency;
+  daysOfWeek: string; // JSON array of 0-6 (Sunday-Saturday) - only for daily habits
+  targetCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Habit with parsed daysOfWeek array */
+export interface HabitWithParsedDays extends Omit<Habit, "daysOfWeek"> {
+  daysOfWeek: number[];
+}
+
+/** Parse daysOfWeek from JSON string to array */
+export function parseHabitDaysOfWeek(
+  habit: Pick<Habit, "daysOfWeek">,
+): number[] {
+  try {
+    const parsed = JSON.parse(habit.daysOfWeek);
+    if (Array.isArray(parsed)) {
+      return parsed.map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+    }
+  } catch {
+    return [];
+  }
+  return [];
+}
+
+/**
+ * Check if a habit is applicable on a given day based on frequency and
+ * daysOfWeek. `today` deve estar deslocado para o fuso do usuário
+ * (agora - tzOffset), usando os getters UTC.
+ */
+export function isHabitApplicableToday(habit: Habit, today: Date = new Date()): boolean {
+  return isHabitApplicableOnWeekday(habit, today.getUTCDay());
+}
+
+/** Aplicabilidade dado o dia da semana local já calculado (0-6, domingo=0). */
+export function isHabitApplicableOnWeekday(
+  habit: Pick<Habit, "daysOfWeek"> & { frequency: string },
+  weekday: number,
+): boolean {
+  if (habit.frequency !== "daily") {
+    // Weekly habits are applicable every day (weekly deadline)
+    return true;
+  }
+  return parseHabitDaysOfWeek(habit).includes(weekday);
+}
+
+/** Habit form values (daysOfWeek as array of numbers for checkboxes) */
+export interface HabitFormValues {
+  name: string;
+  description: string;
+  icon: string;
+  color: EventColor;
+  frequency: HabitFrequency;
+  daysOfWeek: number[]; // Only used for daily habits
+  targetCount: number;
+}
+
+/** Validated habit payload accepted by the API (daysOfWeek as JSON string) */
+export interface HabitPayload {
+  name: string;
+  description: string;
+  icon: string;
+  color: EventColor;
+  frequency: HabitFrequency;
+  daysOfWeek: string; // JSON array - only for daily habits, empty for weekly
+  targetCount: number;
+}
+
+/** Partial habit patch (all fields optional, daysOfWeek as JSON string) */
+export interface HabitPatch {
+  name?: string;
+  description?: string | null;
+  icon?: string;
+  color?: EventColor;
+  frequency?: HabitFrequency;
+  daysOfWeek?: string;
+  targetCount?: number;
+}
+
+/** Habit completion */
+export interface HabitCompletion {
+  id: string;
+  habitId: string;
+  userId: string;
+  date: string;
+  count: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Habit + progresso no período atual (hoje/semana), calculado pela API. */
+export type HabitWithProgress = Habit & {
+  currentCount: number;
+  isApplicableToday: boolean;
+};
+
+/** Response of GET /api/habits/stats. */
+export interface HabitStats {
+  habitId: string;
+  /** Um dia por entrada; value 0-100 ou null quando o dia não é agendado. */
+  progress: DailyProgress[];
+  streak: StreakStats;
+}
+
+export interface HabitStatsResponse {
+  habits: HabitStats[];
+}
+
+/** Resposta de POST /api/habits/[id]/complete. */
+export interface HabitCompleteResponse {
+  completion: HabitCompletion;
+  isComplete: boolean;
+  periodCount: number;
+}
+
 /** Corpo aceito por POST /api/connections. */
 export interface ConnectionInput {
   taskId: string | null;
@@ -294,6 +422,8 @@ export interface DataExport {
   subtasks: DataExportSubtask[];
   connections: DataExportConnection[];
   completions: DataExportCompletion[];
+  habits: DataExportHabit[];
+  habitCompletions: DataExportHabitCompletion[];
 }
 
 export interface DataExportRoutine {
@@ -358,6 +488,23 @@ export interface DataExportCompletion {
   updatedAt: string;
 }
 
+export interface DataExportHabit {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: EventColor;
+  frequency: "daily" | "weekly";
+  daysOfWeek: string;
+  targetCount: number;
+}
+
+export interface DataExportHabitCompletion {
+  habitId: string;
+  date: string;
+  count: number;
+}
+
 export interface ImportResult {
   routines: number;
   timeBlocks: number;
@@ -365,6 +512,8 @@ export interface ImportResult {
   subtasks: number;
   connections: number;
   completions: number;
+  habits: number;
+  habitCompletions: number;
 }
 
 /**
