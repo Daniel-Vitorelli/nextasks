@@ -250,6 +250,7 @@ describe("parseDataExport", () => {
           description: null,
           icon: "CheckCircle2",
           color: "blue",
+          type: "good",
           frequency: "daily",
           daysOfWeek: "[1,3]",
           targetCount: 2,
@@ -263,6 +264,13 @@ describe("parseDataExport", () => {
     expect(parsed).not.toBeNull();
     expect(parsed!.habits).toHaveLength(1);
     expect(parsed!.habits[0].daysOfWeek).toBe("[1,3]");
+
+    // Backup antigo sem type vira "good" (comportamento legado).
+    const legacyType = parseDataExport({
+      ...withHabits,
+      habits: [{ ...withHabits.habits[0], type: undefined }],
+    });
+    expect(legacyType!.habits[0].type).toBe("good");
 
     // Conclusão apontando para hábito inexistente é rejeitada.
     const orphan = {

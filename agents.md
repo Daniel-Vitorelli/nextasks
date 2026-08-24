@@ -137,11 +137,16 @@ Key models (see `frontend/prisma/schema.prisma`):
 ### Habits (`app/api/habits/**`, `lib/habit-stats.ts`, `lib/streak.ts`)
 - **Dashboard = só CRUD**; confirmação fica na home (`HabitsCheckIn`), que lista hábitos aplicáveis hoje
 - Aplicabilidade: diário → `daysOfWeek` inclui o dia local; semanal → todos os dias (meta vale a semana)
-- `POST /:id/complete`: upsert em `HabitCompletion` (chave = meia-noite UTC do dia local via tzOffset); diário fora da agenda → 400; contagem satura em `targetCount`; responde `{ completion, isComplete, periodCount }` (diário = hoje, semanal = soma da semana corrente)
+- `POST /:id/complete`: upsert em `HabitCompletion` (chave = meia-noite UTC do dia local via tzOffset); diário fora da agenda → 400; contagem satura em `targetCount`; responde `{ completion, isComplete, periodCount, type }` (diário = hoje, semanal = soma da semana corrente)
+- `DELETE /:id/complete?tzOffset=`: remove o registro de HOJE (desfazer confirmação/recaída) e devolve o periodCount recalculado
 - `GET /api/habits?tzOffset=` devolve cada hábito com `currentCount` e `isApplicableToday` (mesma convenção de dia do complete)
 - `GET /api/habits/stats?days=&tzOffset=`: progresso diário 0–100 por hábito + streak (`computeStreak`); dias não agendados ficam `null` e não quebram streak; semanal mostra preenchimento da semana corrente (100% nos dias de semana completa)
+- **Tipos de hábito** (`Habit.type`): `good` (quer manter) e `bad` (quer largar)
+  - Bom: marcação = confirmação; frequência (diária c/ agenda ou semanal) e meta = `targetCount` por período; value do dia = count/meta
+  - Ruim: marcação = recaída (`logSlip`), sem saturação nem "completo"; **rastreado todos os dias** — sem frequência, sem agenda, sem meta; ausência = dia limpo → value 100, recaída → 0; streak conta dias/semanas LIMPOS consecutivos (invertido no `buildHabitProgress`)
+  - Ruim semanal legado: qualquer recaída na semana zera os dias decorridos dela; desfazer via DELETE
 - Cores usam os tokens `--event-*` (ver `Heatmap color=` e `StreakCard accentColor`); ícones vêm do catálogo curado `lib/lucide-icons.ts`
-- Backup/export inclui hábitos + conclusões (parser aceita backups antigos sem eles)
+- Backup/export inclui hábitos + conclusões (parser aceita backups antigos sem eles; `type` ausente vira `"good"`)
 
 ---
 
@@ -177,7 +182,8 @@ Key models (see `frontend/prisma/schema.prisma`):
 | GET | `/api/habits?tzOffset=` | List habits + `currentCount`/`isApplicableToday` do período |
 | POST | `/api/habits` | Create habit |
 | GET/PATCH/DELETE | `/api/habits/:id` | Habit detail/update/delete |
-| POST | `/api/habits/:id/complete` | Confirm habit (query: tzOffset; body: increment) |
+| POST | `/api/habits/:id/complete` | Confirmar/recaída (query: tzOffset; body: increment) |
+| DELETE | `/api/habits/:id/complete` | Remove o registro de HOJE (desfazer confirmação/recaída) |
 | GET | `/api/habits/stats?days=&tzOffset=` | Progresso diário + streak por hábito |
 
 All routes require authentication (session cookie from better-auth).
@@ -192,7 +198,7 @@ All routes require authentication (session cookie from better-auth).
 - `parseSubtaskInput` / `parseSubtaskPatch` → subtasks
 - `parseTimeBlockInput` / `parseTimeBlockPatch` → time blocks
 - `parseConnectionInput` / `parseConnectionPatch` / `parseDayFilter` → connections
-- `parseHabitInput` / `parseHabitPatch` → habits (diário exige ≥1 dia; semanal descarta os dias)
+- `parseHabitInput` / `parseHabitPatch` → habits (bons: diário exige ≥1 dia, semanal descarta os dias; ruins: sempre diários, sem agenda/meta, voltar a bom exige os dias)
 - Zod schemas in `schemas/` for react-hook-form (login, signup, routine, task, time-block, habit)
 
 ---

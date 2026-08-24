@@ -5,6 +5,7 @@ import type {
   Habit,
   HabitCompleteResponse,
   HabitPayload,
+  HabitUndoResponse,
   HabitWithProgress,
 } from "@/types/domain";
 import {
@@ -128,6 +129,24 @@ export function useHabits(tzOffset: number) {
     [tzOffset],
   );
 
+  /** Remove a marcação de hoje (confirmação ou recaída). */
+  const undoHabit = useCallback(
+    async (habitId: string) => {
+      const response = await fetch(`/api/habits/${habitId}/complete?tzOffset=${tzOffset}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to undo habit");
+      }
+
+      const result = (await response.json()) as HabitUndoResponse;
+      notifyDataChanged(AFTER_HABIT_CHANGE);
+      return result;
+    },
+    [tzOffset],
+  );
+
   return {
     habits,
     isLoading,
@@ -135,5 +154,6 @@ export function useHabits(tzOffset: number) {
     saveHabit,
     deleteHabit,
     completeHabit,
+    undoHabit,
   };
 }

@@ -59,14 +59,17 @@ export async function POST(request: Request, { params }: RouteParams) {
   const date = new Date(dayStartMs);
   const weekStartMs = dayStartMs - userNow.getUTCDay() * 86_400_000;
 
-  // Hábitos diários só aceitam marcação nos dias agendados; semanais podem
-  // ser marcados em qualquer dia (a meta vale para a semana inteira).
-  if (habit.frequency !== "weekly") {
+  // Hábitos bons diários só aceitam marcação nos dias agendados; ruins valem
+  // todo dia e semanais podem ser marcados em qualquer dia da semana.
+  if (habit.type !== "bad" && habit.frequency !== "weekly") {
     const daysOfWeek = parseDaysOfWeek(habit.daysOfWeek);
     if (!daysOfWeek.includes(userNow.getUTCDay())) {
       return badRequest("Habit not scheduled for today");
     }
   }
+
+  // Ruim: marcações são recaídas — não saturam em targetCount.
+  const isBad = habit.type === "bad";
 
   const { completion, periodCount } = await prisma.$transaction(async (tx) => {
     let row = await tx.habitCompletion.upsert({
@@ -87,8 +90,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       },
     });
 
-    // Cliques repetidos não devem ultrapassar a meta.
-    if (row.count > habit.targetCount) {
+    // Bons hábitos: cliques repetidos não devem ultrapassar a meta.
+    if (!isBad && row.count > habit.targetCount) {
       row = await tx.habitCompletion.update({
         where: { id: row.id },
         data: { count: habit.targetCount },
@@ -111,7 +114,64 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   return NextResponse.json({
     completion,
-    isComplete: completion.count >= habit.targetCount,
+    isComplete: !isBad && completion.count >= habit.targetCount,
     periodCount,
+    type: habit.type,
+  });
+}
+
+/** Remove o registro de hoje (desfazer confirmação/recaída). */
+export async function DELETE(request: Request, { params }: RouteParams) {
+  const { user, response } = await requireUser();
+  if (response) return response;
+
+  const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const tzOffset = parseTzOffset(searchParams.get("tzOffset"));
+
+  const habit = await prisma.habit.findFirst({
+    where: { id, userId: user.id },
+  });
+
+  if (!habit) {
+    return notFound();
+  }
+
+  const now = new Date();
+  const userNow = new Date(now.getTime() - tzOffset * 60_000);
+  const dayStartMs = Date.UTC(
+    userNow.getUTCFullYear(),
+    userNow.getUTCMonth(),
+    userNow.getUTCDate(),
+  );
+  const date = new Date(dayStartMs);
+  const weekStartMs = dayStartMs - userNow.getUTCDay() * 86_400_000;
+
+  const removed = await prisma.$transaction(async (tx) => {
+    const existing = await tx.habitCompletion.findUnique({
+      where: { habitId_date: { habitId: habit.id, date } },
+    });
+    if (!existing) return false;
+
+    await tx.habitCompletion.delete({ where: { id: existing.id } });
+    return true;
+  });
+
+  // Recalcula o total do período após remover o dia de hoje.
+  const periodStart =
+    habit.frequency === "weekly" ? new Date(weekStartMs) : date;
+  const aggregated = await prisma.habitCompletion.aggregate({
+    _sum: { count: true },
+    where: {
+      habitId: habit.id,
+      date: { gte: periodStart, lte: date },
+    },
+  });
+
+  return NextResponse.json({
+    ok: true,
+    removed,
+    periodCount: aggregated._sum.count ?? 0,
+    type: habit.type,
   });
 }

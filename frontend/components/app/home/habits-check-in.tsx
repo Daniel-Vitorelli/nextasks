@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarCheck, CheckCircle2, ChevronDown } from "lucide-react";
+import {
+  CalendarCheck,
+  CheckCircle2,
+  ChevronDown,
+  RotateCcw,
+  XCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -18,14 +24,14 @@ import { useHabitStats } from "@/hooks/use-habit-stats";
 import { useTzOffset } from "@/lib/client/use-tz-offset";
 import type { HabitWithProgress } from "@/types/domain";
 
-/** Confirmação dos hábitos do dia: diários agendados para hoje e semanais
- *  (que podem ser marcados em qualquer dia da semana). Cada hábito expande
- *  para o próprio streak e heatmap de conclusões. */
+/** Confirmação dos hábitos do dia. Bons hábitos: confirmar até a meta.
+ *  Ruins: registrar recaídas — dia sem registro é dia limpo, e o streak
+ *  conta dias/semanas limpos consecutivos. */
 export function HabitsCheckIn() {
   const t = useTranslations("app.home.habits");
   const locale = useLocale();
   const tzOffset = useTzOffset();
-  const { habits, isLoading, completeHabit } = useHabits(tzOffset);
+  const { habits, isLoading, completeHabit, undoHabit } = useHabits(tzOffset);
   const { stats, isLoading: isStatsLoading } = useHabitStats();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -48,6 +54,17 @@ export function HabitsCheckIn() {
     setPendingId(habit.id);
     try {
       await completeHabit(habit.id);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const handleUndo = async (habit: HabitWithProgress) => {
+    setPendingId(habit.id);
+    try {
+      await undoHabit(habit.id);
     } catch (error) {
       console.error(error);
     } finally {
@@ -85,17 +102,18 @@ export function HabitsCheckIn() {
           {todaysHabits.map((habit) => {
             const IconComponent =
               LUCIDE_ICON_MAP[habit.icon] ?? CheckCircle2;
-            const currentCount = Math.min(
-              habit.currentCount,
-              habit.targetCount,
-            );
-            const isComplete = currentCount >= habit.targetCount;
+            const isBad = habit.type === "bad";
+            const currentCount = habit.currentCount;
+            const isComplete =
+              !isBad && currentCount >= habit.targetCount;
+            const slipped = isBad && currentCount > 0;
             const periodLabel =
               habit.frequency === "weekly"
                 ? t("period.weekly")
                 : t("period.daily");
             const isExpanded = expandedIds.has(habit.id);
             const habitStats = stats.get(habit.id);
+            const isPending = pendingId === habit.id;
 
             return (
               <li
@@ -112,37 +130,78 @@ export function HabitsCheckIn() {
                   </div>
 
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p
-                      className={
-                        isComplete
-                          ? "text-muted-foreground font-medium line-through"
-                          : "font-medium truncate"
-                      }
-                    >
-                      {habit.name}
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <span
+                        className={
+                          isComplete ? "text-muted-foreground line-through" : ""
+                        }
+                      >
+                        {habit.name}
+                      </span>
+                      {slipped && (
+                        <XCircle className="text-destructive size-4 shrink-0" />
+                      )}
                     </p>
                     <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                      <span>
-                        {currentCount} / {habit.targetCount}
-                      </span>
+                      {isBad ? (
+                        <span>{t("relapsesCount", { count: currentCount })}</span>
+                      ) : (
+                        <span>
+                          {currentCount} / {habit.targetCount}
+                        </span>
+                      )}
                       <span>· {periodLabel}</span>
                     </p>
                   </div>
 
-                  <Button
-                    variant={isComplete ? "default" : "outline"}
-                    size="sm"
-                    disabled={isComplete || pendingId === habit.id}
-                    onClick={() => void handleComplete(habit)}
-                    className="gap-1.5"
-                  >
-                    {pendingId === habit.id ? (
-                      <Spinner className="size-3.5" />
-                    ) : (
-                      <CheckCircle2 className="size-3.5" />
-                    )}
-                    {isComplete ? t("done") : t("confirm")}
-                  </Button>
+                  {isBad ? (
+                    <div className="flex shrink-0 items-center gap-1">
+                      {slipped && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={isPending}
+                          onClick={() => void handleUndo(habit)}
+                          aria-label={t("undo")}
+                        >
+                          {isPending ? (
+                            <Spinner className="size-4" />
+                          ) : (
+                            <RotateCcw className="size-4" />
+                          )}
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => void handleComplete(habit)}
+                        className="gap-1.5"
+                      >
+                        {isPending ? (
+                          <Spinner className="size-3.5" />
+                        ) : (
+                          <XCircle className="size-3.5" />
+                        )}
+                        {t("logSlip")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant={isComplete ? "default" : "outline"}
+                      size="sm"
+                      disabled={isComplete || isPending}
+                      onClick={() => void handleComplete(habit)}
+                      className="gap-1.5"
+                    >
+                      {isPending ? (
+                        <Spinner className="size-3.5" />
+                      ) : (
+                        <CheckCircle2 className="size-3.5" />
+                      )}
+                      {isComplete ? t("done") : t("confirm")}
+                    </Button>
+                  )}
 
                   <Button
                     variant="ghost"

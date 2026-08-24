@@ -71,6 +71,7 @@ export async function GET(request: Request) {
         frequency: habit.frequency,
         daysOfWeek: habit.daysOfWeek,
         targetCount: habit.targetCount,
+        type: habit.type,
         createdAtDayMs: createdDayMs(habit.createdAt),
       },
       countsByHabit.get(habit.id) ?? new Map<number, number>(),

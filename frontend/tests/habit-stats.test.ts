@@ -131,4 +131,79 @@ describe("buildHabitProgress", () => {
     );
     expect(progress).toHaveLength(3);
   });
+
+  it("hábito ruim: dia sem recaída vale 100 e com recaída vale 0", () => {
+    // Hoje é segunda; janela dom..seg. Recaída só no domingo.
+    const progress = buildHabitProgress(
+      {
+        frequency: "daily",
+        daysOfWeek: "[0,1]",
+        targetCount: 1,
+        type: "bad",
+        createdAtDayMs: TODAY_MS - 60 * DAY_MS,
+      },
+      new Map([[TODAY_MS - DAY_MS, 1]]),
+      days(2),
+    );
+
+    expect(progress[0].value).toBe(0); // domingo com recaída
+    expect(progress[1].value).toBe(100); // segunda limpa
+
+    const streak = computeStreak(progress, new Date(TODAY_MS));
+    expect(streak.current).toBe(1); // segunda limpa encadeia
+    expect(streak.longest).toBe(1);
+  });
+
+  it("hábito ruim: ausência de marcações gera streak contínuo", () => {
+    // Ruins são rastreados todos os dias, independente da agenda salva.
+    const progress = buildHabitProgress(
+      {
+        frequency: "daily",
+        daysOfWeek: "[1]",
+        targetCount: 1,
+        type: "bad",
+        createdAtDayMs: TODAY_MS - 60 * DAY_MS,
+      },
+      new Map(),
+      days(8),
+    );
+
+    expect(progress.every((day) => day.value === 100)).toBe(true);
+    const streak = computeStreak(progress, new Date(TODAY_MS));
+    expect(streak.current).toBe(8);
+  });
+
+  it("hábito ruim semanal: qualquer recaída zera os dias decorridos da semana", () => {
+    // Recaída no domingo (início da semana corrente); hoje é segunda.
+    const progress = buildHabitProgress(
+      {
+        frequency: "weekly",
+        daysOfWeek: "[]",
+        targetCount: 1,
+        type: "bad",
+        createdAtDayMs: TODAY_MS - 60 * DAY_MS,
+      },
+      new Map([[TODAY_MS - DAY_MS, 2]]),
+      days(2),
+    );
+
+    expect(progress[0].value).toBe(0);
+    expect(progress[1].value).toBe(0);
+
+    // Semana anterior inteira limpa: streak de dias limpos até sábado.
+    const cleanWeek = buildHabitProgress(
+      {
+        frequency: "weekly",
+        daysOfWeek: "[]",
+        targetCount: 1,
+        type: "bad",
+        createdAtDayMs: TODAY_MS - 60 * DAY_MS,
+      },
+      new Map(),
+      days(9),
+    );
+    const streak = computeStreak(cleanWeek, new Date(TODAY_MS));
+    expect(streak.current).toBeGreaterThanOrEqual(2);
+    expect(streak.lastFullDay).not.toBeNull();
+  });
 });

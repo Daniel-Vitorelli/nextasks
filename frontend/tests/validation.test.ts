@@ -220,6 +220,36 @@ describe("parseHabitInput", () => {
       expect(result.data.icon).toBe("CheckCircle2");
     }
   });
+
+  it("type aceita good/bad e default é good", () => {
+    const bad = parseHabitInput({ name: "X", daysOfWeek: [1], type: "bad" });
+    expect(bad.ok).toBe(true);
+    if (bad.ok) expect(bad.data.type).toBe("bad");
+
+    const good = parseHabitInput({ name: "X", daysOfWeek: [1], type: "good" });
+    expect(good.ok).toBe(true);
+    if (good.ok) expect(good.data.type).toBe("good");
+
+    const fallback = parseHabitInput({ name: "X", daysOfWeek: [1], type: "x" });
+    expect(fallback.ok).toBe(true);
+    if (fallback.ok) expect(fallback.data.type).toBe("good");
+  });
+
+  it("ruins são sempre diários, sem agenda nem exigência de dias", () => {
+    const bad = parseHabitInput({
+      name: "Fumar",
+      type: "bad",
+      frequency: "weekly",
+      daysOfWeek: [],
+    });
+    expect(bad.ok).toBe(true);
+    if (bad.ok) {
+      expect(bad.data.frequency).toBe("daily");
+      expect(bad.data.daysOfWeek).toBe("[]");
+      expect(bad.data.targetCount).toBe(1);
+    }
+  });
+
   it("targetCount abaixo de 1 cai no default", () => {
     const result = parseHabitInput({ name: "X", daysOfWeek: [1], targetCount: 0.5 });
     expect(result.ok).toBe(true);
@@ -236,6 +266,31 @@ describe("parseHabitPatch", () => {
     expect(
       parseHabitPatch({ frequency: "daily", daysOfWeek: [1] }).ok,
     ).toBe(true);
+  });
+
+  it("ruins: força diário, limpa agenda e ignora frequência enviada", () => {
+    const bad = parseHabitPatch({
+      type: "bad",
+      frequency: "weekly",
+      daysOfWeek: [1],
+    });
+    expect(bad.ok).toBe(true);
+    if (bad.ok) {
+      expect(bad.data.type).toBe("bad");
+      expect(bad.data.frequency).toBe("daily");
+      expect(bad.data.daysOfWeek).toBe("[]");
+    }
+  });
+
+  it("voltar para bom sem informar dias é rejeitado", () => {
+    const backToGood = parseHabitPatch({ type: "good" });
+    expect(backToGood.ok).toBe(false);
+
+    const withDays = parseHabitPatch({ type: "good", daysOfWeek: [2, 4] });
+    expect(withDays.ok).toBe(true);
+    if (withDays.ok) {
+      expect(withDays.data.daysOfWeek).toBe("[2,4]");
+    }
   });
 
   it("não permite limpar os dias sem mudar a frequência", () => {

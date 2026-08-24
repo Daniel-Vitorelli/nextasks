@@ -30,11 +30,13 @@ export function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
   const daysOfWeek = parseHabitDaysOfWeek(habit);
 
   const frequencyText =
-    habit.frequency === "daily"
-      ? t("frequency.daily", {
-          days: daysOfWeek.map((d) => t(`weekdayShort_${d}`)).join(", "),
-        })
-      : t("frequency.weekly");
+    habit.type === "bad"
+      ? t("frequency.everyday")
+      : habit.frequency === "daily"
+        ? t("frequency.daily", {
+            days: daysOfWeek.map((d) => t(`weekdayShort_${d}`)).join(", "),
+          })
+        : t("frequency.weekly");
 
   return (
     <div className="border-border/60 group relative flex items-start gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md">
@@ -47,7 +49,14 @@ export function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
       <div className="flex-1 min-w-0 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0">
-            <h3 className="font-medium truncate">{habit.name}</h3>
+            <h3 className="flex items-center gap-2 font-medium">
+              <span className="truncate">{habit.name}</span>
+              {habit.type === "bad" && (
+                <span className="bg-destructive/10 text-destructive shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                  {t("badgeBad")}
+                </span>
+              )}
+            </h3>
             <p className="text-xs text-muted-foreground">
               {frequencyText}
             </p>

@@ -264,6 +264,9 @@ export interface ConnectionsResponse {
 /** Habit frequency type */
 export type HabitFrequency = "daily" | "weekly";
 
+/** Bom = quer construir/manter; ruim = quer largar (lógica invertida). */
+export type HabitKind = "good" | "bad";
+
 /** Habit model (as stored in database - daysOfWeek is JSON string) */
 export interface Habit {
   id: string;
@@ -272,6 +275,7 @@ export interface Habit {
   description: string | null;
   icon: string;
   color: EventColor;
+  type: HabitKind;
   frequency: HabitFrequency;
   daysOfWeek: string; // JSON array of 0-6 (Sunday-Saturday) - only for daily habits
   targetCount: number;
@@ -310,9 +314,11 @@ export function isHabitApplicableToday(habit: Habit, today: Date = new Date()): 
 
 /** Aplicabilidade dado o dia da semana local já calculado (0-6, domingo=0). */
 export function isHabitApplicableOnWeekday(
-  habit: Pick<Habit, "daysOfWeek"> & { frequency: string },
+  habit: Pick<Habit, "daysOfWeek"> & { frequency: string; type?: string },
   weekday: number,
 ): boolean {
+  // Ruins são rastreados todos os dias.
+  if (habit.type === "bad") return true;
   if (habit.frequency !== "daily") {
     // Weekly habits are applicable every day (weekly deadline)
     return true;
@@ -326,6 +332,7 @@ export interface HabitFormValues {
   description: string;
   icon: string;
   color: EventColor;
+  type: HabitKind;
   frequency: HabitFrequency;
   daysOfWeek: number[]; // Only used for daily habits
   targetCount: number;
@@ -337,6 +344,7 @@ export interface HabitPayload {
   description: string;
   icon: string;
   color: EventColor;
+  type: HabitKind;
   frequency: HabitFrequency;
   daysOfWeek: string; // JSON array - only for daily habits, empty for weekly
   targetCount: number;
@@ -348,6 +356,7 @@ export interface HabitPatch {
   description?: string | null;
   icon?: string;
   color?: EventColor;
+  type?: HabitKind;
   frequency?: HabitFrequency;
   daysOfWeek?: string;
   targetCount?: number;
@@ -382,11 +391,20 @@ export interface HabitStatsResponse {
   habits: HabitStats[];
 }
 
-/** Resposta de POST /api/habits/[id]/complete. */
+/** Resposta de POST/DELETE /api/habits/[id]/complete. */
 export interface HabitCompleteResponse {
   completion: HabitCompletion;
   isComplete: boolean;
   periodCount: number;
+  type: HabitKind;
+}
+
+/** Resposta de DELETE /api/habits/[id]/complete (desfazer marcação do dia). */
+export interface HabitUndoResponse {
+  ok: boolean;
+  removed: boolean;
+  periodCount: number;
+  type: HabitKind;
 }
 
 /** Corpo aceito por POST /api/connections. */
@@ -494,6 +512,7 @@ export interface DataExportHabit {
   description: string | null;
   icon: string;
   color: EventColor;
+  type: HabitKind;
   frequency: "daily" | "weekly";
   daysOfWeek: string;
   targetCount: number;

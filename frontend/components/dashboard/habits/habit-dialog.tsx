@@ -83,6 +83,7 @@ function toDefaultValues(habit: Habit | null): HabitFormValues {
       description: "",
       icon: "CheckCircle2",
       color: "green",
+      type: "good",
       frequency: "daily",
       daysOfWeek: [],
       targetCount: 1,
@@ -94,6 +95,7 @@ function toDefaultValues(habit: Habit | null): HabitFormValues {
     description: habit.description ?? "",
     icon: habit.icon,
     color: habit.color ?? "green",
+    type: habit.type ?? "good",
     frequency: habit.frequency,
     daysOfWeek: parseHabitDaysOfWeek(habit),
     targetCount: habit.targetCount,
@@ -119,6 +121,7 @@ function HabitForm({ habit, onSave, onClose }: HabitFormProps) {
   });
 
   const frequency = watch("frequency");
+  const habitType = watch("type");
 
   const showError = useFieldErrors<keyof HabitFormValues>(
     errors,
@@ -280,10 +283,10 @@ function HabitForm({ habit, onSave, onClose }: HabitFormProps) {
       </div>
 
       <div className="space-y-2">
-        <FieldLabel>{t("frequencyLabel")}</FieldLabel>
+        <FieldLabel>{t("typeLabel")}</FieldLabel>
         <Controller
           control={control}
-          name="frequency"
+          name="type"
           render={({ field }) => (
             <RadioGroup
               value={field.value}
@@ -291,84 +294,116 @@ function HabitForm({ habit, onSave, onClose }: HabitFormProps) {
               className="grid grid-cols-2 gap-2"
             >
               <RadioOption
-                value="daily"
-                id="frequency-daily"
-                label={t("daily")}
-                description={t("dailyDescription")}
+                value="good"
+                id="type-good"
+                label={t("typeGood")}
+                description={t("typeGoodDescription")}
               />
               <RadioOption
-                value="weekly"
-                id="frequency-weekly"
-                label={t("weekly")}
-                description={t("weeklyDescription")}
+                value="bad"
+                id="type-bad"
+                label={t("typeBad")}
+                description={t("typeBadDescription")}
               />
             </RadioGroup>
           )}
         />
       </div>
 
-      {frequency === "daily" && (
-        <div className="space-y-2" data-invalid={showError("daysOfWeek")}>
-          <FieldLabel>{t("daysLabel")}</FieldLabel>
-          <div className="flex flex-wrap gap-2">
-            {["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"].map(
-              (day, index) => (
-                <Controller
-                  key={day}
-                  control={control}
-                  name="daysOfWeek"
-                  render={({ field }) => {
-                    const checked = field.value.includes(index);
-                    return (
-                      <label
-                        className="border-border/60 hover:border-primary/50 hover:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.checked
-                                ? [...field.value, index]
-                                : field.value.filter((d) => d !== index)
-                            )
-                          }
-                          className="sr-only"
-                        />
-                        <span className="text-sm font-medium capitalize">{t(day)}</span>
-                      </label>
-                    );
-                  }}
-                />
-              ))}
-          </div>
-          {showError("daysOfWeek") && (
-            <FieldError>{errors.daysOfWeek!.message}</FieldError>
-          )}
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <FieldLabel htmlFor="habit-target-count">{t("targetCountLabel")}</FieldLabel>
-        <Controller
-          control={control}
-          name="targetCount"
-          render={({ field }) => (
-            <Input
-              id="habit-target-count"
-              type="number"
-              min="1"
-              value={field.value}
-              onChange={(e) => field.onChange(Math.max(1, Number(e.target.value) || 1))}
-              className="w-24"
-              aria-invalid={showError("targetCount")}
+      {habitType === "good" && (
+        <>
+          <div className="space-y-2">
+            <FieldLabel>{t("frequencyLabel")}</FieldLabel>
+            <Controller
+              control={control}
+              name="frequency"
+              render={({ field }) => (
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <RadioOption
+                    value="daily"
+                    id="frequency-daily"
+                    label={t("daily")}
+                    description={t("dailyDescription")}
+                  />
+                  <RadioOption
+                    value="weekly"
+                    id="frequency-weekly"
+                    label={t("weekly")}
+                    description={t("weeklyDescription")}
+                  />
+                </RadioGroup>
+              )}
             />
+          </div>
+
+          {frequency === "daily" && (
+            <div className="space-y-2" data-invalid={showError("daysOfWeek")}>
+              <FieldLabel>{t("daysLabel")}</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"].map(
+                  (day, index) => (
+                    <Controller
+                      key={day}
+                      control={control}
+                      name="daysOfWeek"
+                      render={({ field }) => {
+                        const checked = field.value.includes(index);
+                        return (
+                          <label
+                            className="border-border/60 hover:border-primary/50 hover:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.checked
+                                    ? [...field.value, index]
+                                    : field.value.filter((d) => d !== index)
+                                )
+                              }
+                              className="sr-only"
+                            />
+                            <span className="text-sm font-medium capitalize">{t(day)}</span>
+                          </label>
+                        );
+                      }}
+                    />
+                  ))}
+              </div>
+              {showError("daysOfWeek") && (
+                <FieldError>{errors.daysOfWeek!.message}</FieldError>
+              )}
+            </div>
           )}
-        />
-        {showError("targetCount") && (
-          <FieldError>{errors.targetCount!.message}</FieldError>
-        )}
-      </div>
+
+          <div className="space-y-2">
+            <FieldLabel htmlFor="habit-target-count">{t("targetCountLabel")}</FieldLabel>
+            <Controller
+              control={control}
+              name="targetCount"
+              render={({ field }) => (
+                <Input
+                  id="habit-target-count"
+                  type="number"
+                  min="1"
+                  value={field.value}
+                  onChange={(e) => field.onChange(Math.max(1, Number(e.target.value) || 1))}
+                  className="w-24"
+                  aria-invalid={showError("targetCount")}
+                />
+              )}
+            />
+            {showError("targetCount") && (
+              <FieldError>{errors.targetCount!.message}</FieldError>
+            )}
+          </div>
+        </>
+      )}
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>

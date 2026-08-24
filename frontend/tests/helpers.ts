@@ -203,6 +203,7 @@ export async function createHabit(
   overrides: {
     name?: string;
     color?: string;
+    type?: "good" | "bad";
     frequency?: "daily" | "weekly";
     daysOfWeek?: string;
     targetCount?: number;
@@ -214,6 +215,7 @@ export async function createHabit(
       name: overrides.name ?? "Beber água",
       icon: "CheckCircle2",
       color: overrides.color ?? "green",
+      type: overrides.type ?? "good",
       frequency: overrides.frequency ?? "daily",
       daysOfWeek: overrides.daysOfWeek ?? JSON.stringify([1, 3, 5]),
       targetCount: overrides.targetCount ?? 1,

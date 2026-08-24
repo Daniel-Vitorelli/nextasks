@@ -389,12 +389,15 @@ function parseHabit(value: unknown): DataExportHabit | null {
     ? (value.color as EventColor)
     : "green";
 
+  const type: DataExportHabit["type"] = value.type === "bad" ? "bad" : "good";
+
   return {
     id: requiredString(value.id, 100) ?? "",
     name,
     description: optionalString(value.description, 2000),
     icon: requiredString(value.icon, 100) ?? "CheckCircle2",
     color,
+    type,
     frequency,
     daysOfWeek,
     targetCount,
