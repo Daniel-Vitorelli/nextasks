@@ -92,7 +92,7 @@ export function XpToast() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2"
+      className="pointer-events-none fixed bottom-24 left-1/2 z-40 -translate-x-1/2"
     >
       <div
         key={current?.key ?? "idle"}

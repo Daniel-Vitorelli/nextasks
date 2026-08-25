@@ -43,7 +43,9 @@ export function RoutineDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{routine ? t("editTitle") : t("title")}</DialogTitle>
           <DialogDescription>

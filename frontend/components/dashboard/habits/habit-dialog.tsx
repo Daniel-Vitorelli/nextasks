@@ -29,6 +29,17 @@ import { colorSwatchClass } from "@/components/calendar/calendar-event-color";
 import { CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Dias da semana: chave de tradução + índice (0 = domingo). */
+const HABIT_DAYS = [
+  { key: "domingo", index: 0 },
+  { key: "segunda", index: 1 },
+  { key: "terca", index: 2 },
+  { key: "quarta", index: 3 },
+  { key: "quinta", index: 4 },
+  { key: "sexta", index: 5 },
+  { key: "sabado", index: 6 },
+] as const;
+
 interface HabitDialogProps {
   open: boolean;
   habit: Habit | null;
@@ -49,7 +60,14 @@ export function HabitDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85dvh] max-w-md flex-col gap-4 overflow-hidden">
+      <DialogContent
+        onOpenAutoFocus={(event) => {
+          // Radix tenta focar o conteúdo/X: evita a corrida com o autoFocus
+          // do primeiro campo (foco determinístico no input).
+          event.preventDefault();
+        }}
+        className="flex max-h-[85dvh] max-w-md flex-col gap-4 overflow-hidden"
+      >
         <DialogHeader className="shrink-0 pr-8">
           <DialogTitle>{habit ? t("editTitle") : t("title")}</DialogTitle>
           <DialogDescription>
@@ -211,38 +229,32 @@ function HabitForm({ habit, onSave, onClose }: HabitFormProps) {
                   {t("iconEmpty")}
                 </p>
               ) : (
-                <div className="grid grid-cols-6 gap-1.5">
+                <div className="grid grid-cols-6 gap-1.5" role="radiogroup" aria-label={t("iconLabel")}>
                   {filteredIcons.map((name) => {
                     const Icon = LUCIDE_ICON_MAP[name];
                     const selected = field.value === name;
                     return (
-                      <label
+                      <button
                         key={name}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
                         title={name}
+                        onClick={() => field.onChange(name)}
                         className={cn(
-                          "hover:bg-primary/5 relative flex aspect-square cursor-pointer items-center justify-center rounded-lg border transition-colors has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-2",
+                          "group/icon relative flex aspect-square cursor-pointer items-center justify-center rounded-lg border transition-colors focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
                           selected
                             ? "border-primary bg-primary/5"
                             : "border-transparent hover:border-border",
                         )}
                       >
-                        <input
-                          type="radio"
-                          name="habit-icon"
-                          className="sr-only"
-                          checked={selected}
-                          onChange={() => field.onChange(name)}
-                          aria-label={name}
-                        />
                         <Icon
                           className={cn(
                             "size-5 transition-colors",
-                            selected
-                              ? "text-primary"
-                              : "text-muted-foreground",
+                            selected ? "text-primary" : "text-muted-foreground",
                           )}
                         />
-                      </label>
+                      </button>
                     );
                   })}
                 </div>
@@ -343,38 +355,43 @@ function HabitForm({ habit, onSave, onClose }: HabitFormProps) {
           {frequency === "daily" && (
             <div className="space-y-2" data-invalid={showError("daysOfWeek")}>
               <FieldLabel>{t("daysLabel")}</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"].map(
-                  (day, index) => (
-                    <Controller
-                      key={day}
-                      control={control}
-                      name="daysOfWeek"
-                      render={({ field }) => {
-                        const checked = field.value.includes(index);
-                        return (
-                          <label
-                            className="border-border/60 hover:border-primary/50 hover:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.checked
-                                    ? [...field.value, index]
-                                    : field.value.filter((d) => d !== index)
-                                )
-                              }
-                              className="sr-only"
-                            />
-                            <span className="text-sm font-medium capitalize">{t(day)}</span>
-                          </label>
-                        );
-                      }}
-                    />
-                  ))}
-              </div>
+              <Controller
+                control={control}
+                name="daysOfWeek"
+                render={({ field }) => (
+                  <div
+                    className="flex flex-wrap gap-2"
+                    role="group"
+                    aria-label={t("daysLabel")}
+                  >
+                    {HABIT_DAYS.map((day) => {
+                      const checked = field.value.includes(day.index);
+                      return (
+                        <button
+                          key={day.key}
+                          type="button"
+                          aria-pressed={checked}
+                          onClick={() =>
+                            field.onChange(
+                              checked
+                                ? field.value.filter((d) => d !== day.index)
+                                : [...field.value, day.index],
+                            )
+                          }
+                          className={cn(
+                            "rounded-lg border px-3 py-2 text-sm capitalize transition-colors focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
+                            checked
+                              ? "border-primary bg-primary/10 font-semibold text-primary"
+                              : "border-border/60 hover:border-primary/50 hover:bg-primary/5",
+                          )}
+                        >
+                          {t(day.key)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              />
               {showError("daysOfWeek") && (
                 <FieldError>{errors.daysOfWeek!.message}</FieldError>
               )}

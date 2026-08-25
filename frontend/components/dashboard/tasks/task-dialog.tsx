@@ -37,7 +37,7 @@ export function TaskDialog({ open, task, onOpenChange, onSave }: TaskDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onOpenAutoFocus={(event) => event.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{task ? t("editTitle") : t("title")}</DialogTitle>
           <DialogDescription>

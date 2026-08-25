@@ -41,7 +41,7 @@ export function SubtaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onOpenAutoFocus={(event) => event.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
             {subtask ? t("editTitle") : t("createTitle")}
