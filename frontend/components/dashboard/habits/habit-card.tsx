@@ -72,7 +72,7 @@ export function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                className="h-8 w-8 transition-opacity md:opacity-0 md:group-hover:opacity-100"
                 aria-label={t("actions.more")}
               >
                 <MoreHorizontal className="size-4" />

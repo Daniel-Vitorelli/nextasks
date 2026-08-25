@@ -126,7 +126,7 @@ export function HabitsCheckIn() {
                   colorStyles?.borderHover,
                 )}
               >
-                <div className="flex items-center gap-4 p-4">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-4">
                   <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${blockTintClass(habit.color)}`}
                   >

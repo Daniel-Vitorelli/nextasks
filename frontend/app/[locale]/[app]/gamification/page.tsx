@@ -71,43 +71,48 @@ export default function GamificationPage() {
         <>
           {/* Cabeçalho: anel de nível + rank */}
           <Card>
-            <CardContent className="flex flex-wrap items-center gap-6 p-6">
-              <LevelRing
-                level={summary.level}
-                progress={summary.levelProgress}
-              />
-              <div className="min-w-0 flex-1 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <RankBadge rank={summary.rank} />
-                  {summary.nextRank && (
-                    <span className="text-muted-foreground text-xs">
-                      {t("nextRankIn", {
-                        levels: summary.nextRank.minLevel - summary.level,
-                      })}
-                    </span>
-                  )}
+            <CardContent className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6">
+              {/* Linha 1: anel + info de nível/rank/XP */}
+              <div className="flex items-center gap-4 sm:gap-6">
+                <LevelRing
+                  level={summary.level}
+                  progress={summary.levelProgress}
+                />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <RankBadge rank={summary.rank} />
+                    {summary.nextRank && (
+                      <span className="text-muted-foreground text-xs">
+                        {t("nextRankIn", {
+                          levels: summary.nextRank.minLevel - summary.level,
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-jetbrainsMono text-2xl font-bold tabular-nums sm:text-3xl">
+                    {summary.totalXp.toLocaleString(locale)}{" "}
+                    <span className="text-base font-medium">XP</span>
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    {t("xpToNext", { amount: summary.xpToNextLevel })}
+                  </p>
                 </div>
-                <p className="font-jetbrainsMono text-3xl font-bold tabular-nums">
-                  {summary.totalXp.toLocaleString(locale)}{" "}
-                  <span className="text-base font-medium">XP</span>
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  {t("xpToNext", { amount: summary.xpToNextLevel })}
-                </p>
               </div>
-              <div className="bg-muted/60 flex flex-col items-center justify-center rounded-xl px-5 py-4 text-center">
-                <p className="text-2xl font-bold tabular-nums">
+
+              {/* Linha 2: contador de conquistas (separado por divisor) */}
+              <div className="border-border/60 flex items-center justify-between gap-3 border-t pt-4">
+                <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+                  {t("unlocked")}
+                </p>
+                <p className="text-xl font-bold tabular-nums">
                   {summary.unlockedCount}
                   <span className="text-muted-foreground text-sm font-medium">
                     /{summary.achievements.length}
                   </span>
                 </p>
-                <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
-                  {t("unlocked")}
-                </p>
               </div>
 
-              {/* Escada de ranks: conquistados em cor, atual destacado */}
+              {/* Linha 3: escada de ranks */}
               <RankLadder
                 ranks={[summary.rank, ...getFutureRanks(summary)]}
                 currentLevel={summary.level}
@@ -625,7 +630,7 @@ function RankLadder({
       <p className="text-muted-foreground mb-1.5 text-[11px] uppercase tracking-wider">
         {t("rankLadder")}
       </p>
-      <ol className="flex flex-wrap items-start gap-x-3 gap-y-3">
+      <ol className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3 sm:justify-start">
         {ranks.map((rank) => {
           const isCurrent = rank.id === currentRankId;
           const reached = currentLevel >= rank.minLevel;

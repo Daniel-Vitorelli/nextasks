@@ -224,6 +224,8 @@ All routes require authentication (session cookie from better-auth).
 - **shadcn/ui primitives** in `components/ui/` (button, dialog, popover, dropdown-menu, chart, etc.)
 - **Form pattern**: react-hook-form + zod resolver → `useForm` + `FormProvider` → `FormField` + `FormItem` + `FormControl` + `FormMessage`
 - **Dialogs**: `Dialog` + `DialogTrigger` + `DialogContent` + form inside
+- **Dialogs de formulário**: quando o primeiro campo tem `autoFocus`, adicione `onOpenAutoFocus={(e) => e.preventDefault()}` no Content (evita corrida de foco com o Radix)
+- **Seletores de opção dentro de dialogs**: prefira **botões reais** (`aria-pressed`/`role=radio`) a inputs nativos `sr-only` dentro de `<label>` — inputs invisíveis ancoram longe e causam scroll-jump no conteúdo
 - **Popovers**: `Popover` + `PopoverTrigger` + `PopoverContent` (use `onInteractOutside` with `[data-radix-popper-content-wrapper]` check when nested in dialogs)
 - **Tooltips**: `TooltipProvider` + `Tooltip` + `TooltipTrigger` + `TooltipContent`
 - **Charts**: `ChartContainer` + `ChartWrapper` + `ResponsiveContainer` + `AreaChart` (see `progress-chart.tsx`)

@@ -96,7 +96,7 @@ export function MonthView({
 
       {/* Grade de dias */}
       <div
-        className="border-border/60 bg-border/30 grid flex-1 grid-cols-7 grid-rows-6 gap-px overflow-hidden"
+        className="border-border/60 bg-border/30 grid flex-1 grid-cols-7 grid-rows-6 gap-px overflow-y-auto overflow-x-hidden"
         role="grid"
       >
         {cells.map((cell) => {
