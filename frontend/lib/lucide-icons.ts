@@ -36,6 +36,7 @@ import {
   Croissant,
   Crown,
   CupSoda,
+  Diamond,
   Dog,
   DollarSign,
   Droplets,
@@ -158,6 +159,7 @@ const ICONS = {
   Crown,
   Sparkles,
   Gem,
+  Diamond,
 
   // Saude e forma fisica
   HeartPulse,

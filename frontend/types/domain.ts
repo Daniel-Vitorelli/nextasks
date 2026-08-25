@@ -211,6 +211,7 @@ export interface TaskBlockConnection {
   id: string;
   taskId: string | null;
   subtaskId: string | null;
+  habitId: string | null;
   timeBlockId: string;
   requiredCount: number;
   dayFilter: DayFilter;
@@ -253,10 +254,21 @@ export interface ConnectionCatalogSubtask {
   done: boolean;
 }
 
+/** Hábito listado no catálogo de conexões (somente bons conectam). */
+export interface ConnectionCatalogHabit {
+  id: string;
+  name: string;
+  type: HabitKind;
+  color: EventColor;
+  icon: string;
+  frequency: HabitFrequency;
+}
+
 /** Resposta de GET /api/connections. */
 export interface ConnectionsResponse {
   tasks: ConnectionCatalogTask[];
   subtasks: ConnectionCatalogSubtask[];
+  habits: ConnectionCatalogHabit[];
   blocks: ConnectionCatalogBlock[];
   connections: TaskBlockConnection[];
 }
@@ -369,6 +381,8 @@ export interface HabitCompletion {
   userId: string;
   date: string;
   count: number;
+  /** explicit (usuário) | auto (propagado via conexões). */
+  source: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -411,6 +425,7 @@ export interface HabitUndoResponse {
 export interface ConnectionInput {
   taskId: string | null;
   subtaskId: string | null;
+  habitId: string | null;
   timeBlockId: string;
   requiredCount: number;
   dayFilter: DayFilter;
@@ -490,6 +505,7 @@ export interface DataExportSubtask {
 export interface DataExportConnection {
   taskId: string | null;
   subtaskId: string | null;
+  habitId: string | null;
   timeBlockId: string;
   requiredCount: number;
   dayFilter: DayFilter;
@@ -552,4 +568,83 @@ export interface ScheduledOccurrence {
   routineId: string;
   routineName: string;
   blockId: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Gamificação                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Tipos de evento de XP (kind do XpEvent). */
+export type XpKind =
+  | "block.confirm"
+  | "task.done"
+  | "subtask.done"
+  | "habit.confirm"
+  | "habit.target"
+  | "habit.slip"
+  | "routine.dayFull";
+
+/** Evento do ledger de XP (serializado). */
+export interface XpEventRow {
+  id: string;
+  kind: string;
+  refKey: string | null;
+  amount: number;
+  createdAt: string;
+}
+
+/** Tier de uma conquista. */
+export type AchievementTier = "bronze" | "silver" | "gold" | "platinum";
+
+/**
+ * Definição serializável de conquista. Cada condição é um par
+ * estatística/alvo — todas devem ser satisfeitas para desbloquear.
+ */
+export interface AchievementDef {
+  id: string;
+  tier: AchievementTier;
+  icon: string; // nome Lucide
+  xpReward: number;
+  conditions: { stat: string; target: number }[];
+}
+
+/** Conquista com estado de desbloqueio + progresso atual. */
+export interface AchievementView extends AchievementDef {
+  nameKey: string;
+  descriptionKey: string;
+  unlockedAt: string | null;
+  /** Progresso 0-100 = min sobre as condições. */
+  progress: number;
+}
+
+/** Rank derivado da faixa de nível. */
+export interface RankDef {
+  id: string;
+  nameKey: string; // app.gamification.ranks.<id>
+  minLevel: number;
+  color: EventColor;
+  /** Nome Lucide do ícone do rank. */
+  icon: string;
+}
+
+/** Resumo completo de GET /api/gamification. */
+export interface GamificationSummary {
+  totalXp: number;
+  level: number;
+  levelProgress: number; // 0-100 dentro do nível atual
+  xpToNextLevel: number;
+  rank: RankDef;
+  nextRank: RankDef | null;
+  achievements: AchievementView[];
+  unlockedCount: number;
+  recentEvents: XpEventRow[];
+  breakdown: { kind: string; amount: number }[];
+  /** Melhor sequência de dias/semanas 100% da rotina ativa. */
+  bestRoutineStreak: number;
+  /** Sequência 100% atual da rotina ativa. */
+  currentRoutineStreak: number;
+  /** Melhor sequência limpa entre hábitos ruins. */
+  bestCleanStreak: number;
+  /** Sequência limpa atual (máx. entre hábitos ruins). */
+  currentCleanStreak: number;
 }

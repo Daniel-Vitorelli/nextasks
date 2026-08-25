@@ -29,9 +29,12 @@ function useConnectionsSummary() {
     satisfied,
     pending: total - satisfied,
     entities: new Set(
-      data?.connections.flatMap((connection) =>
-        connection.taskId ?? connection.subtaskId ?? [],
-      ),
+      data?.connections.map((connection) =>
+        connection.taskId ??
+        connection.subtaskId ??
+        connection.habitId ??
+        "",
+      ).filter((key) => key !== ""),
     ).size,
   };
 }

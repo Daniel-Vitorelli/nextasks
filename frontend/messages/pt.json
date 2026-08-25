@@ -1,4 +1,9 @@
 {
+  "common": {
+    "close": "Fechar",
+    "loading": "Carregando",
+    "toggleTheme": "Alternar tema"
+  },
   "home": {
     "meta": {
       "title": "NexTasks",
@@ -102,10 +107,149 @@
     }
   },
   "app": {
+    "gamification": {
+      "eyebrow": "Progresso",
+      "title": "Gamificação",
+      "subtitle": "Seu XP, conquistas e ranks em um só lugar.",
+      "xpGained": "+{amount} XP",
+      "xpLost": "−{amount} XP",
+      "nextRankIn": "Faltam {levels} nível(is) para o próximo rank",
+      "xpToNext": "{amount} XP para o próximo nível",
+      "unlocked": "Desbloqueadas",
+      "unlockedLabel": "Desbloqueada",
+      "levelUp": "Nível {level}!",
+      "rankLadder": "Trilha de ranks",
+      "rankMinLevel": "A partir do nível {level}",
+      "rankLabel": "Rank atual",
+      "filters": {
+        "allTiers": "Todos os tiers",
+        "allStatus": "Todas",
+        "unlocked": "Desbloqueadas",
+        "locked": "Bloqueadas",
+        "noResults": "Nenhuma conquista corresponde aos filtros."
+      },
+      "breakdown": {
+        "title": "Distribuição de XP",
+        "empty": "Sem XP distribuído ainda."
+      },
+      "records": {
+        "title": "Recordes",
+        "currentLabel": "atual",
+        "bestLabel": "recorde",
+        "routineStreak": "Sequência da rotina",
+        "cleanStreak": "Sequência limpa (hábitos ruins)"
+      },
+      "tabs": {
+        "achievements": "Conquistas",
+        "history": "Histórico",
+        "how": "Como ganhar"
+      },
+      "tiers": {
+        "bronze": "Bronze",
+        "silver": "Prata",
+        "gold": "Ouro",
+        "platinum": "Platina"
+      },
+      "ranks": {
+        "iniciante": "Iniciante",
+        "aprendiz": "Aprendiz",
+        "bronze": "Bronze",
+        "prata": "Prata",
+        "ouro": "Ouro",
+        "platina": "Platina",
+        "diamante": "Diamante",
+        "lendario": "Lendário"
+      },
+      "history": {
+        "empty": "Nenhum evento de XP ainda.",
+        "day": {
+          "today": "Hoje",
+          "yesterday": "Ontem"
+        },
+        "filters": {
+          "all": "Tudo",
+          "gains": "Ganhos",
+          "losses": "Perdas"
+        },
+        "kinds": {
+          "blockConfirm": "Bloco confirmado",
+          "taskDone": "Tarefa concluída",
+          "subtaskDone": "Sub-tarefa concluída",
+          "habitConfirm": "Hábito confirmado",
+          "habitTarget": "Meta do hábito atingida",
+          "habitSlip": "Recaída registrada",
+          "routineDayFull": "Dia 100% da rotina",
+          "achievement": "Conquista desbloqueada"
+        }
+      },
+      "how": {
+        "title": "Como ganhar XP",
+        "footnote": "Desfazer uma ação remove o XP correspondente. Conquistas concedem bônus por tier: bronze +50, prata +100, ouro +250, platina +500.",
+        "rows": {
+          "blockChecklist": "Confirmar bloco (checkbox)",
+          "blockScore": "Por ponto de nota no bloco (1–10)",
+          "taskDone": "Concluir tarefa",
+          "subtaskDone": "Concluir sub-tarefa",
+          "habitConfirm": "Confirmar hábito bom",
+          "habitTargetBonus": "Bater a meta do hábito no período",
+          "habitSlip": "Registrar recaída (hábito ruim)",
+          "routineDayFull": "Dia com todos os blocos confirmados"
+        }
+      },
+      "achievements": {
+        "first-block": {
+          "name": "Primeiro passo",
+          "description": "Confirme seu primeiro bloco de tempo."
+        },
+        "block-10": { "name": "Ritmo", "description": "Confirme 10 blocos de tempo." },
+        "block-50": { "name": "Constância", "description": "Confirme 50 blocos de tempo." },
+        "block-250": { "name": "Máquina", "description": "Confirme 250 blocos de tempo." },
+        "perfect-day": { "name": "Dia perfeito", "description": "Tenha um dia com todos os blocos confirmados." },
+        "streak-week-full": { "name": "Semana de fogo", "description": "7 dias 100% seguidos na rotina." },
+        "first-task": { "name": "Menos uma", "description": "Conclua sua primeira tarefa." },
+        "task-10": { "name": "Produtivo", "description": "Conclua 10 tarefas." },
+        "task-50": { "name": "Imparável", "description": "Conclua 50 tarefas." },
+        "architect": { "name": "Arquiteto", "description": "Mantenha 5 conexões ativas entre entidades e blocos." },
+        "subtask-25": { "name": "Detalhista", "description": "Conclua 25 sub-tarefas." },
+        "first-checkin": { "name": "Check-in!", "description": "Bata a meta de um hábito pela primeira vez." },
+        "checkin-7": { "name": "Na agenda", "description": "Bata metas de hábitos em 7 dias." },
+        "checkin-30": { "name": "Hábito raiz", "description": "Bata metas de hábitos em 30 dias." },
+        "three-good-habits": { "name": "Trilogia do bem", "description": "Tenha 3 hábitos bons ativos." },
+        "clean-week": { "name": "Semana limpa", "description": "7 dias seguidos sem recaída num hábito ruim." },
+        "clean-month": { "name": "Mês limpo", "description": "30 dias seguidos sem recaída num hábito ruim." },
+        "battling-two": { "name": "Dupla frente", "description": "Combata 2 hábitos ruins ao mesmo tempo." },
+        "resilience": { "name": "Resiliência", "description": "Após uma recaída, alcance 7 dias limpos seguidos." },
+        "xp-1000": { "name": "Milhar", "description": "Acumule 1.000 XP." },
+        "xp-10000": { "name": "Dezena mil", "description": "Acumule 10.000 XP." },
+        "level-5": { "name": "Nível 5", "description": "Alcance o nível 5." },
+        "level-10": { "name": "Nível 10", "description": "Alcance o nível 10." },
+        "level-15": { "name": "Nível 15", "description": "Alcance o nível 15." },
+        "level-25": { "name": "Nível 25", "description": "Alcance o nível 25." },
+        "first-link": { "name": "Elo", "description": "Crie sua primeira conexão entre entidade e bloco." },
+        "link-10": { "name": "Teia", "description": "Mantenha 10 conexões ativas." },
+        "perfect-10": { "name": "Nota dez", "description": "Receba nota 10 em 10 confirmações de bloco." },
+        "perfect-50": { "name": "Perfeccionista", "description": "Receba nota 10 em 50 confirmações." },
+        "task-100": { "name": "Centurião", "description": "Conclua 100 tarefas." },
+        "subtask-100": { "name": "Centopeia", "description": "Conclua 100 sub-tarefas." },
+        "checkin-100": { "name": "Cem check-ins", "description": "Bata metas de hábitos em 100 dias." },
+        "clean-90": { "name": "Nove-zero", "description": "90 dias seguidos sem recaída num hábito ruim." },
+        "block-500": { "name": "Inquebrável", "description": "Confirme 500 blocos de tempo." },
+        "perfect-days-50": { "name": "Meio ano perfeito", "description": "Acumule 50 dias 100% na rotina." },
+        "streak-month-full": { "name": "Mês de fogo", "description": "30 dias 100% seguidos na rotina." },
+        "link-25": { "name": "Teia mestre", "description": "Mantenha 25 conexões ativas." },
+        "five-good-habits": { "name": "Quinteto do bem", "description": "Tenha 5 hábitos bons ativos." },
+        "checkin-500": { "name": "Quinhentos check-ins", "description": "Bata metas de hábitos em 500 dias." },
+        "clean-60": { "name": "Dois meses limpos", "description": "60 dias seguidos sem recaída num hábito ruim." },
+        "level-20": { "name": "Nível 20", "description": "Alcance o nível 20." },
+        "level-40": { "name": "Nível 40", "description": "Alcance o nível 40." },
+        "xp-50000": { "name": "Cofre do dragão", "description": "Acumule 50.000 XP." }
+      }
+    },
     "dock": {
       "dashboard": "Painel",
       "social": "Social",
       "home": "Início",
+      "gamification": "Gamificação",
       "calendar": "Calendário",
       "ai": "IA",
       "config": "Configurações"
@@ -118,7 +262,8 @@
       "prevWeek": "Semana anterior",
       "nextWeek": "Próxima semana",
       "weekView": "Semana",
-      "dayView": "Dia",
+        "dayView": "Dia",
+        "monthView": "Mês",
       "empty": "Nenhuma atividade agendada para este período.",
       "loadError": "Não foi possível carregar o calendário."
     },
@@ -434,10 +579,28 @@
       "connections": {
         "blocksSection": "Blocos de tempo",
         "entitiesSection": "Tarefas e sub-tarefas",
+        "groupTasks": "Tarefas",
+        "groupSubtasks": "Sub-tarefas",
+        "groupHabits": "Hábitos",
+        "addMore": "Adicionar...",
+        "onlyBadHabits": "Hábitos ruins não participam de conexões.",
         "noBlocks": "Nenhum bloco de tempo disponível.",
         "noTasks": "Nenhuma tarefa ou sub-tarefa disponível.",
         "loading": "Carregando…",
         "taskBadge": "Tarefa",
+        "subtaskBadge": "Sub-tarefa",
+        "habitBadge": "Hábito",
+        "orphanBlockTitle": "Bloco removido — revise ou remova estas vinculações",
+        "tabLinks": "Vinculações",
+        "tabExplorer": "Explorador",
+        "linksEmptyTitle": "Nenhuma vinculação ainda",
+        "linksEmptyDescription": "Conecte tarefas, sub-tarefas e hábitos aos blocos de tempo na aba Explorador.",
+        "goToExplorer": "Abrir explorador",
+        "showOptions": "Mostrar opções da conexão",
+        "hideOptions": "Ocultar opções da conexão",
+        "removeConnection": "Remover conexão",
+        "removedEntity": "Entidade removida",
+        "groupSummary": "{satisfied}/{total} satisfeitas",
         "hintEntity": "Bloco confirmado completa a tarefa/sub-tarefa quando todas as conexões estiverem satisfeitas; entidade concluída confirma os blocos do período atual. As confirmações contam a partir da conexão.",
         "hintBlock": "Concluir a tarefa/sub-tarefa confirma o bloco no período atual; bloco confirmado completa a entidade quando todas as conexões estiverem satisfeitas. As confirmações contam a partir da conexão.",
         "search": "Buscar…",
@@ -482,7 +645,7 @@
     },
     "connections": {
       "title": "Conexões",
-      "description": "Vincule tarefas e sub-tarefas a blocos de tempo: ao confirmar o bloco o número de vezes necessário, a entidade conectada conclui automaticamente.",
+      "description": "Vincule tarefas, sub-tarefas e hábitos a blocos de tempo: ao confirmar o bloco, a entidade conectada avança automaticamente.",
       "manage": "Gerenciar conexões",
       "empty": {
         "title": "Nenhuma conexão ainda",
@@ -503,12 +666,13 @@
       },
       "how": {
         "connectTitle": "1. Conecte",
-        "connectDescription": "Vincule uma tarefa ou sub-tarefa a um bloco de tempo — ou o contrário.",
+        "connectDescription": "Vincule uma tarefa, sub-tarefa ou hábito bom a um bloco de tempo - ou o contrário.",
         "fulfillTitle": "2. Cumpra",
         "fulfillDescription": "Cada confirmação do bloco conta para a conexão; atingindo o necessário, a entidade conclui.",
         "automateTitle": "3. Automatize",
         "automateDescription": "Entidade concluída confirma o bloco no período atual. As confirmações contam a partir da conexão.",
         "flowTask": "Tarefa conectada",
+        "flowHabit": "Hábito bom",
         "flowBlock": "Bloco confirmado ×N",
         "flowDone": "Tarefa concluída"
       },

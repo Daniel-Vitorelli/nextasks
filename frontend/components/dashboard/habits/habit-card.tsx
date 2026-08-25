@@ -17,6 +17,7 @@ import {
   blockTextClass,
   blockTintClass,
 } from "@/components/connections/connection-colors";
+import { eventColorStyles } from "@/components/calendar/calendar-event-color";
 
 interface HabitCardProps {
   habit: Habit;
@@ -39,7 +40,11 @@ export function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
         : t("frequency.weekly");
 
   return (
-    <div className="border-border/60 group relative flex items-start gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md">
+    <div
+      className={`group relative flex items-start gap-4 rounded-xl border border-border/60 p-4 transition-all hover:shadow-md ${
+        eventColorStyles[habit.color]?.borderHover ?? ""
+      }`}
+    >
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${blockTintClass(habit.color)}`}
       >

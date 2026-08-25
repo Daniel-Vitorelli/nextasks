@@ -29,6 +29,8 @@ model User {
   connections    TaskBlockConnection[]
   habits         Habit[]
   habitCompletions HabitCompletion[]
+  xpEvents       XpEvent[]
+  achievements   AchievementUnlock[]
 }
 
 model Routine {
@@ -138,6 +140,7 @@ model TaskBlockConnection {
   userId        String
   taskId        String?
   subtaskId     String?
+  habitId       String?
   timeBlockId   String
   requiredCount Int       @default(1)
   dayFilter     String    @default("all")
@@ -147,14 +150,16 @@ model TaskBlockConnection {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   task      Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   subtask   Subtask?  @relation(fields: [subtaskId], references: [id], onDelete: Cascade)
+  habit     Habit?    @relation(fields: [habitId], references: [id], onDelete: Cascade)
   timeBlock TimeBlock @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
 
-  // Como exatamente um de taskId/subtaskId é preenchido, os dois índices
+  // Como exatamente um de taskId/subtaskId/habitId é preenchido, os índices
   // juntos garantem unicidade por (entidade, bloco) mesmo com NULLs.
   // (CHECK constraint não é suportado pelo Prisma no datasource MySQL;
   // a exclusividade XOR é garantida pela validação da aplicação.)
   @@unique([taskId, timeBlockId])
   @@unique([subtaskId, timeBlockId])
+  @@unique([habitId, timeBlockId])
   @@index([userId])
   @@index([timeBlockId])
 }
@@ -174,6 +179,7 @@ model Habit {
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   completions HabitCompletion[]
+  connections TaskBlockConnection[]
 
   @@index([userId])
 }
@@ -184,6 +190,7 @@ model HabitCompletion {
   userId    String
   date      DateTime // Start of the day in user's timezone
   count     Int      @default(1)
+  source    String   @default("explicit") // explicit | auto (via conexões)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -192,6 +199,34 @@ model HabitCompletion {
 
   @@unique([habitId, date])
   @@index([userId, date])
+}
+
+/// Evento append-only do ledger de XP. refKey torna o evento idempotente
+/// (ex.: "block:<id>:<periodStartMs>"); eventos sem refKey são únicos por
+/// conteúdo. amount pode ser negativo (penalidades).
+model XpEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String // block.confirm | task.done | habit.confirm | habit.slip ...
+  refKey    String?
+  amount    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+/// Conquista desbloqueada (catálogo vive em código; só o unlock persiste).
+model AchievementUnlock {
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId, unlockedAt])
 }
 
 model Session {

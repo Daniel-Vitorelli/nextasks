@@ -169,9 +169,15 @@ function parseConnection(value: unknown): DataExportConnection | null {
   const timeBlockId = requiredString(value.timeBlockId, 100);
   const taskId = optionalString(value.taskId, 100);
   const subtaskId = optionalString(value.subtaskId, 100);
+  const habitId = optionalString(value.habitId, 100);
   const hasTask = value.taskId !== undefined && value.taskId !== null;
   const hasSubtask = value.subtaskId !== undefined && value.subtaskId !== null;
-  if (!timeBlockId || hasTask === hasSubtask) return null;
+  const hasHabit = value.habitId !== undefined && value.habitId !== null;
+  // Exatamente uma entidade por conexão (tarefa, sub-tarefa ou hábito).
+  if (!timeBlockId) return null;
+  if (Number(hasTask) + Number(hasSubtask) + Number(hasHabit) !== 1) {
+    return null;
+  }
 
   const requiredCount =
     typeof value.requiredCount === "number" &&
@@ -190,6 +196,7 @@ function parseConnection(value: unknown): DataExportConnection | null {
   return {
     taskId,
     subtaskId,
+    habitId,
     timeBlockId,
     requiredCount,
     dayFilter,
@@ -294,6 +301,15 @@ export function parseDataExport(value: unknown): DataExport | null {
     timeBlockIds.add(parsed.id);
   }
 
+  const habits: DataExportHabit[] = [];
+  const habitIds = new Set<string>();
+  for (const item of habitsRaw) {
+    const parsed = parseHabit(item);
+    if (!parsed) return null;
+    habits.push(parsed);
+    habitIds.add(parsed.id);
+  }
+
   const connections: DataExportConnection[] = [];
   for (const item of arrays.connections as unknown[]) {
     const parsed = parseConnection(item);
@@ -301,6 +317,7 @@ export function parseDataExport(value: unknown): DataExport | null {
     if (!timeBlockIds.has(parsed.timeBlockId)) return null;
     if (parsed.taskId && !taskIds.has(parsed.taskId)) return null;
     if (parsed.subtaskId && !subtaskIds.has(parsed.subtaskId)) return null;
+    if (parsed.habitId && !habitIds.has(parsed.habitId)) return null;
     connections.push(parsed);
   }
 
@@ -310,15 +327,6 @@ export function parseDataExport(value: unknown): DataExport | null {
     if (!parsed) return null;
     if (!timeBlockIds.has(parsed.timeBlockId)) return null;
     completions.push(parsed);
-  }
-
-  const habits: DataExportHabit[] = [];
-  const habitIds = new Set<string>();
-  for (const item of habitsRaw) {
-    const parsed = parseHabit(item);
-    if (!parsed) return null;
-    habits.push(parsed);
-    habitIds.add(parsed.id);
   }
 
   const habitCompletions: DataExportHabitCompletion[] = [];

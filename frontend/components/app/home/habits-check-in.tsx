@@ -19,6 +19,8 @@ import {
   blockTextClass,
   blockTintClass,
 } from "@/components/connections/connection-colors";
+import { eventColorStyles } from "@/components/calendar/calendar-event-color";
+import { cn } from "@/lib/utils";
 import { useHabits } from "@/hooks/use-habits";
 import { useHabitStats } from "@/hooks/use-habit-stats";
 import { useTzOffset } from "@/lib/client/use-tz-offset";
@@ -102,6 +104,7 @@ export function HabitsCheckIn() {
           {todaysHabits.map((habit) => {
             const IconComponent =
               LUCIDE_ICON_MAP[habit.icon] ?? CheckCircle2;
+            const colorStyles = eventColorStyles[habit.color];
             const isBad = habit.type === "bad";
             const currentCount = habit.currentCount;
             const isComplete =
@@ -118,7 +121,10 @@ export function HabitsCheckIn() {
             return (
               <li
                 key={habit.id}
-                className="border-border/60 rounded-xl border bg-card"
+                className={cn(
+                  "border-border/60 rounded-xl border bg-card transition-colors",
+                  colorStyles?.borderHover,
+                )}
               >
                 <div className="flex items-center gap-4 p-4">
                   <div
@@ -172,11 +178,14 @@ export function HabitsCheckIn() {
                         </Button>
                       )}
                       <Button
-                        variant="outline"
                         size="sm"
                         disabled={isPending}
                         onClick={() => void handleComplete(habit)}
-                        className="gap-1.5"
+                        className={cn(
+                          "gap-1.5",
+                          colorStyles?.accentBg,
+                          colorStyles?.accentBgHover,
+                        )}
                       >
                         {isPending ? (
                           <Spinner className="size-3.5" />
@@ -188,11 +197,14 @@ export function HabitsCheckIn() {
                     </div>
                   ) : (
                     <Button
-                      variant={isComplete ? "default" : "outline"}
                       size="sm"
                       disabled={isComplete || isPending}
                       onClick={() => void handleComplete(habit)}
-                      className="gap-1.5"
+                      className={cn(
+                        "gap-1.5",
+                        colorStyles?.accentBg,
+                        colorStyles?.accentBgHover,
+                      )}
                     >
                       {isPending ? (
                         <Spinner className="size-3.5" />

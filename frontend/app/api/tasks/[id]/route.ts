@@ -14,6 +14,17 @@ import {
   confirmBlocksForDoneEntities,
   reversePropagateForEntities,
 } from "@/lib/server/connections";
+import {
+  awardXpOnce,
+  removeXpByEntityPrefix,
+  removeXpForRef,
+  xpRefKeys,
+} from "@/lib/server/gamification/xp";
+import { XP_AMOUNTS } from "@/lib/gamification/rules";
+import {
+  evaluateAchievements,
+} from "@/lib/server/gamification/service";
+import { loadGamificationStats } from "@/lib/server/gamification/stats";
 
 async function getOwnedTask(id: string, userId: string) {
   return prisma.task.findFirst({
@@ -64,6 +75,14 @@ export async function PATCH(
           tzOffsetMinutes,
         );
       }
+
+      // Gamificação: +XP pela tarefa e por cada sub-tarefa recém-concluída.
+      if (taskCompleted) {
+        await awardXpOnce(tx, user.id, "task.done", XP_AMOUNTS.taskDone, xpRefKeys.taskDone(id));
+      }
+      for (const subtaskId of completedSubtaskIds) {
+        await awardXpOnce(tx, user.id, "subtask.done", XP_AMOUNTS.subtaskDone, xpRefKeys.subtaskDone(subtaskId));
+      }
     }
 
     // Reabrir a tarefa remove as auto-confirmações que ela originou e
@@ -75,7 +94,13 @@ export async function PATCH(
         [{ taskId: id, subtaskId: null }],
         tzOffsetMinutes,
       );
+      // Gamificação: reabrir remove o ganho da tarefa (sub-tarefas mantêm o
+      // próprio evento — reabrir a tarefa não desfaz o progresso dos filhos).
+      await removeXpForRef(tx, user.id, "task.done", xpRefKeys.taskDone(id));
     }
+
+    const stats = await loadGamificationStats(tx, user.id, tzOffsetMinutes);
+    await evaluateAchievements(tx, user.id, stats);
 
     return updated;
   });
@@ -124,6 +149,12 @@ export async function DELETE(
     ];
 
     await tx.task.delete({ where: { id } });
+
+    // Gamificação: eventos de XP das entidades excluídas saem do ledger.
+    await removeXpByEntityPrefix(tx, user.id, `task:${id}:`);
+    for (const subtaskId of subtaskIds) {
+      await removeXpByEntityPrefix(tx, user.id, `subtask:${subtaskId}:`);
+    }
 
     // As entidades excluídas não existem mais: remove as auto-confirmações
     // que cada uma originou e reavalia as entidades conectadas aos blocos.

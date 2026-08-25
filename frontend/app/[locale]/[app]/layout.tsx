@@ -3,6 +3,7 @@ import { getUser } from "@/lib/server/session";
 import { AppDock } from "@/components/app/app-dock";
 import { SessionProvider } from "@/components/app/session-provider";
 import { ConnectionsProvider } from "@/components/connections/connections-provider";
+import { XpToast } from "@/components/app/gamification/xp-toast";
 import type { ReactNode } from "react";
 
 
@@ -22,6 +23,7 @@ export default async function Layout({
       <ConnectionsProvider>
         <div className="relative min-h-screen">
           <main className="pb-8">{children}</main>
+          <XpToast />
           <AppDock />
         </div>
       </ConnectionsProvider>

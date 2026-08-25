@@ -42,7 +42,7 @@ frontend/
 │   ├── dashboard/habits/            # habits section (CRUD), card, dialog (ícone/cor)
 │   ├── app/                         # authenticated layout (dock, session, home sections)
 │   │   └── home/habits-check-in.tsx # confirmação diária + streak/heatmap por hábito
-│   ├── calendar/                    # WeekView + drag/resize overlays
+│   ├── calendar/                    # WeekView/MonthView + drag/resize overlays
 │   ├── connections/                 # connection popover, provider, badges
 │   └── ui/                          # shadcn primitives
 ├── hooks/                           # data hooks (tasks, routines, subtasks, blocks, progress, habits)
@@ -99,9 +99,9 @@ Key models (see `frontend/prisma/schema.prisma`):
 - `TimeBlockCompletion` — periodStart/periodEnd, value ("true"/"false" or "1"–"10"), **source** (explicit/auto), **sourceEntityId** ("task:<id>" | "subtask:<id>")
 - `Task` — title, description, dueDate, priority (1–6), done, subtasks, connections
 - `Subtask` — recursive tree (parentId/children), taskId, done, connections
-- `TaskBlockConnection` — M:N task/subtask ↔ timeBlock, `requiredCount`, `dayFilter` ("all" | "weekday:N" | "date:YYYY-MM-DD"), unique constraints on (taskId,timeBlockId) and (subtaskId,timeBlockId)
-- `Habit` — name, description, icon (nome Lucide), color (EventColor), frequency (daily/weekly), `daysOfWeek` (JSON array 0–6, só diário), targetCount
-- `HabitCompletion` — date (meia-noite UTC do dia local do usuário), count, unique (habitId,date)
+- `TaskBlockConnection` — M:N task/subtask/**habit** ↔ timeBlock, `requiredCount`, `dayFilter` ("all" | "weekday:N" | "date:YYYY-MM-DD"), unique constraints on (taskId,timeBlockId), (subtaskId,timeBlockId), (habitId,timeBlockId); exatamente uma entidade por conexão
+- `Habit` — name, description, icon (nome Lucide), color (EventColor), type ("good"|"bad"), frequency (daily/weekly), `daysOfWeek` (JSON array 0–6, só diário), targetCount
+- `HabitCompletion` — date (meia-noite UTC do dia local do usuário), count, **source** ("explicit" | "auto" via conexões), unique (habitId,date)
 
 ---
 
@@ -114,25 +114,40 @@ Key models (see `frontend/prisma/schema.prisma`):
 - Delete child → recalculates ancestors (`removeAndRecomplete`)
 - Create subtask under completed parent → reopens chain
 
-### Task/Subtask ↔ TimeBlock Connections (`lib/server/connections.ts`)
-- **Block confirmed** → completes entity when **all** its connections satisfied
-- **Entity completed** → auto-confirms connected blocks in current period (checklist "true", score "10")
-- **Reverse propagation**: unconfirm block → removes auto-confirmations, reopens entities that only had that block; unmark entity → removes its auto-confirmations, re-evaluates connected blocks
+### Task/Subtask/Habit ↔ TimeBlock Connections (`lib/server/connections.ts`)
+- **Block confirmed** → completes connected task/subtask when ALL its connections satisfied; hábitos bons recebem conclusão automática do período (create-if-missing, count=targetCount, source="auto")
+- **Good habit reaches target** → auto-confirms connected blocks in current period (checklist "true", score "10", sourceEntityId="habit:<id>")
+- **Reverse propagation**: unconfirm block → reopens tasks/subtasks insatisfeitas e remove APENAS conclusões automáticas de hábitos no período; habit undone (DELETE complete) remove suas auto-confirmações em blocos e reavalia tarefas conectadas
+- Hábitos ruins NUNCA participam de conexões (rejeitadas na criação)
 - `dayFilter` semantics: daily = that day; weekly = weekday of block within period week (`applicableDayUtc`)
 - Impossible filters rejected (weekly block with different weekday/date filter) — 400 on create/update
 - Connections to blocks with `confirmation: "none"` rejected
 - Auto-confirm is **create-if-missing** (never overwrites explicit user decision)
-- Propagation only for entities that **actually transitioned** (pending → done)
+- Propagation only for entities that **actually transitioned**
 
 ### Home Task Selection (`lib/task-ordering.ts`)
 - One pending task at a time, ordered by: `dueUrgencyScore` (overdue 10–15, today 8–10, ≤3d 6–8, ≤7d 4–6, ≤30d 0–4, none 0) + priority (1–6)
 - Tiebreak: earlier dueDate → higher priority → earlier createdAt
+
+### Calendar (`app/[locale]/[app]/calendar`, `components/calendar/**`)
+- Três visões: semana/dia (WeekView com drag/resize/popovers) e **mês** (`MonthView`: grade 6×7 fixa, chips mínimos por dia, "+N", hoje destacado; `monthGridRange` monta o intervalo de 42 dias para a API)
+- Navegação contextual por visão (±7 dias vs ±1 mês); range memoizado — **nunca** derive objetos novos sem `useMemo` (loop de recarga)
 
 ### Progress Chart (`app/api/routines/progress/route.ts`)
 - Daily % = confirmedValue / confirmableBlocks × 100
 - Checkbox = 1, score = score/10 (only 10 = 1)
 - Weekly routines only count on block's weekday
 - `daysWithRecords` returned for adaptive period selector (only show options ≤ recorded days)
+
+### Gamificação (`lib/gamification/**`, `lib/server/gamification/**`, `app/api/gamification`)
+- **Ledger append-only** `XpEvent` (kind, refKey, amount ±): idempotência por `@@unique(userId,kind,refKey)` — desfazer ação remove o evento (`removeXpForRef`), sem farm de toggle
+- Regras centralizadas em `lib/gamification/rules.ts` (bloco +10/por nota, tarefa +20, sub-tarefa +10, hábito +5/meta +10, recaída −15, dia 100% +25)
+- **Níveis**: curva quadrática `75·(L−1)·L/2` (`levels.ts`); **ranks** por faixa de nível em `ranks.ts` (Iniciante→Lendário, cores `--event-*`)
+- **Conquistas**: catálogo declarativo `achievements-catalog.ts` (~43, todas visíveis, condições por limiar de estatística) com filtros de tier/status na página; avaliador `evaluateAchievements` roda ao fim das mutações e no GET `/api/gamification`; unlock concede XP por tier
+- Hábitos ruins só geram penalidade; conexões não pontuam diretamente
+- **Ranks difíceis de propósito** (Nv 6/12/20/30/42/56/72) com medalhão sólido + ícone Lucide por rank (`RankDef.icon`)
+- Página `/app/gamification`: anel de nível, medalhão do rank, escada de ranks, callout da conquista mais próxima, conquistas (filtros tier/status), histórico agrupado por dia com ícones e filtro ganhos/perdas, distribuição de XP por origem (`breakdown`), recordes (atual + recorde) — tudo pt/en
+- Toast (`XpToast`) com fila sequencial e prioridade conquista > nível > delta de XP
 
 ### Habits (`app/api/habits/**`, `lib/habit-stats.ts`, `lib/streak.ts`)
 - **Dashboard = só CRUD**; confirmação fica na home (`HabitsCheckIn`), que lista hábitos aplicáveis hoje
@@ -185,6 +200,7 @@ Key models (see `frontend/prisma/schema.prisma`):
 | POST | `/api/habits/:id/complete` | Confirmar/recaída (query: tzOffset; body: increment) |
 | DELETE | `/api/habits/:id/complete` | Remove o registro de HOJE (desfazer confirmação/recaída) |
 | GET | `/api/habits/stats?days=&tzOffset=` | Progresso diário + streak por hábito |
+| GET | `/api/gamification` | Resumo de XP/nível/rank/conquistas/histórico |
 
 All routes require authentication (session cookie from better-auth).
 

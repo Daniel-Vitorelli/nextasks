@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/server/prisma";
 import { parseHabitPatch } from "@/lib/validation/habits";
-import { requireUser } from "@/lib/server/api";
-import { notFound } from "@/lib/server/api";
+import { notFound, parseTzOffset, requireUser } from "@/lib/server/api";
+import { reversePropagateForBlock } from "@/lib/server/connections";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -46,6 +46,29 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return notFound();
   }
 
+  // Hábitos ruins não participam de conexões: ao virar ruim, remove as
+  // conexões e as auto-confirmações que o hábito originou nos blocos.
+  const tzOffset = parseTzOffset(
+    new URL(request.url).searchParams.get("tzOffset"),
+  );
+  if (result.data.type === "bad" && habit.type !== "bad") {
+    await prisma.$transaction(async (tx) => {
+      const autos = await tx.timeBlockCompletion.findMany({
+        where: { source: "auto", sourceEntityId: `habit:${id}` },
+        select: { timeBlockId: true },
+      });
+      await tx.timeBlockCompletion.deleteMany({
+        where: { source: "auto", sourceEntityId: `habit:${id}` },
+      });
+      await tx.taskBlockConnection.deleteMany({ where: { habitId: id } });
+      for (const timeBlockId of [
+        ...new Set(autos.map((auto) => auto.timeBlockId)),
+      ]) {
+        await reversePropagateForBlock(tx, user.id, timeBlockId, tzOffset);
+      }
+    });
+  }
+
   const updated = await prisma.habit.update({
     where: { id },
     data: result.data,
@@ -68,7 +91,29 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     return notFound();
   }
 
-  await prisma.habit.delete({ where: { id } });
+  // A exclusão em cascata remove conexões e conclusões, mas as auto-
+  // confirmações que o hábito gerou em blocos ficariam órfãs: remove-as e
+  // reavalia as entidades conectadas a cada bloco afetado.
+  const tzOffset = parseTzOffset(
+    new URL(_request.url).searchParams.get("tzOffset"),
+  );
+  await prisma.$transaction(async (tx) => {
+    const autos = await tx.timeBlockCompletion.findMany({
+      where: { source: "auto", sourceEntityId: `habit:${id}` },
+      select: { timeBlockId: true },
+    });
+    if (autos.length > 0) {
+      await tx.timeBlockCompletion.deleteMany({
+        where: { source: "auto", sourceEntityId: `habit:${id}` },
+      });
+      for (const timeBlockId of [
+        ...new Set(autos.map((auto) => auto.timeBlockId)),
+      ]) {
+        await reversePropagateForBlock(tx, user.id, timeBlockId, tzOffset);
+      }
+    }
+    await prisma.habit.delete({ where: { id } });
+  });
 
   return NextResponse.json({ ok: true });
 }

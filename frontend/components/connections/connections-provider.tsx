@@ -18,6 +18,7 @@ const AFTER_CONNECTION_CHANGE: DataResource[] = [
   "connections",
   "tasks",
   "subtasks",
+  "habits",
   "time-blocks",
   "progress",
   "current-block",
@@ -26,6 +27,7 @@ const AFTER_CONNECTION_CHANGE: DataResource[] = [
 interface ToggleParams {
   taskId?: string | null;
   subtaskId?: string | null;
+  habitId?: string | null;
   timeBlockId: string;
 }
 
@@ -102,9 +104,9 @@ export function ConnectionsProvider({
     notifyDataChanged(AFTER_CONNECTION_CHANGE);
   }, []);
 
-  // Confirmações de blocos, tarefas e sub-tarefas mudam os contadores de
-  // confirmação server-side: recarrega quando qualquer um deles muda.
-  useDataSync(["tasks", "subtasks", "time-blocks"], () => {
+  // Confirmações de blocos, tarefas, sub-tarefas e hábitos mudam os contadores
+  // de confirmação server-side: recarrega quando qualquer um deles muda.
+  useDataSync(["tasks", "subtasks", "time-blocks", "habits"], () => {
     void reload();
   });
 
@@ -116,7 +118,9 @@ export function ConnectionsProvider({
           !connection.id.startsWith("pending-") &&
           (params.taskId
             ? connection.taskId === params.taskId
-            : connection.subtaskId === params.subtaskId),
+            : params.habitId
+              ? connection.habitId === params.habitId
+              : connection.subtaskId === params.subtaskId),
       );
 
       const pendingExists = data?.connections.some(
@@ -125,7 +129,9 @@ export function ConnectionsProvider({
           connection.timeBlockId === params.timeBlockId &&
           (params.taskId
             ? connection.taskId === params.taskId
-            : connection.subtaskId === params.subtaskId),
+            : params.habitId
+              ? connection.habitId === params.habitId
+              : connection.subtaskId === params.subtaskId),
       );
 
       // Um POST ja esta em voo para esta entidade + bloco: ignora o clique
@@ -154,9 +160,10 @@ export function ConnectionsProvider({
         }
       } else {
         const pending: TaskBlockConnection = {
-          id: `pending-${params.timeBlockId}-${params.taskId ?? params.subtaskId}`,
+          id: `pending-${params.timeBlockId}-${params.taskId ?? params.subtaskId ?? params.habitId}`,
           taskId: params.taskId ?? null,
           subtaskId: params.subtaskId ?? null,
+          habitId: params.habitId ?? null,
           timeBlockId: params.timeBlockId,
           requiredCount: 1,
           dayFilter: "all",
@@ -180,6 +187,7 @@ export function ConnectionsProvider({
             body: JSON.stringify({
               taskId: params.taskId ?? null,
               subtaskId: params.subtaskId ?? null,
+              habitId: params.habitId ?? null,
               timeBlockId: params.timeBlockId,
             }),
           },

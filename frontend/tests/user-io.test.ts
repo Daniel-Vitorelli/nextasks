@@ -121,6 +121,7 @@ function minimalExport(): DataExport {
       {
         taskId: "t1",
         subtaskId: null,
+        habitId: null,
         timeBlockId: "b1",
         requiredCount: 2,
         dayFilter: "weekday:3",
@@ -280,6 +281,43 @@ describe("parseDataExport", () => {
       ],
     };
     expect(parseDataExport(orphan)).toBeNull();
+
+    // Conexão hábito↔bloco válida no backup.
+    const withHabitConnection = parseDataExport({
+      ...withHabits,
+      connections: [
+        ...minimalExport().connections,
+        {
+          taskId: null,
+          subtaskId: null,
+          habitId: "h1",
+          timeBlockId: "b1",
+          requiredCount: 1,
+          dayFilter: "all",
+          createdAt: "2024-01-01T00:00:00.000Z",
+        },
+      ],
+    });
+    expect(withHabitConnection).not.toBeNull();
+    expect(withHabitConnection!.connections).toHaveLength(2);
+    expect(withHabitConnection!.connections[1].habitId).toBe("h1");
+
+    // Conexão apontando para hábito inexistente é rejeitada.
+    const unknownHabitConnection = parseDataExport({
+      ...withHabits,
+      connections: [
+        {
+          taskId: null,
+          subtaskId: null,
+          habitId: "nao-existe",
+          timeBlockId: "b1",
+          requiredCount: 1,
+          dayFilter: "all",
+          createdAt: "2024-01-01T00:00:00.000Z",
+        },
+      ],
+    });
+    expect(unknownHabitConnection).toBeNull();
 
     // Hábito sem nome é rejeitado.
     const unnamed = {

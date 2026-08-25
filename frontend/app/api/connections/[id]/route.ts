@@ -4,11 +4,13 @@ import { prisma } from "@/lib/server/prisma";
 import { badRequest, notFound, parseTzOffset, requireUser, type RouteContext } from "@/lib/server/api";
 import {
   completeEntitiesForConnections,
+  completeHabitsForConnections,
   connectionInclude,
   isDayFilterSatisfiable,
   isRequiredCountReachable,
   loadCompletionsByBlock,
   reversePropagateForEntities,
+  revertAutoHabitCompletionsForConnections,
   toConnectionRow,
 } from "@/lib/server/connections";
 import { localWeekday } from "@/lib/server/completions";
@@ -84,13 +86,29 @@ export async function PATCH(
     );
 
     // Ajuste no sentido contrário (requiredCount aumentado ou filtro mais
-    // restrito) pode deixar a entidade insatisfeita: reavalia e reabre.
+    // restritivo) pode deixar a entidade insatisfeita: reavalia e reabre;
+    // hábitos perdem somente as conclusões automáticas do período.
     await reversePropagateForEntities(
       tx,
       user.id,
       [{ taskId: existing.taskId, subtaskId: existing.subtaskId }],
       tzOffsetMinutes,
     );
+    if (existing.habitId) {
+      // Par forward+reverse garante o estado final correto do hábito.
+      await completeHabitsForConnections(
+        tx,
+        user.id,
+        [existing.habitId],
+        tzOffsetMinutes,
+      );
+      await revertAutoHabitCompletionsForConnections(
+        tx,
+        user.id,
+        [existing.habitId],
+        tzOffsetMinutes,
+      );
+    }
 
     return connection;
   });
@@ -127,7 +145,9 @@ export async function DELETE(
 
   // Remover a conexão não reverte conclusões já propagadas, mas pode ser a
   // última conexão insatisfeita: com as restantes satisfeitas, a entidade
-  // completa agora (mesma invariante dos blocos confirmados).
+  // completa agora (mesma invariante dos blocos confirmados). Para hábitos,
+  // a conexão removida também pode quebrar a satisfação: reavalia e remove
+  // somente conclusões automáticas.
   await prisma.$transaction(async (tx) => {
     await tx.taskBlockConnection.delete({ where: { id } });
     await completeEntitiesForConnections(
@@ -136,6 +156,20 @@ export async function DELETE(
       [{ taskId: existing.taskId, subtaskId: existing.subtaskId }],
       tzOffsetMinutes,
     );
+    if (existing.habitId) {
+      await completeHabitsForConnections(
+        tx,
+        user.id,
+        [existing.habitId],
+        tzOffsetMinutes,
+      );
+      await revertAutoHabitCompletionsForConnections(
+        tx,
+        user.id,
+        [existing.habitId],
+        tzOffsetMinutes,
+      );
+    }
   });
 
   return NextResponse.json({ ok: true });

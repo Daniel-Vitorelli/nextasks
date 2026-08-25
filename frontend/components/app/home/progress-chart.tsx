@@ -18,19 +18,19 @@ interface ProgressChartProps {
   className?: string;
 }
 
-const chartConfig = {
-  value: {
-    label: "Progress",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig;
-
 export function ProgressChart({
   data,
   locale,
   className,
 }: ProgressChartProps) {
   const t = useTranslations("app.home.progressChart");
+
+  const chartConfig = {
+    value: {
+      label: t("progress"),
+      color: "var(--chart-1)",
+    },
+  } satisfies ChartConfig;
 
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     day: "numeric",
@@ -114,6 +114,15 @@ export function ProgressChart({
           stroke="var(--color-value)"
           strokeWidth={2}
           connectNulls={false}
+          // Rotinas semanais têm valores só no dia do bloco: sem os pontos,
+          // cada valor isolado ficaria invisível (segmento de largura zero).
+          dot={{
+            r: 2,
+            strokeWidth: 0,
+            fill: "var(--color-value)",
+            fillOpacity: 1,
+          }}
+          activeDot={{ r: 4, strokeWidth: 0 }}
         />
       </AreaChart>
     </ChartContainer>

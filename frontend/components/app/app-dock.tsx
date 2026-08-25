@@ -10,6 +10,7 @@ import {
   Bot,
   CalendarDays,
   Cog,
+  Gamepad2,
   Home,
   LayoutDashboard,
   Users,
@@ -18,11 +19,12 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
 const items = [
-  { labelKey: "social", icon: Users, href: "/app/social" },
+  { labelKey: "ai", icon: Bot, href: "/app/ai" },
+  { labelKey: "calendar", icon: CalendarDays, href: "/app/calendar" },
   { labelKey: "dashboard", icon: LayoutDashboard, href: "/app/dashboard" },
   { labelKey: "home", icon: Home, href: "/app/home" },
-  { labelKey: "calendar", icon: CalendarDays, href: "/app/calendar" },
-  { labelKey: "ai", icon: Bot, href: "/app/ai" },
+  { labelKey: "gamification", icon: Gamepad2, href: "/app/gamification" },
+  { labelKey: "social", icon: Users, href: "/app/social" },
   { labelKey: "config", icon: Cog, href: "/app/config" },
 ];
 

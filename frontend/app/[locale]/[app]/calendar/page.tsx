@@ -1,14 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { addDays, format, startOfWeek } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  format,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 import { enUS, ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { WeekView } from "@/components/calendar/week-view";
+import {
+  MonthView,
+  monthGridRange,
+} from "@/components/calendar/month-view";
 import type { CalendarEvent, ViewType } from "@/types/calendar";
 import type { ScheduledOccurrence } from "@/types/domain";
 import { occurrenceToEvent } from "@/lib/time-blocks";
@@ -27,13 +37,22 @@ export default function CalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Intervalo carregado conforme a visão: semana/dia usam a âncora; mês usa
+  // a grade completa de 6 semanas (42 dias ≤ limite da API).
+  // useMemo garante identidade estável entre renders — sem isso, o callback
+  // de carregamento mudaria a cada render e causaria loop de piscadas.
+  const range = useMemo(() => {
+    if (view === "month") return monthGridRange(currentDate);
+    const start = view === "week" ? startOfWeek(currentDate) : currentDate;
+    return { start, end: addDays(start, 6) };
+  }, [view, currentDate]);
+
   const loadSchedule = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const rangeEnd = addDays(currentDate, 6);
       const response = await fetch(
-        `/api/calendar?start=${currentDate.toISOString()}&end=${rangeEnd.toISOString()}&tzOffset=${tzOffsetMinutes}`,
+        `/api/calendar?start=${range.start.toISOString()}&end=${range.end.toISOString()}&tzOffset=${tzOffsetMinutes}`,
       );
       if (!response.ok) throw new Error("Failed to load schedule");
       const payload = (await response.json()) as { occurrences: ScheduledOccurrence[] };
@@ -44,7 +63,7 @@ export default function CalendarPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentDate, tzOffsetMinutes, t]);
+  }, [range.start, range.end, tzOffsetMinutes, t]);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -52,7 +71,24 @@ export default function CalendarPage() {
   }, [loadSchedule]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const monthLabel = format(currentDate, "MMMM yyyy", { locale: dateLocale });
+  const navigate = (direction: -1 | 1) => {
+    setCurrentDate((date) =>
+      view === "month" ? addMonths(date, direction) : addDays(date, direction * 7),
+    );
+  };
+
+  const goToday = () => {
+    setCurrentDate(
+      view === "month"
+        ? startOfMonth(new Date())
+        : startOfWeek(new Date()),
+    );
+  };
+
+  const monthLabel =
+    view === "month"
+      ? format(currentDate, "MMMM yyyy", { locale: dateLocale })
+      : format(range.start, "MMMM yyyy", { locale: dateLocale });
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-12 md:px-8">
@@ -70,21 +106,18 @@ export default function CalendarPage() {
           <Button
             size="icon-sm"
             variant="outline"
-            onClick={() => setCurrentDate((date) => addDays(date, -7))}
+            onClick={() => navigate(-1)}
             aria-label={t("prevWeek")}
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentDate(startOfWeek(new Date()))}
-          >
+          <Button variant="outline" onClick={goToday}>
             {t("today")}
           </Button>
           <Button
             size="icon-sm"
             variant="outline"
-            onClick={() => setCurrentDate((date) => addDays(date, 7))}
+            onClick={() => navigate(1)}
             aria-label={t("nextWeek")}
           >
             <ChevronRight className="size-4" />
@@ -93,48 +126,58 @@ export default function CalendarPage() {
             {monthLabel}
           </div>
           <div className="flex items-center gap-1 rounded-md border p-0.5">
-            <Button
-              size="sm"
-              variant={view === "week" ? "default" : "ghost"}
-              onClick={() => setView("week")}
-            >
-              {t("weekView")}
-            </Button>
-            <Button
-              size="sm"
-              variant={view === "day" ? "default" : "ghost"}
-              onClick={() => setView("day")}
-            >
-              {t("dayView")}
-            </Button>
+            {(["week", "day", "month"] as const).map((mode) => (
+              <Button
+                key={mode}
+                size="sm"
+                variant={view === mode ? "default" : "ghost"}
+                onClick={() => {
+                  setView(mode);
+                  if (mode === "month") {
+                    setCurrentDate((date) => startOfMonth(date));
+                  }
+                }}
+              >
+                {t(`${mode}View`)}
+              </Button>
+            ))}
           </div>
         </div>
       </header>
 
-      <div className="h-[70vh] rounded-xl border border-border/60 bg-card">
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <Spinner />
-          </div>
-        ) : error ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-        ) : events.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">{t("empty")}</p>
-          </div>
-        ) : (
-          <WeekView
-            view={view}
-            currentDate={currentDate}
-            events={events}
-            locale={dateLocale}
-            className="h-full"
-            onDateChange={setCurrentDate}
-          />
-        )}
-      </div>
+      {view === "month" ? (
+        <MonthView
+          currentDate={currentDate}
+          events={events}
+          locale={dateLocale}
+          className="h-[70vh] rounded-xl border border-border/60 bg-card overflow-hidden"
+        />
+      ) : (
+        <div className="h-[70vh] rounded-xl border border-border/60 bg-card">
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <Spinner />
+            </div>
+          ) : error ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-muted-foreground">{t("empty")}</p>
+            </div>
+          ) : (
+            <WeekView
+              view={view}
+              currentDate={currentDate}
+              events={events}
+              locale={dateLocale}
+              className="h-full"
+              onDateChange={setCurrentDate}
+            />
+          )}
+        </div>
+      )}
     </main>
   );
 }

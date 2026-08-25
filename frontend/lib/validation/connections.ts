@@ -39,7 +39,11 @@ export function parseConnectionInput(value: unknown): ConnectionInput | null {
   const hasTask = typeof body.taskId === "string" && body.taskId.trim() !== "";
   const hasSubtask =
     typeof body.subtaskId === "string" && body.subtaskId.trim() !== "";
-  if (hasTask === hasSubtask) return null;
+  const hasHabit =
+    typeof body.habitId === "string" && body.habitId.trim() !== "";
+  if (Number(hasTask) + Number(hasSubtask) + Number(hasHabit) !== 1) {
+    return null;
+  }
 
   if (typeof body.timeBlockId !== "string" || body.timeBlockId.trim() === "") {
     return null;
@@ -56,6 +60,7 @@ export function parseConnectionInput(value: unknown): ConnectionInput | null {
   return {
     taskId: hasTask ? body.taskId as string : null,
     subtaskId: hasSubtask ? body.subtaskId as string : null,
+    habitId: hasHabit ? body.habitId as string : null,
     timeBlockId: body.timeBlockId,
     requiredCount,
     dayFilter,

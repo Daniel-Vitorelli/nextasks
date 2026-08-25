@@ -5,7 +5,19 @@ import { periodForFrequency } from "@/lib/server/completions";
 import {
   completeEntitiesForBlock,
   reversePropagateForBlock,
+  revertAutoHabitCompletionsForBlock,
 } from "@/lib/server/connections";
+import {
+  awardXpOnce,
+  blockConfirmXp,
+  removeXpForRef,
+  syncRoutineDayFullXp,
+  xpRefKeys,
+} from "@/lib/server/gamification/xp";
+import {
+  evaluateAchievements,
+} from "@/lib/server/gamification/service";
+import { loadGamificationStats } from "@/lib/server/gamification/stats";
 import {
   asFrequency,
   badRequest,
@@ -63,6 +75,11 @@ export async function POST(
     tzOffsetMinutes,
   );
 
+  // Gamificação: refKey idempotente por bloco+período evita farm de toggle;
+  // desconfirmar remove o ganho correspondente.
+  const xpRef = xpRefKeys.block(timeBlock.id, period.start.getTime());
+  const xpAmount = blockConfirmXp(timeBlock.confirmation, validValue);
+
   const completion = await prisma.$transaction(async (tx) => {
     const saved = await tx.timeBlockCompletion.upsert({
       where: {
@@ -91,21 +108,47 @@ export async function POST(
     // explícita: converte auto-confirmações do período em explícitas.
     if (validValue === "false") {
       // Desmarcar propaga no sentido reverso: reavalia as entidades
-      // conectadas e reabre as que ficaram com conexões insatisfeitas.
+      // conectadas e reabre as que ficaram com conexões insatisfeitas;
+      // hábitos perdem apenas as conclusões automáticas do período.
       await reversePropagateForBlock(tx, user.id, timeBlock.id, tzOffsetMinutes);
+      await revertAutoHabitCompletionsForBlock(
+        tx,
+        user.id,
+        timeBlock.id,
+        tzOffsetMinutes,
+      );
+      await removeXpForRef(tx, user.id, "block.confirm", xpRef);
     } else {
-      // Bloco confirmado propaga para as entidades conectadas (quando todas
-      // as conexões da entidade estiverem satisfeitas).
+      // Bloco confirmado propaga para TODAS as entidades conectadas (tarefas,
+      // sub-tarefas e hábitos bons) quando suas conexões estiverem satisfeitas.
       await completeEntitiesForBlock(
         tx,
         user.id,
         timeBlock.id,
         tzOffsetMinutes,
       );
+      await awardXpOnce(tx, user.id, "block.confirm", xpAmount, xpRef);
     }
 
-    return saved;
+    // Dia 100% da rotina ativa: concede/remove conforme o estado atual.
+    await syncRoutineDayFullXp(tx, user.id, tzOffsetMinutes);
+
+    const stats = await loadGamificationStats(tx, user.id, tzOffsetMinutes);
+    const newlyUnlocked = await evaluateAchievements(
+      tx,
+      user.id,
+      stats,
+    );
+
+    return { saved, newlyUnlocked };
   });
 
-  return NextResponse.json({ completion, period });
+  return NextResponse.json({
+    completion: completion.saved,
+    period,
+    gamification:
+      completion.newlyUnlocked.length > 0
+        ? { unlocked: completion.newlyUnlocked }
+        : undefined,
+  });
 }

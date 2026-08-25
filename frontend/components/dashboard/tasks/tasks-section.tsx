@@ -75,7 +75,10 @@ export function TasksSection() {
     <section className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight">{t("title")}</h2>
+          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <ListChecks className="size-5" />
+            {t("title")}
+          </h2>
           <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
 

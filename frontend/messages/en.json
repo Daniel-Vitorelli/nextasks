@@ -1,4 +1,9 @@
 {
+  "common": {
+    "close": "Close",
+    "loading": "Loading",
+    "toggleTheme": "Toggle theme"
+  },
   "home": {
     "meta": {
       "title": "NexTasks",
@@ -102,10 +107,146 @@
     }
   },
   "app": {
+    "gamification": {
+      "eyebrow": "Progress",
+      "title": "Gamification",
+      "subtitle": "Your XP, achievements and ranks in one place.",
+      "xpGained": "+{amount} XP",
+      "xpLost": "−{amount} XP",
+      "nextRankIn": "{levels} level(s) to the next rank",
+      "xpToNext": "{amount} XP to the next level",
+      "unlocked": "Unlocked",
+      "unlockedLabel": "Unlocked",
+      "levelUp": "Level {level}!",
+      "rankLadder": "Rank ladder",
+      "rankMinLevel": "From level {level}",
+      "rankLabel": "Current rank",
+      "filters": {
+        "allTiers": "All tiers",
+        "allStatus": "All",
+        "unlocked": "Unlocked",
+        "locked": "Locked",
+        "noResults": "No achievements match the filters."
+      },
+      "breakdown": {
+        "title": "XP breakdown",
+        "empty": "No XP distributed yet."
+      },
+      "records": {
+        "title": "Records",
+        "currentLabel": "now",
+        "bestLabel": "best",
+        "routineStreak": "Routine streak",
+        "cleanStreak": "Clean streak (bad habits)"
+      },
+      "tabs": {
+        "achievements": "Achievements",
+        "history": "History",
+        "how": "How to earn"
+      },
+      "tiers": {
+        "bronze": "Bronze",
+        "silver": "Silver",
+        "gold": "Gold",
+        "platinum": "Platinum"
+      },
+      "ranks": {
+        "iniciante": "Beginner",
+        "aprendiz": "Apprentice",
+        "bronze": "Bronze",
+        "prata": "Silver",
+        "ouro": "Gold",
+        "platina": "Platinum",
+        "diamante": "Diamond",
+        "lendario": "Legendary"
+      },
+      "history": {
+        "empty": "No XP events yet.",
+        "day": {
+          "today": "Today",
+          "yesterday": "Yesterday"
+        },
+        "filters": {
+          "all": "Everything",
+          "gains": "Gains",
+          "losses": "Losses"
+        },
+        "kinds": {
+          "blockConfirm": "Block confirmed",
+          "taskDone": "Task completed",
+          "subtaskDone": "Subtask completed",
+          "habitConfirm": "Habit checked in",
+          "habitTarget": "Habit target reached",
+          "habitSlip": "Relapse logged",
+          "routineDayFull": "100% routine day",
+          "achievement": "Achievement unlocked"
+        }
+      },
+      "how": {
+        "title": "How to earn XP",
+        "footnote": "Undoing an action removes its XP. Achievements grant tier bonuses: bronze +50, silver +100, gold +250, platinum +500.",
+        "rows": {
+          "blockChecklist": "Confirm block (checkbox)",
+          "blockScore": "Per score point on block (1–10)",
+          "taskDone": "Complete task",
+          "subtaskDone": "Complete subtask",
+          "habitConfirm": "Check in good habit",
+          "habitTargetBonus": "Hit habit target for the period",
+          "habitSlip": "Log relapse (bad habit)",
+          "routineDayFull": "Day with all blocks confirmed"
+        }
+      },
+      "achievements": {
+        "first-block": { "name": "First step", "description": "Confirm your first time block." },
+        "block-10": { "name": "Rhythm", "description": "Confirm 10 time blocks." },
+        "block-50": { "name": "Consistency", "description": "Confirm 50 time blocks." },
+        "block-250": { "name": "Machine", "description": "Confirm 250 time blocks." },
+        "perfect-day": { "name": "Perfect day", "description": "Have a day with all blocks confirmed." },
+        "streak-week-full": { "name": "Week on fire", "description": "7 consecutive 100% routine days." },
+        "first-task": { "name": "One less", "description": "Complete your first task." },
+        "task-10": { "name": "Productive", "description": "Complete 10 tasks." },
+        "task-50": { "name": "Unstoppable", "description": "Complete 50 tasks." },
+        "architect": { "name": "Architect", "description": "Keep 5 active links between entities and blocks." },
+        "subtask-25": { "name": "Detail-oriented", "description": "Complete 25 subtasks." },
+        "first-checkin": { "name": "Check-in!", "description": "Reach a habit target for the first time." },
+        "checkin-7": { "name": "On schedule", "description": "Reach habit targets on 7 days." },
+        "checkin-30": { "name": "Root habit", "description": "Reach habit targets on 30 days." },
+        "three-good-habits": { "name": "Trinity of good", "description": "Have 3 active good habits." },
+        "clean-week": { "name": "Clean week", "description": "7 consecutive days without relapse on a bad habit." },
+        "clean-month": { "name": "Clean month", "description": "30 consecutive days without relapse on a bad habit." },
+        "battling-two": { "name": "Two fronts", "description": "Fight 2 bad habits at the same time." },
+        "resilience": { "name": "Resilience", "description": "After a relapse, reach 7 clean days in a row." },
+        "xp-1000": { "name": "Thousand", "description": "Accumulate 1,000 XP." },
+        "xp-10000": { "name": "Ten thousand", "description": "Accumulate 10,000 XP." },
+        "level-5": { "name": "Level 5", "description": "Reach level 5." },
+        "level-10": { "name": "Level 10", "description": "Reach level 10." },
+        "level-15": { "name": "Level 15", "description": "Reach level 15." },
+        "level-25": { "name": "Level 25", "description": "Reach level 25." },
+        "first-link": { "name": "Link", "description": "Create your first connection between entity and block." },
+        "link-10": { "name": "Web", "description": "Keep 10 active connections." },
+        "perfect-10": { "name": "Perfect ten", "description": "Score a 10 on 10 block confirmations." },
+        "perfect-50": { "name": "Perfectionist", "description": "Score a 10 on 50 confirmations." },
+        "task-100": { "name": "Centurion", "description": "Complete 100 tasks." },
+        "subtask-100": { "name": "Centipede", "description": "Complete 100 subtasks." },
+        "checkin-100": { "name": "Hundreds of check-ins", "description": "Reach habit targets on 100 days." },
+        "clean-90": { "name": "Ninety clean", "description": "90 consecutive days without relapse on a bad habit." },
+        "block-500": { "name": "Unbreakable", "description": "Confirm 500 time blocks." },
+        "perfect-days-50": { "name": "Half a perfect year", "description": "Accumulate 50 days at 100% in your routine." },
+        "streak-month-full": { "name": "Month on fire", "description": "30 consecutive 100% routine days." },
+        "link-25": { "name": "Master web", "description": "Keep 25 active connections." },
+        "five-good-habits": { "name": "Good five", "description": "Have 5 active good habits." },
+        "checkin-500": { "name": "Five hundred check-ins", "description": "Reach habit targets on 500 days." },
+        "clean-60": { "name": "Two clean months", "description": "60 consecutive days without relapse on a bad habit." },
+        "level-20": { "name": "Level 20", "description": "Reach level 20." },
+        "level-40": { "name": "Level 40", "description": "Reach level 40." },
+        "xp-50000": { "name": "Dragon hoard", "description": "Accumulate 50,000 XP." }
+      }
+    },
 "dock": {
       "dashboard": "Dashboard",
       "social": "Social",
       "home": "Home",
+      "gamification": "Gamification",
       "calendar": "Calendar",
       "ai": "AI",
       "config": "Settings"
@@ -118,7 +259,8 @@
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
       "weekView": "Week",
-      "dayView": "Day",
+        "dayView": "Day",
+        "monthView": "Month",
       "empty": "No activities scheduled for this period.",
       "loadError": "Could not load the calendar."
     },
@@ -434,10 +576,28 @@
       "connections": {
         "blocksSection": "Time blocks",
         "entitiesSection": "Tasks and subtasks",
+        "groupTasks": "Tasks",
+        "groupSubtasks": "Subtasks",
+        "groupHabits": "Habits",
+        "addMore": "Add...",
+        "onlyBadHabits": "Bad habits don't participate in connections.",
         "noBlocks": "No time blocks available.",
         "noTasks": "No tasks or subtasks available.",
         "loading": "Loading…",
         "taskBadge": "Task",
+        "subtaskBadge": "Subtask",
+        "habitBadge": "Habit",
+        "orphanBlockTitle": "Removed block — review or delete these links",
+        "tabLinks": "Links",
+        "tabExplorer": "Explorer",
+        "linksEmptyTitle": "No links yet",
+        "linksEmptyDescription": "Connect tasks, subtasks and habits to time blocks in the Explorer tab.",
+        "goToExplorer": "Open explorer",
+        "showOptions": "Show connection options",
+        "hideOptions": "Hide connection options",
+        "removeConnection": "Remove connection",
+        "removedEntity": "Removed entity",
+        "groupSummary": "{satisfied}/{total} satisfied",
         "hintEntity": "A confirmed block completes the task/subtask when all its connections are satisfied; a completed entity confirms the blocks of the current period. Confirmations count from the moment the connection is created.",
         "hintBlock": "Completing the task/subtask confirms the block in the current period; a confirmed block completes the entity when all connections are satisfied. Confirmations count from the moment the connection is created.",
         "search": "Search…",
@@ -482,7 +642,7 @@
     },
     "connections": {
       "title": "Connections",
-      "description": "Link tasks and subtasks to time blocks: once the block is confirmed the required number of times, the connected entity is completed automatically.",
+      "description": "Link tasks, subtasks and habits to time blocks: confirming a block automatically advances the connected entity.",
       "manage": "Manage connections",
       "empty": {
         "title": "No connections yet",
@@ -503,12 +663,13 @@
       },
       "how": {
         "connectTitle": "1. Connect",
-        "connectDescription": "Link a task or subtask to a time block — or the other way around.",
+        "connectDescription": "Link a task, subtask or good habit to a time block - or the other way around.",
         "fulfillTitle": "2. Fulfill",
         "fulfillDescription": "Each block confirmation counts toward the connection; once the target is reached, the entity is completed.",
         "automateTitle": "3. Automate",
         "automateDescription": "A completed entity confirms the block in the current period. Confirmations count from the moment the connection is created.",
         "flowTask": "Linked task",
+        "flowHabit": "Good habit",
         "flowBlock": "Block confirmed ×N",
         "flowDone": "Task completed"
       },

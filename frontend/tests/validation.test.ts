@@ -15,26 +15,31 @@ describe("parseConnectionInput", () => {
     expect(input).toEqual({
       taskId: "t1",
       subtaskId: null,
+      habitId: null,
       timeBlockId: "b1",
       requiredCount: 1,
       dayFilter: "all",
     });
   });
 
-  it("aceita conexão com subtask", () => {
+  it("aceita conexão com hábito", () => {
     const input = parseConnectionInput({
-      subtaskId: "s1",
+      habitId: "h1",
       timeBlockId: "b1",
-      requiredCount: 3,
-      dayFilter: "weekday:2",
     });
-    expect(input).not.toBeNull();
-    expect(input!.subtaskId).toBe("s1");
-    expect(input!.requiredCount).toBe(3);
+    expect(input).toEqual({
+      taskId: null,
+      subtaskId: null,
+      habitId: "h1",
+      timeBlockId: "b1",
+      requiredCount: 1,
+      dayFilter: "all",
+    });
   });
 
-  it("rejeita XOR violado (ambos ou nenhum)", () => {
+  it("rejeita XOR violado (duas ou nenhuma entidade)", () => {
     expect(parseConnectionInput({ taskId: "t1", subtaskId: "s1", timeBlockId: "b1" })).toBeNull();
+    expect(parseConnectionInput({ taskId: "t1", habitId: "h1", timeBlockId: "b1" })).toBeNull();
     expect(parseConnectionInput({ timeBlockId: "b1" })).toBeNull();
   });
 

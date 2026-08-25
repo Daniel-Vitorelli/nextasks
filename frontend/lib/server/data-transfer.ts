@@ -98,6 +98,7 @@ export async function buildDataExport(userId: string): Promise<DataExport> {
     connections: connections.map((row) => ({
       taskId: row.taskId,
       subtaskId: row.subtaskId,
+      habitId: row.habitId,
       timeBlockId: row.timeBlockId,
       requiredCount: row.requiredCount,
       dayFilter: row.dayFilter as DataExport["connections"][number]["dayFilter"],
@@ -243,6 +244,26 @@ export async function importDataExport(
       });
     }
 
+    const habitIds = new Map<string, string>();
+    for (const habit of payload.habits) {
+      const id = randomUUID();
+      habitIds.set(habit.id, id);
+      await tx.habit.create({
+        data: {
+          id,
+          userId,
+          name: habit.name,
+          description: habit.description,
+          icon: habit.icon,
+          color: habit.color,
+          type: habit.type,
+          frequency: habit.frequency,
+          daysOfWeek: habit.daysOfWeek,
+          targetCount: habit.targetCount,
+        },
+      });
+    }
+
     for (const connection of payload.connections) {
       const timeBlockId = timeBlockIds.get(connection.timeBlockId);
       if (!timeBlockId) throw new Error("Time block reference not found");
@@ -252,11 +273,15 @@ export async function importDataExport(
       const subtaskId = connection.subtaskId
         ? subtaskIds.get(connection.subtaskId)
         : undefined;
+      const habitId = connection.habitId
+        ? habitIds.get(connection.habitId)
+        : undefined;
       await tx.taskBlockConnection.create({
         data: {
           userId,
           taskId: taskId ?? null,
           subtaskId: subtaskId ?? null,
+          habitId: habitId ?? null,
           timeBlockId,
           requiredCount: connection.requiredCount,
           dayFilter: connection.dayFilter,
@@ -282,26 +307,6 @@ export async function importDataExport(
             subtaskIds,
           ),
           updatedAt: new Date(completion.updatedAt),
-        },
-      });
-    }
-
-    const habitIds = new Map<string, string>();
-    for (const habit of payload.habits) {
-      const id = randomUUID();
-      habitIds.set(habit.id, id);
-      await tx.habit.create({
-        data: {
-          id,
-          userId,
-          name: habit.name,
-          description: habit.description,
-          icon: habit.icon,
-          color: habit.color,
-          type: habit.type,
-          frequency: habit.frequency,
-          daysOfWeek: habit.daysOfWeek,
-          targetCount: habit.targetCount,
         },
       });
     }

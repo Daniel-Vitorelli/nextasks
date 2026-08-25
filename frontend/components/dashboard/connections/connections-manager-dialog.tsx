@@ -6,14 +6,15 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Link2,
   ListChecks,
   Minus,
   Plus,
-  Repeat2,
   Search,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import { LUCIDE_ICON_MAP } from "@/lib/lucide-icons";
 import { useConnections } from "@/components/connections/connections-provider";
 import {
   blockRecurrence,
@@ -52,10 +54,10 @@ import {
   blockBorderClass,
   blockTintClass,
   blockTextClass,
-  solidTextOnColor,
 } from "@/components/connections/connection-colors";
 import type {
   ConnectionCatalogBlock,
+  ConnectionCatalogHabit,
   ConnectionCatalogSubtask,
   ConnectionCatalogTask,
   ConnectionPatch,
@@ -83,11 +85,13 @@ export function ConnectionsManagerDialog({
   );
 }
 
+type Tab = "links" | "explorer";
+
 function DialogBody() {
   const t = useTranslations("dashboard.connections");
   const tc = useTranslations("dashboard.tasks.connections");
   const { data, isLoading } = useConnections();
-  const [tab, setTab] = React.useState<"blocks" | "entities">("blocks");
+  const [tab, setTab] = React.useState<Tab>("links");
   const [search, setSearch] = React.useState("");
 
   const query = search.trim().toLowerCase();
@@ -116,16 +120,16 @@ function DialogBody() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="bg-muted/60 flex items-center gap-1 rounded-lg p-1">
                 <TabButton
-                  active={tab === "blocks"}
-                  onClick={() => setTab("blocks")}
+                  active={tab === "links"}
+                  onClick={() => setTab("links")}
                 >
-                  {t("tabBlocks")}
+                  {tc("tabLinks")}
                 </TabButton>
                 <TabButton
-                  active={tab === "entities"}
-                  onClick={() => setTab("entities")}
+                  active={tab === "explorer"}
+                  onClick={() => setTab("explorer")}
                 >
-                  {t("tabEntities")}
+                  {tc("tabExplorer")}
                 </TabButton>
               </div>
 
@@ -141,10 +145,10 @@ function DialogBody() {
               </div>
             </div>
 
-            {tab === "blocks" ? (
-              <BlocksTab matches={matches} />
+            {tab === "links" ? (
+              <LinksTab matches={matches} onGoToExplorer={() => setTab("explorer")} />
             ) : (
-              <EntitiesTab matches={matches} />
+              <ExplorerTab matches={matches} />
             )}
           </>
         )}
@@ -179,85 +183,45 @@ function TabButton({
 }
 
 function HowItWorks() {
-  const t = useTranslations("dashboard.connections");
-  const steps = [
-    {
-      icon: Link2,
-      title: t("how.connectTitle"),
-      text: t("how.connectDescription"),
-      tone: "text-primary",
-    },
-    {
-      icon: Repeat2,
-      title: t("how.fulfillTitle"),
-      text: t("how.fulfillDescription"),
-      tone: "text-amber-600 dark:text-amber-400",
-    },
-    {
-      icon: Sparkles,
-      title: t("how.automateTitle"),
-      text: t("how.automateDescription"),
-      tone: "text-emerald-600 dark:text-emerald-400",
-    },
-  ];
-
   return (
-    <div className="space-y-3">
-      <div className="border-border/60 bg-muted/30 flex flex-wrap items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2.5">
-        <FlowBox
-          icon={<ListChecks className="size-3.5" />}
-          label={t("how.flowTask")}
-          tone="bg-event-blue-bg text-event-blue"
-        />
-        <ArrowRight className="text-muted-foreground size-4 shrink-0" />
-        <FlowBox
-          icon={<Clock className="size-3.5" />}
-          label={t("how.flowBlock")}
-          tone="bg-event-purple-bg text-event-purple"
-        />
-        <ArrowRight className="text-muted-foreground size-4 shrink-0" />
-        <FlowBox
-          icon={<CheckCircle2 className="size-3.5" />}
-          label={t("how.flowDone")}
-          tone="bg-event-green-bg text-event-green"
-        />
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-3">
-        {steps.map((step) => (
-          <div
-            key={step.title}
-            className="bg-muted/50 flex items-start gap-2.5 rounded-lg p-3"
-          >
-            <span
-              className={cn(
-                "bg-background flex size-6 shrink-0 items-center justify-center rounded-full shadow-sm",
-              )}
-            >
-              <step.icon className={cn("size-3.5", step.tone)} />
-            </span>
-            <div className="space-y-0.5">
-              <p className="text-xs font-semibold">{step.title}</p>
-              <p className="text-muted-foreground text-[11px] leading-snug">
-                {step.text}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="border-border/60 bg-muted/30 flex flex-wrap items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2.5">
+      <FlowBox
+        icon={<ListChecks className="size-3.5" />}
+        labelKey="how.flowTask"
+        tone="bg-event-blue-bg text-event-blue"
+      />
+      <ArrowRight className="text-muted-foreground size-4 shrink-0" />
+      <FlowBox
+        icon={<Sparkles className="size-3.5" />}
+        labelKey="how.flowHabit"
+        tone="bg-event-orange-bg text-event-orange"
+      />
+      <ArrowRight className="text-muted-foreground size-4 shrink-0" />
+      <FlowBox
+        icon={<Clock className="size-3.5" />}
+        labelKey="how.flowBlock"
+        tone="bg-event-purple-bg text-event-purple"
+      />
+      <ArrowRight className="text-muted-foreground size-4 shrink-0" />
+      <FlowBox
+        icon={<CheckCircle2 className="size-3.5" />}
+        labelKey="how.flowDone"
+        tone="bg-event-green-bg text-event-green"
+      />
     </div>
   );
 }
 
 function FlowBox({
   icon,
-  label,
+  labelKey,
   tone,
 }: {
   icon: React.ReactNode;
-  label: string;
+  labelKey: string;
   tone: string;
 }) {
+  const t = useTranslations("dashboard.connections");
   return (
     <span
       className={cn(
@@ -266,7 +230,7 @@ function FlowBox({
       )}
     >
       {icon}
-      {label}
+      {t(labelKey)}
     </span>
   );
 }
@@ -281,9 +245,12 @@ function StatsRow() {
       (connection) => connection.confirmedCount >= connection.requiredCount,
     ).length ?? 0;
   const entities = new Set(
-    data?.connections.flatMap((connection) =>
-      connection.taskId ?? connection.subtaskId ?? [],
-    ),
+    data?.connections.map((connection) =>
+      connection.taskId ??
+      connection.subtaskId ??
+      connection.habitId ??
+      "",
+    ).filter((key) => key !== ""),
   ).size;
 
   const stats = [
@@ -338,123 +305,165 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Mini linha do tempo da semana: destaca os dias em que o bloco ocorre. */
-function WeekStrip({
-  frequency,
-  weekday,
-  color,
-}: {
-  frequency: Frequency;
-  weekday: number;
-  color: EventColor;
-}) {
-  const t = useTranslations("dashboard.tasks.connections");
-  const solid = blockBorderClass(color);
-  const text = solidTextOnColor[color];
+/* ------------------------------------------------------------------ */
+/* Aba Vinculações: conexões ativas agrupadas por bloco                 */
+/* ------------------------------------------------------------------ */
 
-  return (
-    <div
-      className="flex items-center gap-1"
-      aria-label={t(frequency === "weekly" ? "recurrenceWeekly" : "recurrenceDaily")}
-    >
-      {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-        const isBlockDay = day === weekday;
-        const daily = frequency === "daily";
-        return (
-          <span
-            key={day}
-            title={t(`weekday_${day}`)}
-            className={cn(
-              "flex size-5 items-center justify-center rounded-full text-[9px] font-semibold",
-              daily
-                ? cn(blockTintClass(color), blockTextClass(color))
-                : isBlockDay
-                  ? cn(solid, text)
-                  : "bg-muted text-muted-foreground",
-            )}
-          >
-            {t(`weekdayShort_${day}`)}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-function BlocksTab({
+function LinksTab({
   matches,
+  onGoToExplorer,
 }: {
   matches: (title: string) => boolean;
+  onGoToExplorer: () => void;
 }) {
   const t = useTranslations("dashboard.tasks.connections");
   const { data } = useConnections();
 
   if (!data) return null;
-  if (data.blocks.length === 0) return <EmptyHint>{t("noBlocks")}</EmptyHint>;
 
-  const blocks = data.blocks.filter((block) => matches(block.title));
-  if (blocks.length === 0) return <EmptyHint>{t("noMatches")}</EmptyHint>;
+  if (data.connections.length === 0) {
+    return (
+      <div className="border-border/60 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-12 text-center">
+        <div className="bg-muted flex size-12 items-center justify-center rounded-full">
+          <Link2 className="text-muted-foreground size-5" />
+        </div>
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium">{t("linksEmptyTitle")}</p>
+          <p className="text-muted-foreground text-sm">
+            {t("linksEmptyDescription")}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onGoToExplorer}>
+          <Search className="size-3.5" />
+          {t("goToExplorer")}
+        </Button>
+      </div>
+    );
+  }
+
+  // Busca casa com o título do bloco OU da entidade vinculada.
+  const entityTitle = (connection: TaskBlockConnection): string => {
+    if (connection.taskId) {
+      return (
+        data.tasks.find((task) => task.id === connection.taskId)?.title ?? ""
+      );
+    }
+    if (connection.subtaskId) {
+      return (
+        data.subtasks.find((s) => s.id === connection.subtaskId)?.title ?? ""
+      );
+    }
+    return (
+      data.habits.find((habit) => habit.id === connection.habitId)?.name ?? ""
+    );
+  };
+  const visible = data.connections.filter(
+    (connection) =>
+      matches(entityTitle(connection)) ||
+      matches(
+        data.blocks.find((block) => block.id === connection.timeBlockId)
+          ?.title ?? "",
+      ),
+  );
+  if (visible.length === 0) return <EmptyHint>{t("noMatches")}</EmptyHint>;
+
+  // Agrupa por bloco preservando a ordem do catálogo; pendentes primeiro.
+  // Conexões cujo bloco sumiu ganham grupo próprio para poderem ser removidas.
+  const byBlock = new Map<string | null, TaskBlockConnection[]>();
+  for (const connection of visible) {
+    const list = byBlock.get(connection.timeBlockId) ?? [];
+    list.push(connection);
+    byBlock.set(connection.timeBlockId, list);
+  }
+
+  const groups = [...byBlock.entries()].map(([blockId, connections]) => ({
+    block: data.blocks.find((block) => block.id === blockId) ?? null,
+    connections: [...connections].sort(
+      (a, b) =>
+        Number(a.confirmedCount >= a.requiredCount) -
+        Number(b.confirmedCount >= b.requiredCount),
+    ),
+  }));
 
   return (
     <div className="space-y-3">
-      {blocks.map((block) => {
-        const tasks = data.tasks.filter((task) => matches(task.title));
-        const subtasks = data.subtasks.filter((subtask) =>
-          matches(subtask.title),
-        );
-        const disabled =
-          block.confirmation === "none" || !block.routineActive;
-        return (
-          <BlockCard
-            key={block.id}
-            block={block}
-            tasks={tasks}
-            subtasks={subtasks}
-            disabled={disabled}
+      {groups.map(({ block, connections }) =>
+        block ? (
+          <LinkGroup key={block.id} block={block} connections={connections} />
+        ) : (
+          <OrphanLinkGroup
+            key="orphan"
+            connections={connections}
           />
-        );
-      })}
+        ),
+      )}
     </div>
   );
 }
 
-function BlockCard({
-  block,
-  tasks,
-  subtasks,
-  disabled,
+function OrphanLinkGroup({
+  connections,
 }: {
-  block: ConnectionCatalogBlock;
-  tasks: ConnectionCatalogTask[];
-  subtasks: ConnectionCatalogSubtask[];
-  disabled: boolean;
+  connections: TaskBlockConnection[];
 }) {
   const t = useTranslations("dashboard.tasks.connections");
-  const tc = useTranslations("dashboard.routines.calendar");
-  const { data, toggleConnection, updateConnection } = useConnections();
+  const { toggleConnection } = useConnections();
 
-  const findConnection = (
-    taskId?: string | null,
-    subtaskId?: string | null,
-  ): TaskBlockConnection | undefined => {
-    if (!data) return undefined;
-    return data.connections.find(
-      (connection) =>
-        connection.timeBlockId === block.id &&
-        (taskId
-          ? connection.taskId === taskId
-          : connection.subtaskId === subtaskId),
-    );
-  };
+  return (
+    <div className="border-destructive/30 bg-destructive/5 relative overflow-hidden rounded-xl border p-3.5">
+      <span className="bg-destructive/40 absolute inset-y-0 left-0 w-1.5" />
+      <p className="text-destructive mb-2 pl-2 text-xs font-semibold">
+        {t("orphanBlockTitle")}
+      </p>
+      <ul className="space-y-1.5 pl-2">
+        {connections.map((connection) => (
+          <li
+            key={connection.id}
+            className="border-border/70 bg-background/80 flex items-center gap-2.5 rounded-lg border px-2.5 py-1.5"
+          >
+            <span className="min-w-0 flex-1 truncate text-sm">
+              {connection.taskId
+                ? t("taskBadge")
+                : connection.subtaskId
+                  ? t("subtaskBadge")
+                  : t("habitBadge")}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="text-muted-foreground hover:text-destructive"
+              aria-label={t("removeConnection")}
+              onClick={() =>
+                void toggleConnection({
+                  taskId: connection.taskId,
+                  subtaskId: connection.subtaskId,
+                  habitId: connection.habitId,
+                  timeBlockId: connection.timeBlockId,
+                })
+              }
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
-  const updateFor = (
-    connection: TaskBlockConnection | undefined,
-    patch: ConnectionPatch,
-  ) => {
-    if (connection) void updateConnection(connection.id, patch);
-  };
+function LinkGroup({
+  block,
+  connections,
+}: {
+  block: ConnectionCatalogBlock;
+  connections: TaskBlockConnection[];
+}) {
+  const t = useTranslations("dashboard.tasks.connections");
+  const { toggleConnection } = useConnections();
 
-  const noEntities = tasks.length === 0 && subtasks.length === 0;
+  const satisfiedCount = connections.filter(
+    (connection) => connection.confirmedCount >= connection.requiredCount,
+  ).length;
 
   return (
     <div
@@ -470,139 +479,388 @@ function BlockCard({
         )}
       />
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 pl-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2 pl-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                "size-2.5 shrink-0 rounded-full",
-                blockBorderClass(block.color),
-              )}
-            />
-            <p className="truncate text-sm font-semibold">{block.title}</p>
-          </div>
-          <p className="text-muted-foreground truncate text-xs pl-[18px]">
-            {block.routineName}
+          <p className="truncate text-sm font-semibold">{block.title}</p>
+          <p className="text-muted-foreground truncate text-xs">
+            {block.routineName} ·{" "}
+            {blockRecurrence(block.frequency, block.weekday, t)}
           </p>
         </div>
-        <Chip tone="muted">
-          {tc(`confirmationOption_${block.confirmation}`)}
-        </Chip>
-        {!block.routineActive && (
-          <Chip tone="warning">{t("routineInactive")}</Chip>
-        )}
-      </div>
-
-      <div className="mb-3 flex flex-wrap items-center gap-3 pl-2">
-        <WeekStrip
-          frequency={block.frequency}
-          weekday={block.weekday}
-          color={block.color}
-        />
         <span className="text-muted-foreground flex items-center gap-1 text-[11px]">
           <Clock className="size-3" />
           {formatClockTime(block.startMinutes)}
         </span>
-        <span className="text-muted-foreground text-[11px]">
-          · {blockRecurrence(block.frequency, block.weekday, t)}
-        </span>
       </div>
 
-      <div className="space-y-2">
-        {tasks.map((task) => (
-          <ConnectionRow
-            key={task.id}
-            title={task.title}
-            subtitle={t("taskBadge")}
-            accentColor={block.color}
-            connection={findConnection(task.id, null)}
-            disabled={disabled}
-            frequency={block.frequency}
-            blockWeekday={block.weekday}
-            color={block.color}
-            onToggle={() =>
+      <ul className="space-y-1.5 pl-2">
+        {connections.map((connection) => (
+          <LinkRow
+            key={connection.id}
+            connection={connection}
+            onRemove={() =>
               void toggleConnection({
-                taskId: task.id,
-                timeBlockId: block.id,
+                taskId: connection.taskId,
+                subtaskId: connection.subtaskId,
+                habitId: connection.habitId,
+                timeBlockId: connection.timeBlockId,
               })
-            }
-            onUpdate={(patch) =>
-              updateFor(findConnection(task.id, null), patch)
             }
           />
         ))}
-        {subtasks.map((subtask) => (
-          <ConnectionRow
-            key={subtask.id}
-            title={subtask.title}
-            subtitle={subtask.taskTitle}
-            accentColor={block.color}
-            connection={findConnection(null, subtask.id)}
-            disabled={disabled}
-            frequency={block.frequency}
-            blockWeekday={block.weekday}
-            color={block.color}
-            onToggle={() =>
-              void toggleConnection({
-                subtaskId: subtask.id,
-                timeBlockId: block.id,
-              })
-            }
-            onUpdate={(patch) =>
-              updateFor(findConnection(null, subtask.id), patch)
-            }
-          />
-        ))}
-        {noEntities && (
-          <p className="text-muted-foreground px-2 py-1 text-xs">
-            {t("noMatches")}
-          </p>
-        )}
-      </div>
+      </ul>
+
+      <p className="text-muted-foreground px-2 pt-2 text-[10px]">
+        {t("groupSummary", {
+          satisfied: satisfiedCount,
+          total: connections.length,
+        })}
+      </p>
     </div>
   );
 }
 
-function EntitiesTab({
-  matches,
+function LinkRow({
+  connection,
+  onRemove,
 }: {
-  matches: (title: string) => boolean;
+  connection: TaskBlockConnection;
+  onRemove: () => void;
 }) {
+  const t = useTranslations("dashboard.tasks.connections");
+  const { data, updateConnection } = useConnections();
+  const [optionsOpen, setOptionsOpen] = React.useState(false);
+
+  const task = data?.tasks.find((item) => item.id === connection.taskId);
+  const subtask = data?.subtasks.find(
+    (item) => item.id === connection.subtaskId,
+  );
+  const habit = data?.habits.find((item) => item.id === connection.habitId);
+
+  const title =
+    habit?.name ?? subtask?.title ?? task?.title ?? t("removedEntity");
+  const subtitle = subtask
+    ? subtask.taskTitle
+    : habit
+      ? t("habitBadge")
+      : task
+        ? t("taskBadge")
+        : "";
+
+  let iconNode: React.ReactNode;
+  let iconTone: string | undefined;
+  if (habit) {
+    const HabitIcon = LUCIDE_ICON_MAP[habit.icon];
+    iconNode = HabitIcon ? <HabitIcon className="size-3.5" /> : null;
+    iconTone = cn(blockTintClass(habit.color), blockTextClass(habit.color));
+  } else {
+    iconNode = <ListChecks className="size-3.5" />;
+    iconTone = "bg-event-blue-bg text-event-blue";
+  }
+
+  const block = data?.blocks.find(
+    (item) => item.id === connection.timeBlockId,
+  );
+
+  return (
+    <li className="border-border/70 bg-background/80 rounded-lg border px-2.5 py-1.5 transition-colors">
+      <div className="flex items-center gap-2.5">
+        <span
+          className={cn(
+            "flex size-5 shrink-0 items-center justify-center rounded-sm",
+            iconTone,
+          )}
+        >
+          {iconNode}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium">{title}</span>
+          </span>
+          <span className="text-muted-foreground block truncate text-xs">
+            {subtitle}
+          </span>
+        </span>
+        <StatusChip connection={connection} />
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-expanded={optionsOpen}
+          aria-label={optionsOpen ? t("hideOptions") : t("showOptions")}
+          onClick={() => setOptionsOpen((open) => !open)}
+        >
+          <ChevronDown
+            className={cn(
+              "size-3.5 transition-transform",
+              optionsOpen && "rotate-180",
+            )}
+          />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground hover:text-destructive"
+          aria-label={t("removeConnection")}
+          onClick={onRemove}
+        >
+          <Trash2 className="size-3.5" />
+        </Button>
+      </div>
+
+      {optionsOpen && block && (
+        <ConnectionOptionsPanel
+          connection={connection}
+          frequency={block.frequency}
+          blockWeekday={block.weekday}
+          color={block.color}
+          onUpdate={(patch) => void updateConnection(connection.id, patch)}
+        />
+      )}
+    </li>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Aba Explorador: entidade -> blocos                                   */
+/* ------------------------------------------------------------------ */
+
+function ExplorerTab({ matches }: { matches: (title: string) => boolean }) {
   const t = useTranslations("dashboard.tasks.connections");
   const { data } = useConnections();
 
   if (!data) return null;
+
+  const goodHabits = data.habits.filter((habit) => habit.type === "good");
+  const badOnly =
+    data.habits.length > 0 &&
+    goodHabits.length === 0 &&
+    data.tasks.length === 0 &&
+    data.subtasks.length === 0;
+
   const taskIdsWithMatchedSubtasks = new Set(
     data.subtasks
       .filter((subtask) => matches(subtask.title))
       .map((s) => s.taskId),
   );
-  const tasks = data.tasks.filter(
-    (task) => matches(task.title) || taskIdsWithMatchedSubtasks.has(task.id),
+
+  // Busca por título de bloco também superfície as entidades vinculadas a ele.
+  const matchedBlockIds = new Set(
+    data.blocks.filter((block) => matches(block.title)).map((b) => b.id),
+  );
+  const entityIdsOnMatchedBlocks = new Set(
+    data.connections
+      .filter((connection) => matchedBlockIds.has(connection.timeBlockId))
+      .map((connection) =>
+        connection.taskId ?? connection.subtaskId ?? connection.habitId ?? "",
+      )
+      .filter((key) => key !== ""),
   );
 
-  if (data.tasks.length === 0 && data.subtasks.length === 0) {
+  const tasks = data.tasks.filter(
+    (task) =>
+      matches(task.title) ||
+      taskIdsWithMatchedSubtasks.has(task.id) ||
+      entityIdsOnMatchedBlocks.has(task.id),
+  );
+  const habits = goodHabits.filter(
+    (habit) =>
+      matches(habit.name) || entityIdsOnMatchedBlocks.has(habit.id),
+  );
+  // Dentro dos cartões, SEMPRE listamos todos os blocos: a busca seleciona
+  // entidades, não esconde as opções de vínculo delas.
+  const blocks = data.blocks;
+
+  if (data.tasks.length === 0 && data.subtasks.length === 0 && data.habits.length === 0) {
     return <EmptyHint>{t("noTasks")}</EmptyHint>;
   }
-  if (tasks.length === 0) return <EmptyHint>{t("noMatches")}</EmptyHint>;
-
-  const blocks = data.blocks.filter((block) => matches(block.title));
+  if (badOnly) return <EmptyHint>{t("onlyBadHabits")}</EmptyHint>;
+  if (tasks.length === 0 && habits.length === 0) {
+    return <EmptyHint>{t("noMatches")}</EmptyHint>;
+  }
 
   return (
-    <div className="space-y-3">
-      {tasks.map((task) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          subtasks={data.subtasks.filter((subtask) => subtask.taskId === task.id)}
-          blocks={blocks}
-        />
-      ))}
+    <div className="space-y-4">
+      {(tasks.length > 0 || data.subtasks.length > 0) && (
+        <section className="space-y-2">
+          <GroupLabel>{t("groupTasks")}</GroupLabel>
+          {tasks.map((task) => (
+            <TaskEntityCard
+              key={task.id}
+              task={task}
+              subtasks={data.subtasks.filter(
+                (subtask) => subtask.taskId === task.id,
+              )}
+              blocks={blocks}
+            />
+          ))}
+        </section>
+      )}
+
+      {habits.length > 0 && (
+        <section className="space-y-2">
+          <GroupLabel>{t("groupHabits")}</GroupLabel>
+          {habits.map((habit) => (
+            <HabitEntityCard key={habit.id} habit={habit} blocks={blocks} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }
 
-function TaskCard({
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-muted-foreground px-1 text-[10px] font-semibold uppercase tracking-wider">
+      {children}
+    </p>
+  );
+}
+
+function EntityCardShell({
+  iconNode,
+  iconTone,
+  title,
+  badge,
+  meta,
+  expanded,
+  onToggleExpand,
+  connectedCount,
+  children,
+}: {
+  iconNode: React.ReactNode;
+  iconTone: string;
+  title: string;
+  badge?: React.ReactNode;
+  meta?: string;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  connectedCount: number;
+  children: React.ReactNode;
+}) {
+  const t = useTranslations("dashboard.tasks.connections");
+
+  return (
+    <div className="border-border/60 overflow-hidden rounded-xl border bg-card">
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        aria-expanded={expanded}
+        className="hover:bg-muted/40 flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors"
+      >
+        <span
+          className={cn(
+            "flex size-6 shrink-0 items-center justify-center rounded-md",
+            iconTone,
+          )}
+        >
+          {iconNode}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-semibold">{title}</span>
+            {badge}
+          </span>
+          {meta && (
+            <span className="text-muted-foreground block truncate text-xs">
+              {meta}
+            </span>
+          )}
+        </span>
+        {connectedCount > 0 && (
+          <Chip tone="muted">{t("badgeTitle", { count: connectedCount })}</Chip>
+        )}
+        <ChevronDown
+          className={cn(
+            "text-muted-foreground size-4 shrink-0 transition-transform",
+            expanded && "rotate-180",
+          )}
+        />
+      </button>
+      {expanded && <div className="space-y-2 border-t px-3 py-3">{children}</div>}
+    </div>
+  );
+}
+
+function HabitEntityCard({
+  habit,
+  blocks,
+}: {
+  habit: ConnectionCatalogHabit;
+  blocks: ConnectionCatalogBlock[];
+}) {
+  const t = useTranslations("dashboard.tasks.connections");
+  const tHabits = useTranslations("dashboard.habits");
+  const { data, toggleConnection, updateConnection } = useConnections();
+
+  const [expanded, setExpanded] = React.useState(false);
+
+  const IconComponent = LUCIDE_ICON_MAP[habit.icon];
+  const connectedCount = data?.connections.filter(
+    (connection) => connection.habitId === habit.id,
+  ).length ?? 0;
+
+  const meta =
+    habit.frequency === "weekly"
+      ? tHabits("frequency.weekly")
+      : tHabits("frequency.everyday");
+
+  const findConnection = (
+    blockId: string,
+  ): TaskBlockConnection | undefined =>
+    data?.connections.find(
+      (connection) =>
+        connection.timeBlockId === blockId &&
+        connection.habitId === habit.id,
+    );
+
+  const updateFor = (
+    connection: TaskBlockConnection | undefined,
+    patch: ConnectionPatch,
+  ) => {
+    if (connection) void updateConnection(connection.id, patch);
+  };
+
+  return (
+    <EntityCardShell
+      iconNode={IconComponent ? <IconComponent className="size-3.5" /> : null}
+      iconTone={cn(blockTintClass(habit.color), blockTextClass(habit.color))}
+      title={habit.name}
+      meta={meta}
+      expanded={expanded}
+      onToggleExpand={() => setExpanded((value) => !value)}
+      connectedCount={connectedCount}
+    >
+      {blocks.map((block) => {
+        const disabled =
+          block.confirmation === "none" || !block.routineActive;
+        const connection = findConnection(block.id);
+        return (
+          <ConnectionCheckboxRow
+            key={block.id}
+            block={block}
+            checked={!!connection}
+            disabled={disabled}
+            onCheckedChange={() =>
+              void toggleConnection({
+                habitId: habit.id,
+                timeBlockId: block.id,
+              })
+            }
+            connection={connection}
+            onUpdate={(patch) => updateFor(findConnection(block.id), patch)}
+          />
+        );
+      })}
+      {blocks.length === 0 && (
+        <p className="text-muted-foreground px-1 py-1 text-xs">
+          {(data?.blocks.length ?? 0) === 0 ? t("noBlocks") : t("noMatches")}
+        </p>
+      )}
+    </EntityCardShell>
+  );
+}
+
+function TaskEntityCard({
   task,
   subtasks,
   blocks,
@@ -615,19 +873,27 @@ function TaskCard({
   const tTasks = useTranslations("dashboard.tasks");
   const { data, toggleConnection, updateConnection } = useConnections();
 
+  const [expanded, setExpanded] = React.useState(false);
+
+  const subtaskIds = new Set(subtasks.map((subtask) => subtask.id));
+  const connectedCount = data?.connections.filter(
+    (connection) =>
+      connection.taskId === task.id ||
+      (connection.subtaskId !== null &&
+        subtaskIds.has(connection.subtaskId)),
+  ).length ?? 0;
+
   const findConnection = (
     blockId: string,
     subtaskId?: string,
-  ): TaskBlockConnection | undefined => {
-    if (!data) return undefined;
-    return data.connections.find(
+  ): TaskBlockConnection | undefined =>
+    data?.connections.find(
       (connection) =>
         connection.timeBlockId === blockId &&
         (subtaskId
           ? connection.subtaskId === subtaskId
           : connection.taskId === task.id),
     );
-  };
 
   const updateFor = (
     connection: TaskBlockConnection | undefined,
@@ -637,170 +903,165 @@ function TaskCard({
   };
 
   return (
-    <div className="border-border/60 relative overflow-hidden rounded-xl border p-3.5">
-      <span className="bg-event-blue-border absolute inset-y-0 left-0 w-1.5" />
-      <div className="mb-3 flex items-center gap-2 pl-2">
-        <span className="bg-event-blue-bg text-event-blue flex size-6 shrink-0 items-center justify-center rounded-md">
-          <ListChecks className="size-3.5" />
-        </span>
-        <p className="min-w-0 flex-1 truncate text-sm font-semibold">
-          {task.title}
-        </p>
-        {task.done && <Chip tone="success">{tTasks("done")}</Chip>}
-      </div>
+    <EntityCardShell
+      iconNode={<ListChecks className="size-3.5" />}
+      iconTone="bg-event-blue-bg text-event-blue"
+      title={task.title}
+      badge={task.done ? <Chip tone="success">{tTasks("done")}</Chip> : null}
+      expanded={expanded}
+      onToggleExpand={() => setExpanded((value) => !value)}
+      connectedCount={connectedCount}
+    >
+      {blocks.map((block) => {
+        const disabled =
+          block.confirmation === "none" || !block.routineActive;
+        return (
+          <ConnectionCheckboxRow
+            key={block.id}
+            block={block}
+            checked={!!findConnection(block.id)}
+            disabled={disabled}
+            onCheckedChange={() =>
+              void toggleConnection({
+                taskId: task.id,
+                timeBlockId: block.id,
+              })
+            }
+            connection={findConnection(block.id)}
+            onUpdate={(patch) => updateFor(findConnection(block.id), patch)}
+          />
+        );
+      })}
 
-      <div className="space-y-2">
-        {blocks.map((block) => {
-          const disabled =
-            block.confirmation === "none" || !block.routineActive;
-          return (
-            <ConnectionRow
-              key={block.id}
-              title={block.title}
-              subtitle={`${block.routineName} · ${blockRecurrence(
-                block.frequency,
-                block.weekday,
-                t,
-              )}`}
-              accentColor={block.color}
-              connection={findConnection(block.id)}
-              disabled={disabled}
-              frequency={block.frequency}
-              blockWeekday={block.weekday}
-              color={block.color}
-              onToggle={() =>
-                void toggleConnection({
-                  taskId: task.id,
-                  timeBlockId: block.id,
-                })
-              }
-              onUpdate={(patch) =>
-                updateFor(findConnection(block.id), patch)
-              }
-            />
-          );
-        })}
-
-        {subtasks.map((subtask) => (
-          <div key={subtask.id} className="space-y-2">
-            <p className="text-muted-foreground flex items-center gap-1.5 px-1 pt-1 text-[11px] font-medium uppercase tracking-wide">
-              <span className="bg-event-blue-bg text-event-blue flex size-4 items-center justify-center rounded-sm">
-                <ListChecks className="size-2.5" />
-              </span>
-              {subtask.title}
-              {subtask.done && <Chip tone="success">{tTasks("done")}</Chip>}
-            </p>
-            {blocks.map((block) => {
-              const disabled =
-                block.confirmation === "none" || !block.routineActive;
-              return (
-                <ConnectionRow
-                  key={block.id}
-                  title={block.title}
-                  subtitle={`${block.routineName} · ${blockRecurrence(
-                    block.frequency,
-                    block.weekday,
-                    t,
-                  )}`}
-                  accentColor={block.color}
-                  connection={findConnection(block.id, subtask.id)}
-                  disabled={disabled}
-                  frequency={block.frequency}
-                  blockWeekday={block.weekday}
-                  color={block.color}
-                  onToggle={() =>
-                    void toggleConnection({
-                      subtaskId: subtask.id,
-                      timeBlockId: block.id,
-                    })
-                  }
-                  onUpdate={(patch) =>
-                    updateFor(findConnection(block.id, subtask.id), patch)
-                  }
-                />
-              );
-            })}
-          </div>
-        ))}
-
-        {blocks.length === 0 && (
-          <p className="text-muted-foreground px-2 py-1 text-xs">
-            {(data?.blocks.length ?? 0) === 0 ? t("noBlocks") : t("noMatches")}
+      {subtasks.map((subtask) => (
+        <div key={subtask.id} className="space-y-2">
+          <p className="text-muted-foreground flex items-center gap-1.5 px-1 pt-1 text-[11px] font-medium uppercase tracking-wide">
+            <span className="bg-event-blue-bg text-event-blue flex size-4 items-center justify-center rounded-sm">
+              <ListChecks className="size-2.5" />
+            </span>
+            {subtask.title}
+            {subtask.done && <Chip tone="success">{tTasks("done")}</Chip>}
           </p>
-        )}
-      </div>
-    </div>
+          {blocks.map((block) => {
+            const disabled =
+              block.confirmation === "none" || !block.routineActive;
+            return (
+              <ConnectionCheckboxRow
+                key={block.id}
+                block={block}
+                checked={!!findConnection(block.id, subtask.id)}
+                disabled={disabled}
+                onCheckedChange={() =>
+                  void toggleConnection({
+                    subtaskId: subtask.id,
+                    timeBlockId: block.id,
+                  })
+                }
+                connection={findConnection(block.id, subtask.id)}
+                onUpdate={(patch) =>
+                  updateFor(findConnection(block.id, subtask.id), patch)
+                }
+              />
+            );
+          })}
+        </div>
+      ))}
+
+      {blocks.length === 0 && (
+        <p className="text-muted-foreground px-1 py-1 text-xs">
+          {(data?.blocks.length ?? 0) === 0 ? t("noBlocks") : t("noMatches")}
+        </p>
+      )}
+    </EntityCardShell>
   );
 }
 
-function ConnectionRow({
-  title,
-  subtitle,
-  accentColor,
-  connection,
+/** Linha de vínculo no explorador: checkbox liga/desliga + painel quando ligado. */
+function ConnectionCheckboxRow({
+  block,
+  checked,
   disabled,
-  frequency,
-  blockWeekday,
-  color,
-  onToggle,
+  onCheckedChange,
+  connection,
   onUpdate,
 }: {
-  title: string;
-  subtitle?: string;
-  accentColor?: EventColor;
+  block: ConnectionCatalogBlock;
+  checked: boolean;
+  disabled: boolean;
+  onCheckedChange: () => void;
   connection: TaskBlockConnection | undefined;
-  disabled?: boolean;
-  frequency: Frequency;
-  blockWeekday: number;
-  color: EventColor;
-  onToggle: () => void;
   onUpdate: (patch: ConnectionPatch) => void;
 }) {
+  const t = useTranslations("dashboard.tasks.connections");
+  const [optionsOpen, setOptionsOpen] = React.useState(false);
+
   return (
     <div
       className={cn(
         "rounded-lg border px-2.5 py-1.5 transition-colors",
-        connection ? "bg-background/80 border-border/70" : "border-transparent",
-        disabled && !connection && "opacity-60",
+        checked ? "bg-background/80 border-border/70" : "border-transparent",
+        disabled && !checked && "opacity-60",
       )}
     >
-      <label className="flex cursor-pointer items-center gap-2.5">
-        {accentColor && (
-          <span
-            className={cn(
-              "size-2.5 shrink-0 rounded-sm",
-              blockBorderClass(accentColor),
-            )}
-          />
-        )}
-        <Checkbox
-          checked={!!connection}
-          disabled={disabled && !connection}
-          onCheckedChange={onToggle}
-          className="shrink-0"
-        />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{title}</span>
-          {subtitle && (
-            <span className="text-muted-foreground block truncate text-xs">
-              {subtitle}
-            </span>
+      <div className="flex items-center gap-2.5">
+        <label
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-2.5",
+            !disabled && "cursor-pointer",
           )}
-        </span>
-        {connection && <StatusChip connection={connection} />}
-      </label>
-      {connection && !disabled && (
+        >
+          <Checkbox
+            checked={checked}
+            disabled={disabled && !checked}
+            onCheckedChange={onCheckedChange}
+            className="shrink-0"
+          />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium">
+              {block.title}
+            </span>
+            <span className="text-muted-foreground block truncate text-xs">
+              {block.routineName} ·{" "}
+              {blockRecurrence(block.frequency, block.weekday, t)} ·{" "}
+              {formatClockTime(block.startMinutes)}
+            </span>
+          </span>
+        </label>
+        {checked && <StatusChip connection={connection!} />}
+        {checked && !disabled && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-expanded={optionsOpen}
+            aria-label={optionsOpen ? t("hideOptions") : t("showOptions")}
+            onClick={() => setOptionsOpen((open) => !open)}
+          >
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform",
+                optionsOpen && "rotate-180",
+              )}
+            />
+          </Button>
+        )}
+      </div>
+
+      {checked && !disabled && optionsOpen && connection && (
         <ConnectionOptionsPanel
           connection={connection}
-          frequency={frequency}
-          blockWeekday={blockWeekday}
-          color={color}
+          frequency={block.frequency}
+          blockWeekday={block.weekday}
+          color={block.color}
           onUpdate={onUpdate}
         />
       )}
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Peças compartilhadas                                                 */
+/* ------------------------------------------------------------------ */
 
 function StatusChip({ connection }: { connection: TaskBlockConnection }) {
   const t = useTranslations("dashboard.tasks.connections");

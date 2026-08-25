@@ -14,6 +14,17 @@ import {
   confirmBlocksForDoneEntities,
   reversePropagateForEntities,
 } from "@/lib/server/connections";
+import {
+  awardXpOnce,
+  removeXpByEntityPrefix,
+  removeXpForRef,
+  xpRefKeys,
+} from "@/lib/server/gamification/xp";
+import { XP_AMOUNTS } from "@/lib/gamification/rules";
+import {
+  evaluateAchievements,
+} from "@/lib/server/gamification/service";
+import { loadGamificationStats } from "@/lib/server/gamification/stats";
 
 async function getOwnedSubtask(id: string, userId: string) {
   return prisma.subtask.findFirst({
@@ -89,6 +100,27 @@ export async function PATCH(
           tzOffsetMinutes,
         );
       }
+
+      // Gamificação: +XP por cada sub-tarefa recém-concluída (a própria e a
+      // sub-árvore); tarefa completada pela cascata pontua na rota da tarefa.
+      for (const subtaskId of completedSubtaskIds) {
+        await awardXpOnce(
+          tx,
+          user.id,
+          "subtask.done",
+          XP_AMOUNTS.subtaskDone,
+          xpRefKeys.subtaskDone(subtaskId),
+        );
+      }
+      if (patch.done === true) {
+        await awardXpOnce(
+          tx,
+          user.id,
+          "subtask.done",
+          XP_AMOUNTS.subtaskDone,
+          xpRefKeys.subtaskDone(id),
+        );
+      }
     }
 
     if (ancestorIds.length > 0) {
@@ -123,7 +155,20 @@ export async function PATCH(
         ],
         tzOffsetMinutes,
       );
+      // Gamificação: reabrir remove o ganho do nó reaberto e dos ancestrais.
+      await removeXpForRef(tx, user.id, "subtask.done", xpRefKeys.subtaskDone(id));
+      for (const ancestorId of ancestorIds) {
+        await removeXpForRef(
+          tx,
+          user.id,
+          "subtask.done",
+          xpRefKeys.subtaskDone(ancestorId),
+        );
+      }
     }
+
+    const stats = await loadGamificationStats(tx, user.id, tzOffsetMinutes);
+    await evaluateAchievements(tx, user.id, stats);
 
     return updated;
   });
@@ -180,6 +225,11 @@ export async function DELETE(
 
     // Exclui a sub-tarefa e toda a sub-árvore abaixo dela (cascade).
     await tx.subtask.delete({ where: { id } });
+
+    // Gamificação: eventos das entidades excluídas saem do ledger.
+    for (const entityId of affectedEntityIds) {
+      await removeXpByEntityPrefix(tx, user.id, `subtask:${entityId}:`);
+    }
 
     // Recalcula a conclusão dos ancestrais: se todos os filhos restantes
     // estiverem feitos (ou não restar nenhum), o ancestral volta a ficar

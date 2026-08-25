@@ -14,7 +14,14 @@ import {
   type DataResource,
 } from "@/lib/client/data-events";
 
-const AFTER_HABIT_CHANGE: DataResource[] = ["habits"];
+const AFTER_HABIT_CHANGE: DataResource[] = [
+  "habits",
+  // Confirmação de hábito pode auto-confirmar blocos conectados (e as
+  // tarefas/sub-tarefas ligadas a eles): mantém todas as telas em sync.
+  "connections",
+  "time-blocks",
+  "current-block",
+];
 
 function withProgress(
   habit: Habit,
@@ -58,11 +65,16 @@ export function useHabits(tzOffset: number) {
       const endpoint = habit ? `/api/habits/${habit.id}` : "/api/habits";
       const method = habit ? "PATCH" : "POST";
 
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
+      const response = await fetch(
+        habit
+          ? `${endpoint}?tzOffset=${tzOffset}`
+          : endpoint,
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        },
+      );
 
       if (!response.ok) {
         throw new Error("Failed to save habit");
@@ -85,7 +97,7 @@ export function useHabits(tzOffset: number) {
       );
       notifyDataChanged(AFTER_HABIT_CHANGE);
     },
-    [],
+    [tzOffset],
   );
 
   const deleteHabit = useCallback(async (habit: Habit | null) => {
@@ -93,9 +105,10 @@ export function useHabits(tzOffset: number) {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/habits/${habit.id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/habits/${habit.id}?tzOffset=${tzOffset}`,
+        { method: "DELETE" },
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete habit");
@@ -108,7 +121,7 @@ export function useHabits(tzOffset: number) {
     } finally {
       setIsDeleting(false);
     }
-  }, []);
+  }, [tzOffset]);
 
   const completeHabit = useCallback(
     async (habitId: string, increment = 1) => {

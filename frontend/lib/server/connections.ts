@@ -40,12 +40,21 @@ export type ConnectionWithBlock = Prisma.TaskBlockConnectionGetPayload<{
 
 type CompletionLike = { periodStart: Date; value: string; updatedAt: Date };
 
-type EntityRef = { taskId: string | null; subtaskId: string | null };
+type EntityRef = {
+  taskId: string | null;
+  subtaskId: string | null;
+  habitId?: string | null;
+};
 
 const DAY_MS = 86_400_000;
 
 /** Chave canônica de uma entidade, usada em sourceEntityId das auto-confirmações. */
-function entityKey(taskId: string | null, subtaskId: string | null): string {
+function entityKey(
+  taskId: string | null,
+  subtaskId: string | null,
+  habitId?: string | null,
+): string {
+  if (habitId) return `habit:${habitId}`;
   return taskId ? `task:${taskId}` : `subtask:${subtaskId}`;
 }
 
@@ -280,6 +289,7 @@ export function toConnectionRow(
   id: string;
   taskId: string | null;
   subtaskId: string | null;
+  habitId: string | null;
   timeBlockId: string;
   requiredCount: number;
   dayFilter: DayFilter;
@@ -290,6 +300,7 @@ export function toConnectionRow(
     id: connection.id,
     taskId: connection.taskId,
     subtaskId: connection.subtaskId,
+    habitId: connection.habitId,
     timeBlockId: connection.timeBlockId,
     requiredCount: connection.requiredCount,
     dayFilter: connection.dayFilter as DayFilter,
@@ -365,7 +376,11 @@ export async function confirmBlockForConnection(
   );
   if (now.getTime() < occurrenceStart.getTime()) return;
 
-  const sourceEntityId = entityKey(connection.taskId, connection.subtaskId);
+  const sourceEntityId = entityKey(
+    connection.taskId,
+    connection.subtaskId,
+    connection.habitId,
+  );
 
   await tx.timeBlockCompletion.upsert({
     where: {
@@ -514,9 +529,9 @@ export async function completeEntitiesForConnections(
 /**
  * Bloco confirmado propaga para as entidades conectadas: conclui a tarefa ou
  * sub-tarefa (com cascata na árvore) somente quando TODAS as conexões da
- * entidade estiverem satisfeitas; e, para as entidades que de fato
- * transicionaram para concluídas, confirma os blocos conectados no período
- * atual.
+ * entidade estiverem satisfeitas; hábitos bons satisfeitos recebem a
+ * conclusão automática do período; e, para as tarefas/sub-tarefas que de
+ * fato transicionaram, confirma os blocos conectados no período atual.
  */
 export async function completeEntitiesForBlock(
   tx: Tx,
@@ -529,6 +544,7 @@ export async function completeEntitiesForBlock(
     where: { userId, timeBlockId: blockId },
     select: { taskId: true, subtaskId: true },
   });
+  await completeHabitsForBlock(tx, userId, blockId, tzOffsetMinutes, now);
   if (blockConnections.length === 0) return;
 
   await completeEntitiesForConnections(
@@ -775,6 +791,263 @@ export async function reversePropagateForBlock(
   });
   if (blockConnections.length === 0) return;
   await reversePropagate(tx, userId, blockConnections, tzOffsetMinutes);
+}
+
+/* ------------------------------------------------------------------ */
+/* Hábitos (bons) como entidades de conexão                            */
+/* ------------------------------------------------------------------ */
+
+/** Janela do período atual do hábito (diário = dia local; semanal = semana). */
+function habitPeriodWindow(
+  habit: { frequency: string },
+  now: Date,
+  tzOffsetMinutes: number,
+): { startMs: number; endExclusiveMs: number; todayKeyMs: number } {
+  const userNow = new Date(now.getTime() - tzOffsetMinutes * 60_000);
+  const dayStartMs = Date.UTC(
+    userNow.getUTCFullYear(),
+    userNow.getUTCMonth(),
+    userNow.getUTCDate(),
+  );
+  if (habit.frequency === "weekly") {
+    const weekStartMs = dayStartMs - userNow.getUTCDay() * DAY_MS;
+    return {
+      startMs: weekStartMs,
+      endExclusiveMs: weekStartMs + 7 * DAY_MS,
+      todayKeyMs: dayStartMs,
+    };
+  }
+  return {
+    startMs: dayStartMs,
+    endExclusiveMs: dayStartMs + DAY_MS,
+    todayKeyMs: dayStartMs,
+  };
+}
+
+/** Todas as conexões de um conjunto de hábitos. */
+async function loadConnectionsOfHabits(
+  tx: Tx,
+  userId: string,
+  habitIds: string[],
+): Promise<ConnectionWithBlock[]> {
+  if (habitIds.length === 0) return [];
+  return tx.taskBlockConnection.findMany({
+    where: { userId, habitId: { in: habitIds } },
+    include: connectionInclude,
+  });
+}
+
+/**
+ * Direção bloco -> hábito: para cada hábito bom conectado, se TODAS as suas
+ * conexões estiverem satisfeitas, garante uma conclusão no período atual do
+ * hábito (count = targetCount, source="auto"), SEM sobrescrever registros
+ * explícitos ou anteriores (create-if-missing).
+ */
+export async function completeHabitsForConnections(
+  tx: Tx,
+  userId: string,
+  habitIds: string[],
+  tzOffsetMinutes: number,
+  now: Date = new Date(),
+): Promise<void> {
+  const uniqueIds = [...new Set(habitIds)];
+  if (uniqueIds.length === 0) return;
+
+  const habits = await tx.habit.findMany({
+    where: { userId, id: { in: uniqueIds }, type: "good" },
+  });
+  if (habits.length === 0) return;
+
+  const connections = await loadConnectionsOfHabits(tx, userId, uniqueIds);
+  if (connections.length === 0) return;
+
+  const completionsByBlock = await loadCompletionsByBlock(tx, connections);
+
+  for (const habit of habits) {
+    const habitConnections = connections.filter(
+      (connection) => connection.habitId === habit.id,
+    );
+    if (habitConnections.length === 0) continue;
+
+    const satisfied = habitConnections.every(
+      (connection) =>
+        countConfirmed(
+          connection,
+          completionsByBlock.get(connection.timeBlockId) ?? [],
+          tzOffsetMinutes,
+        ) >= connection.requiredCount,
+    );
+    if (!satisfied) continue;
+
+    const window = habitPeriodWindow(habit, now, tzOffsetMinutes);
+    const existing = await tx.habitCompletion.findFirst({
+      where: {
+        habitId: habit.id,
+        date: {
+          gte: new Date(window.startMs),
+          lt: new Date(window.endExclusiveMs),
+        },
+      },
+    });
+    if (existing) continue;
+
+    await tx.habitCompletion.create({
+      data: {
+        habitId: habit.id,
+        userId,
+        date: new Date(window.todayKeyMs),
+        count: Math.max(1, habit.targetCount),
+        source: "auto",
+      },
+    });
+  }
+}
+
+/** Variante por bloco, usada quando um bloco é confirmado. */
+export async function completeHabitsForBlock(
+  tx: Tx,
+  userId: string,
+  blockId: string,
+  tzOffsetMinutes: number,
+  now: Date = new Date(),
+): Promise<void> {
+  const connections = await tx.taskBlockConnection.findMany({
+    where: { userId, timeBlockId: blockId, habitId: { not: null } },
+    select: { habitId: true },
+  });
+  const habitIds = [
+    ...new Set(
+      connections
+        .map((c) => c.habitId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  await completeHabitsForConnections(
+    tx,
+    userId,
+    habitIds,
+    tzOffsetMinutes,
+    now,
+  );
+}
+
+/**
+ * Reversão bloco -> hábito: desconfirmar um bloco pode quebrar a satisfação
+ * dos hábitos conectados. Remove SOMENTE conclusões automáticas (source=
+ * "auto") dentro da janela do período atual; registros explícitos do usuário
+ * nunca são tocados.
+ */
+export async function revertAutoHabitCompletionsForBlock(
+  tx: Tx,
+  userId: string,
+  blockId: string,
+  tzOffsetMinutes: number,
+  now: Date = new Date(),
+): Promise<void> {
+  const blockHabitConnections = await tx.taskBlockConnection.findMany({
+    where: { userId, timeBlockId: blockId, habitId: { not: null } },
+    select: { habitId: true },
+  });
+  const habitIds = [
+    ...new Set(
+      blockHabitConnections
+        .map((c) => c.habitId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  await revertAutoHabitCompletionsForConnections(
+    tx,
+    userId,
+    habitIds,
+    tzOffsetMinutes,
+    now,
+  );
+}
+
+/**
+ * Variante por hábitos: reavalia a satisfação de cada um e remove as
+ * conclusões automáticas insatisfatórias no período atual. Usada quando uma
+ * conexão é criada/editada/removida (requiredCount maior, filtro mais
+ * restritivo ou conexão removida podem quebrar a satisfação).
+ */
+export async function revertAutoHabitCompletionsForConnections(
+  tx: Tx,
+  userId: string,
+  habitIds: string[],
+  tzOffsetMinutes: number,
+  now: Date = new Date(),
+): Promise<void> {
+  const uniqueIds = [...new Set(habitIds)];
+  if (uniqueIds.length === 0) return;
+
+  const habits = await tx.habit.findMany({
+    where: { userId, id: { in: uniqueIds }, type: "good" },
+  });
+
+  const allConnections = await loadConnectionsOfHabits(tx, userId, uniqueIds);
+  if (allConnections.length === 0) {
+    // Sem conexões restantes, nenhuma conclusão automática se sustenta.
+    if (habits.length > 0) {
+      await tx.habitCompletion.deleteMany({
+        where: { habitId: { in: uniqueIds }, source: "auto" },
+      });
+    }
+    return;
+  }
+
+  const completionsByBlock = await loadCompletionsByBlock(tx, allConnections);
+
+  for (const habit of habits) {
+    const habitConnections = allConnections.filter(
+      (connection) => connection.habitId === habit.id,
+    );
+    if (habitConnections.length === 0) continue;
+
+    const satisfied = habitConnections.every(
+      (connection) =>
+        countConfirmed(
+          connection,
+          completionsByBlock.get(connection.timeBlockId) ?? [],
+          tzOffsetMinutes,
+        ) >= connection.requiredCount,
+    );
+    if (satisfied) continue;
+
+    const window = habitPeriodWindow(habit, now, tzOffsetMinutes);
+    await tx.habitCompletion.deleteMany({
+      where: {
+        habitId: habit.id,
+        source: "auto",
+        date: {
+          gte: new Date(window.startMs),
+          lt: new Date(window.endExclusiveMs),
+        },
+      },
+    });
+  }
+}
+
+/**
+ * Direção hábito -> blocos: o usuário atingiu a meta do hábito no período
+ * atual; auto-confirma os blocos conectados (mesma regra das tarefas).
+ */
+export async function confirmBlocksForHabits(
+  tx: Tx,
+  userId: string,
+  habitIds: string[],
+  tzOffsetMinutes: number,
+  now: Date = new Date(),
+): Promise<void> {
+  if (habitIds.length === 0) return;
+
+  const connections = await tx.taskBlockConnection.findMany({
+    where: { userId, habitId: { in: habitIds } },
+    include: connectionInclude,
+  });
+
+  for (const connection of connections) {
+    await confirmBlockForConnection(tx, connection, tzOffsetMinutes, now);
+  }
 }
 
 /**

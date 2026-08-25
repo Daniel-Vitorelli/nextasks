@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CalendarClock, TrendingUp } from "lucide-react";
 
@@ -65,6 +65,19 @@ export default function HomePage() {
     !progressError &&
     !showProgressChart &&
     blocks.length === 0;
+
+  // Mantém o período selecionado dentro das opções ainda disponíveis
+  // (ex.: confirmações apagadas reduzem daysWithRecords).
+  const recordedDays = progress?.daysWithRecords;
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (recordedDays === undefined) return;
+    const available = [7, 15, 30, 60].filter((d) => d <= recordedDays);
+    if (available.length > 0 && !available.includes(selectedDays)) {
+      setSelectedDays(Math.max(...available));
+    }
+  }, [recordedDays, selectedDays]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleConfirmed = (blockId: string) => {
     removeBlock(blockId);

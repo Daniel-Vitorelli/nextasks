@@ -28,11 +28,12 @@ export default function DashboardPage() {
 
       <RoutinesSection />
 
+      <TasksSection />
+      
       <HabitsSection />
 
       <ConnectionsSection />
 
-      <TasksSection />
     </main>
   );
 }

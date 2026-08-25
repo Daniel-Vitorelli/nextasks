@@ -11,6 +11,7 @@ import { computeStreak } from "@/lib/streak";
 import type { DailyProgress, StreakStats } from "@/types/domain";
 
 const ALLOWED_DAYS = [7, 15, 30, 60, 365];
+const DAY_MS = 86_400_000;
 
 export async function GET(request: Request) {
   const { user, response } = await requireUser();
@@ -49,16 +50,18 @@ export async function GET(request: Request) {
   ).length;
 
   const today = startOfDayUtc(new Date(), tzOffsetMinutes);
+  const todayMs = today.getTime();
 
   // Dias com registro desde a criação da rotina: quantos dias no passado têm
   // ao menos um bloco confirmável aplicável (dias que aparecem no gráfico).
+  // Passos fixos de 24h evitam artefatos de DST do fuso do servidor.
   let daysWithRecords = 0;
   for (
-    let day = startOfDayUtc(routine.createdAt, tzOffsetMinutes);
-    day.getTime() <= today.getTime();
-    day.setDate(day.getDate() + 1)
+    let dayMs = startOfDayUtc(routine.createdAt, tzOffsetMinutes).getTime();
+    dayMs <= todayMs;
+    dayMs += DAY_MS
   ) {
-    const weekday = localWeekday(day, tzOffsetMinutes);
+    const weekday = localWeekday(new Date(dayMs), tzOffsetMinutes);
     const hasConfirmable = timeBlocks.some(
       (block) =>
         block.confirmation !== "none" &&
@@ -68,21 +71,20 @@ export async function GET(request: Request) {
     if (hasConfirmable) daysWithRecords += 1;
   }
 
-  const periodStart = new Date(today.getTime() - (days - 1) * 86_400_000);
+  const periodStart = new Date(today.getTime() - (days - 1) * DAY_MS);
   // A rotina começa a valer na data de criação: nada antes dela aparece.
   const start =
     routine.createdAt.getTime() > periodStart.getTime()
       ? startOfDayUtc(routine.createdAt, tzOffsetMinutes)
       : periodStart;
+  const startMs = start.getTime();
 
   // Periodos distintos (dias ou semanas, conforme a frequencia) do intervalo.
   const periodStarts = new Set<number>();
-  for (
-    let day = new Date(start);
-    day.getTime() <= today.getTime();
-    day.setDate(day.getDate() + 1)
-  ) {
-    periodStarts.add(periodForFrequency(frequency, day, tzOffsetMinutes).start.getTime());
+  for (let dayMs = startMs; dayMs <= todayMs; dayMs += DAY_MS) {
+    periodStarts.add(
+      periodForFrequency(frequency, new Date(dayMs), tzOffsetMinutes).start.getTime(),
+    );
   }
 
   const completions = await prisma.timeBlockCompletion.findMany({
@@ -102,12 +104,8 @@ export async function GET(request: Request) {
 
   const progress: DailyProgress[] = [];
 
-  for (
-    let day = new Date(start);
-    day.getTime() <= today.getTime();
-    day.setDate(day.getDate() + 1)
-  ) {
-    const dayStart = startOfDayUtc(day, tzOffsetMinutes);
+  for (let dayMs = startMs; dayMs <= todayMs; dayMs += DAY_MS) {
+    const dayStart = new Date(dayMs);
     const weekday = localWeekday(dayStart, tzOffsetMinutes);
 
     // Rotina diaria vale todos os dias; semanal so no dia da semana do bloco.
