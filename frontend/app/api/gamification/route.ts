@@ -7,6 +7,7 @@ import {
   evaluateAchievements,
 } from "@/lib/server/gamification/service";
 import { loadGamificationStats } from "@/lib/server/gamification/stats";
+import { sendGamificationNotifications } from "@/lib/server/notifications/gamification-hooks";
 import { parseTzOffset } from "@/lib/server/api";
 
 export async function GET(request: Request) {
@@ -22,10 +23,13 @@ export async function GET(request: Request) {
   );
 
   // Avalia conquistas dependentes do tempo (streaks que crescem sozinhos).
-  await prisma.$transaction(async (tx) => {
+  const newlyUnlocked = await prisma.$transaction(async (tx) => {
     const stats = await loadGamificationStats(tx, user.id, tzOffsetMinutes);
-    await evaluateAchievements(tx, user.id, stats);
+    return evaluateAchievements(tx, user.id, stats);
   });
+
+  // Pushes de conquistas/level up (inclusive os que ocorrem só ao abrir a página).
+  await sendGamificationNotifications(user.id, { newlyUnlockedAchievements: newlyUnlocked });
 
   const summary = await buildGamificationSummary(prisma, user.id, {
     recentLimit,

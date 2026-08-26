@@ -254,6 +254,94 @@
       "ai": "IA",
       "config": "Configurações"
     },
+    "social": {
+      "eyebrow": "Social",
+      "title": "Amigos",
+      "subtitle": "Conecte-se e acompanhe a evolução de quem importa.",
+      "tabs": {
+        "friends": "Amigos",
+        "requests": "Pedidos",
+        "ranking": "Ranking",
+        "activity": "Atividade"
+      },
+      "invite": {
+        "title": "Buscar pessoas",
+        "searchDescription": "Busque pelo nome ou digite o e-mail completo para convidar.",
+        "searchPlaceholder": "Buscar por nome ou e-mail…",
+        "submit": "Adicionar",
+        "sendToEmail": "Enviar convite para {email}",
+        "success": "Convite enviado!",
+        "notFound": "Nenhuma conta encontrada com esse e-mail.",
+        "alreadyFriends": "Vocês já são amigos.",
+        "alreadyRequested": "Já existe um pedido entre vocês.",
+        "self": "Você não pode se adicionar como amigo.",
+        "error": "Não foi possível enviar o convite."
+      },
+      "requests": {
+        "title": "Pedidos",
+        "incomingTitle": "Recebidos",
+        "outgoingTitle": "Enviados",
+        "accept": "Aceitar",
+        "decline": "Recusar",
+        "cancel": "Cancelar pedido",
+        "pendingBadge": "Aguardando resposta",
+        "empty": "Nenhum pedido pendente."
+      },
+      "friends": {
+        "title": "Seus amigos",
+        "empty": "Nenhum amigo ainda. Busque alguém pelo nome acima ou convide por e-mail!",
+        "level": "Nv {level}",
+        "remove": "Remover amigo"
+      },
+      "leaderboard": {
+        "subtitle": "XP ganho nesta semana",
+        "you": "você",
+        "empty": "Sem XP registrado esta semana. Complete tarefas e confirme blocos para pontuar!"
+      },
+      "activity": {
+        "empty": "Nada por aqui ainda. Conquistas, níveis e amizades aparecem neste feed.",
+        "kinds": {
+          "achievement": "{name} desbloqueou \"{achievement}\"",
+          "levelUp": "{name} alcançou o nível {level}",
+          "friendAccepted": "{name} e {other} agora são amigos"
+        }
+      },
+      "detail": {
+        "blocksConfirmed": "Blocos confirmados",
+        "tasksDone": "Tarefas concluídas",
+        "days100": "Dias 100%",
+        "unlockedCount": "Conquistas",
+        "currentRoutineStreak": "Sequência atual",
+        "bestCleanStreak": "Melhor sequência limpa"
+      }
+    },
+    "ai": {
+      "eyebrow": "IA",
+      "title": "Assistente",
+      "subtitle": "Converse sobre sua rotina, hábitos e tarefas — com contexto dos seus dados.",
+      "newChat": "Nova conversa",
+      "untitledChat": "Sem título",
+      "deleteChat": "Excluir conversa",
+      "emptyTitle": "Como posso ajudar?",
+      "emptyDescription": "Pergunte sobre sua rotina de hoje, peça sugestões de melhorias ou motive-me a cumprir meus hábitos.",
+      "composerPlaceholder": "Escreva sua mensagem…",
+      "memory": {
+        "button": "Minha memória",
+        "title": "O que eu lembro sobre você",
+        "description": "Fatos duráveis usados no contexto das respostas. A IA aprende com o tempo e você pode adicionar ou esquecer fatos.",
+        "addPlaceholder": "Ex.: Prefiro treinar de manhã…",
+        "add": "Adicionar",
+        "forget": "Esquecer",
+        "empty": "Nada memorizado ainda.",
+        "manual": "manual",
+        "ai": "IA"
+      },
+      "errors": {
+        "not_configured": "A IA não está configurada neste servidor (falta a chave da NVIDIA NIM).",
+        "load_failed": "Não foi possível carregar esta conversa.",
+        "generic": "Algo deu errado ao gerar a resposta. Tente novamente."
+      }
+    },
     "calendar": {
       "eyebrow": "Calendário",
       "title": "Calendário",
@@ -391,6 +479,26 @@
         "save": "Salvar",
         "saved": "Fuso horário atualizado.",
         "saveError": "Não foi possível salvar. Tente novamente."
+      },
+      "notifications": {
+        "title": "Notificações",
+        "description": "Receba pushes do navegador sobre amizades, conquistas e lembretes.",
+        "unsupported": "Seu navegador não suporta notificações push.",
+        "requiresHttps": "Notificações exigem conexão segura (HTTPS). Acesse por um endereço https:// — via IP local (http://192.168.x.x) só os avisos com o site aberto funcionam.",
+        "permissionDenied": "A permissão de notificações está bloqueada nas configurações do navegador.",
+        "statusActive": "Notificações ativadas neste dispositivo",
+        "statusInactive": "Ative para receber notificações neste dispositivo",
+        "enable": "Ativar",
+        "disable": "Desativar",
+        "sendTest": "Enviar teste",
+        "testSent": "Notificação enviada!",
+        "categories": {
+          "friendEvents": "Amizades (pedidos e aceites)",
+          "achievements": "Conquistas e subida de nível",
+          "taskReminders": "Lembretes de tarefas (vence hoje / atrasada)",
+          "blockReminders": "Blocos de tempo e rotina do dia",
+          "habitReminders": "Hábitos (meta do dia em aberto)"
+        }
       },
       "data": {
         "title": "Dados",

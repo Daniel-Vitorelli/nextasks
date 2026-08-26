@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/server/session";
 import { AppDock } from "@/components/app/app-dock";
+import { NotificationStream } from "@/components/app/notification-toast";
 import { SessionProvider } from "@/components/app/session-provider";
 import { ConnectionsProvider } from "@/components/connections/connections-provider";
 import { XpToast } from "@/components/app/gamification/xp-toast";
@@ -24,6 +25,7 @@ export default async function Layout({
         <div className="relative min-h-screen">
           <main className="pb-8">{children}</main>
           <XpToast />
+          <NotificationStream />
           <AppDock />
         </div>
       </ConnectionsProvider>

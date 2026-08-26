@@ -31,6 +31,14 @@ model User {
   habitCompletions HabitCompletion[]
   xpEvents       XpEvent[]
   achievements   AchievementUnlock[]
+  pushSubscriptions PushSubscription[]
+  notificationPreferences NotificationPreference?
+  notificationLogs  NotificationLog[]
+  friendshipsRequested Friendship[] @relation("FriendshipsRequested")
+  friendshipsReceived  Friendship[] @relation("FriendshipsReceived")
+  chatConversations    ChatConversation[]
+  memoryFacts          MemoryFact[]
+  activityEvents       ActivityEvent[]
 }
 
 model Routine {
@@ -214,6 +222,54 @@ model XpEvent {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // refKey nulo não participa da unique (MySQL ignora NULL) — eventos sem
+  // refKey podem repetir por conteúdo.
+  @@unique([userId, kind, refKey])
+  @@index([userId, createdAt])
+}
+
+/// Subscription de Web Push (uma por navegador/dispositivo). locale é capturado
+/// no momento do subscribe para formatar a notificação no servidor.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  locale    String   @default("en") // "pt" | "en"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Preferências de notificação por usuário (criadas on-demand com defaults).
+model NotificationPreference {
+  userId         String  @id
+  friendEvents   Boolean @default(true)
+  achievements   Boolean @default(true)
+  taskReminders  Boolean @default(true)
+  blockReminders Boolean @default(true)
+  habitReminders Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Log de envio — garante que cada (kind, refKey) dispare UMA push só,
+/// mesmo com o sweep rodando a cada minuto.
+model NotificationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String // friend.request | friend.accept | achievement.unlock | ...
+  refKey    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, refKey])
   @@index([userId, createdAt])
 }
 
@@ -227,6 +283,81 @@ model AchievementUnlock {
 
   @@unique([userId, achievementId])
   @@index([userId, unlockedAt])
+}
+
+/// Amizade/pedido em uma linha só: status "pending" até o destinatário aceitar.
+/// Declínio e desfazer amizade removem a linha (permite reconvite).
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      String   @default("pending") // pending | accepted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requester User @relation("FriendshipsRequested", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipsReceived", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+}
+
+/// Conversa do chatbot (uma linha por thread na página de IA).
+model ChatConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String? // derivado da primeira mensagem
+  /// Resumo rolante das mensagens antigas (memória de longo prazo da conversa).
+  summary   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  ChatMessage[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+}
+
+/// Mensagem individual da conversa.
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // user | assistant | system (system nunca persistido aqui)
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+/// Fato durável sobre o usuário ("prefere treinar de manhã"), extraído pela
+/// IA ou adicionado manualmente. Entra sempre no system prompt do chatbot.
+model MemoryFact {
+  id        String   @id @default(cuid())
+  userId    String
+  fact      String   @db.Text
+  source    String   @default("ai") // ai | manual
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+}
+
+/// Evento de atividade social (alimenta o feed dos amigos). data é um JSON
+/// com os parâmetros do kind (ex.: { achievementId } ou { level }).
+model ActivityEvent {
+  id        String   @id @default(cuid())
+  userId    String // autor da ação
+  kind      String // achievement.unlock | level.up | friend.accepted
+  data      String   @default("{}")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Session {

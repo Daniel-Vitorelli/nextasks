@@ -648,3 +648,76 @@ export interface GamificationSummary {
   /** Sequência limpa atual (máx. entre hábitos ruins). */
   currentCleanStreak: number;
 }
+
+/* ------------------------------- Amizades -------------------------------- */
+
+/** Perfil público de um usuário (o que amigos podem ver na lista). */
+export interface FriendProfile {
+  id: string;
+  name: string;
+  image: string | null;
+  totalXp: number;
+  level: number;
+  rank: RankDef;
+}
+
+/** Pedido recebido/enviado pendente. */
+export interface FriendRequestView {
+  id: string; // id da Friendship
+  createdAt: string;
+  user: FriendProfile;
+}
+
+/** Resposta de GET /api/friends. */
+export interface FriendsResponse {
+  friends: FriendProfile[];
+  incoming: FriendRequestView[];
+  outgoing: FriendRequestView[];
+}
+
+/** Estatísticas públicas do detalhe do amigo. */
+export interface FriendDetail {
+  profile: FriendProfile;
+  blocksConfirmed: number;
+  tasksDone: number;
+  days100: number;
+  bestRoutineStreak: number;
+  currentRoutineStreak: number;
+  bestCleanStreak: number;
+  unlockedCount: number;
+}
+
+/* --------------------------- Social: extras ------------------------------ */
+
+/** Linha do ranking semanal de XP (usuário + amigos). */
+export interface LeaderboardEntry {
+  userId: string;
+  name: string;
+  image: string | null;
+  /** XP ganho dentro da semana corrente do solicitante. */
+  weekXp: number;
+  level: number;
+  rank: RankDef;
+  isMe: boolean;
+}
+
+export interface UserSearchResult {
+  id: string;
+  name: string;
+  image: string | null;
+  level: number;
+  rank: RankDef;
+  /** Estado do relacionamento: nada pendente / meu pedido aguardando / pedido recebido. */
+  relationStatus: "none" | "outgoing" | "incoming";
+}
+
+/** Item do feed de atividade social. */
+export interface ActivityFeedItem {
+  id: string;
+  actorId: string;
+  actorName: string;
+  actorImage: string | null;
+  kind: "achievement.unlock" | "level.up" | "friend.accepted";
+  data: Record<string, string | number>;
+  createdAt: string;
+}

@@ -251,6 +251,94 @@
       "ai": "AI",
       "config": "Settings"
     },
+    "social": {
+      "eyebrow": "Social",
+      "title": "Friends",
+      "subtitle": "Connect with the people who matter and follow their progress.",
+      "tabs": {
+        "friends": "Friends",
+        "requests": "Requests",
+        "ranking": "Ranking",
+        "activity": "Activity"
+      },
+      "invite": {
+        "title": "Find people",
+        "searchDescription": "Search by name or type the full e-mail to invite.",
+        "searchPlaceholder": "Search by name or e-mail…",
+        "submit": "Add",
+        "sendToEmail": "Send invite to {email}",
+        "success": "Invite sent!",
+        "notFound": "No account found with this e-mail.",
+        "alreadyFriends": "You are already friends.",
+        "alreadyRequested": "A request already exists between you.",
+        "self": "You cannot add yourself as a friend.",
+        "error": "Could not send the invite."
+      },
+      "requests": {
+        "title": "Requests",
+        "incomingTitle": "Received",
+        "outgoingTitle": "Sent",
+        "accept": "Accept",
+        "decline": "Decline",
+        "cancel": "Cancel request",
+        "pendingBadge": "Awaiting reply",
+        "empty": "No pending requests."
+      },
+      "friends": {
+        "title": "Your friends",
+        "empty": "No friends yet. Search someone by name above or invite by e-mail!",
+        "level": "Lv {level}",
+        "remove": "Remove friend"
+      },
+      "leaderboard": {
+        "subtitle": "XP earned this week",
+        "you": "you",
+        "empty": "No XP recorded this week. Complete tasks and confirm blocks to score!"
+      },
+      "activity": {
+        "empty": "Nothing here yet. Achievements, level ups and friendships show up in this feed.",
+        "kinds": {
+          "achievement": "{name} unlocked \"{achievement}\"",
+          "levelUp": "{name} reached level {level}",
+          "friendAccepted": "{name} and {other} are now friends"
+        }
+      },
+      "detail": {
+        "blocksConfirmed": "Blocks confirmed",
+        "tasksDone": "Tasks done",
+        "days100": "100% days",
+        "unlockedCount": "Achievements",
+        "currentRoutineStreak": "Current streak",
+        "bestCleanStreak": "Best clean streak"
+      }
+    },
+    "ai": {
+      "eyebrow": "AI",
+      "title": "Assistant",
+      "subtitle": "Talk about your routine, habits and tasks — with your own data as context.",
+      "newChat": "New conversation",
+      "untitledChat": "Untitled",
+      "deleteChat": "Delete conversation",
+      "emptyTitle": "How can I help?",
+      "emptyDescription": "Ask about today's routine, request improvement suggestions, or get motivated to keep your habits.",
+      "composerPlaceholder": "Type your message…",
+      "memory": {
+        "button": "My memory",
+        "title": "What I remember about you",
+        "description": "Durable facts used in the answer context. The AI learns over time and you can add or forget facts.",
+        "addPlaceholder": "E.g.: I prefer to work out in the morning…",
+        "add": "Add",
+        "forget": "Forget",
+        "empty": "Nothing memorized yet.",
+        "manual": "manual",
+        "ai": "AI"
+      },
+      "errors": {
+        "not_configured": "AI is not configured on this server (missing NVIDIA NIM key).",
+        "load_failed": "Could not load this conversation.",
+        "generic": "Something went wrong while generating the reply. Please try again."
+      }
+    },
     "calendar": {
       "eyebrow": "Calendar",
       "title": "Calendar",
@@ -388,6 +476,26 @@
         "save": "Save",
         "saved": "Timezone updated.",
         "saveError": "Could not save. Try again."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Receive browser push notifications about friends, achievements and reminders.",
+        "unsupported": "Your browser does not support push notifications.",
+        "requiresHttps": "Notifications require a secure connection (HTTPS). Use an https:// address — over a local IP (http://192.168.x.x) only in-app alerts work while the site is open.",
+        "permissionDenied": "Notification permission is blocked in your browser settings.",
+        "statusActive": "Notifications enabled on this device",
+        "statusInactive": "Enable to receive notifications on this device",
+        "enable": "Enable",
+        "disable": "Disable",
+        "sendTest": "Send test",
+        "testSent": "Notification sent!",
+        "categories": {
+          "friendEvents": "Friends (requests and acceptances)",
+          "achievements": "Achievements and level ups",
+          "taskReminders": "Task reminders (due today / overdue)",
+          "blockReminders": "Time blocks and daily routine",
+          "habitReminders": "Habits (open daily target)"
+        }
       },
       "data": {
         "title": "Data",

@@ -18,7 +18,8 @@ export type DataResource =
   | "progress"
   | "current-block"
   | "habits"
-  | "gamification";
+  | "gamification"
+  | "friends";
 
 const listeners = new Map<DataResource, Set<() => void>>();
 

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AppearanceSection } from "@/components/app/config/appearance-section";
 import { DataSection } from "@/components/app/config/data-section";
 import { LocaleSwitcher } from "@/components/app/config/locale-switcher";
+import { NotificationsSection } from "@/components/app/config/notifications-section";
 import { ProfileSection } from "@/components/app/config/profile-section";
 import { TimezoneSection } from "@/components/app/config/timezone-section";
 import {
@@ -47,6 +48,8 @@ export default function ConfigPage() {
         </div>
 
         <TimezoneSection />
+
+        <NotificationsSection />
 
         <DataSection />
       </div>

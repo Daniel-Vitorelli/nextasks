@@ -21,10 +21,9 @@ import {
   xpRefKeys,
 } from "@/lib/server/gamification/xp";
 import { XP_AMOUNTS } from "@/lib/gamification/rules";
-import {
-  evaluateAchievements,
-} from "@/lib/server/gamification/service";
+import { evaluateAchievements } from "@/lib/server/gamification/service";
 import { loadGamificationStats } from "@/lib/server/gamification/stats";
+import { sendGamificationNotifications } from "@/lib/server/notifications/gamification-hooks";
 
 async function getOwnedTask(id: string, userId: string) {
   return prisma.task.findFirst({
@@ -100,12 +99,17 @@ export async function PATCH(
     }
 
     const stats = await loadGamificationStats(tx, user.id, tzOffsetMinutes);
-    await evaluateAchievements(tx, user.id, stats);
+    const newlyUnlocked = await evaluateAchievements(tx, user.id, stats);
 
-    return updated;
+    return { updated, newlyUnlocked };
   });
 
-  return NextResponse.json(task);
+  // Pushes de gamificação após o commit (conquistas + level up).
+  await sendGamificationNotifications(user.id, {
+    newlyUnlockedAchievements: task.newlyUnlocked,
+  });
+
+  return NextResponse.json(task.updated);
 }
 
 export async function DELETE(

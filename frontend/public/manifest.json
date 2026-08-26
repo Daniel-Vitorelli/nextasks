@@ -1,0 +1,17 @@
+{
+  "name": "NexTasks",
+  "short_name": "NexTasks",
+  "description": "Gerenciamento de hábitos, rotinas e tarefas com IA e gamificação.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "/logo_grande.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

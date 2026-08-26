@@ -18,10 +18,9 @@ import {
   xpRefKeys,
 } from "@/lib/server/gamification/xp";
 import { XP_AMOUNTS } from "@/lib/gamification/rules";
-import {
-  evaluateAchievements,
-} from "@/lib/server/gamification/service";
+import { evaluateAchievements } from "@/lib/server/gamification/service";
 import { loadGamificationStats } from "@/lib/server/gamification/stats";
+import { sendGamificationNotifications } from "@/lib/server/notifications/gamification-hooks";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -89,8 +88,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   // Tudo atômico: upsert + XP + cascata de conexões + avaliação de conquistas
   // na MESMA transação (nada fica meio-aplicado se algo falhar).
   const { completion, periodCount, newlyUnlocked } = await prisma.$transaction(
-    async (tx) => {
-      let row = await tx.habitCompletion.upsert({
+    async (tx) => {      let row = await tx.habitCompletion.upsert({
         where: {
           habitId_date: {
             habitId: habit.id,
@@ -179,6 +177,11 @@ export async function POST(request: Request, { params }: RouteParams) {
     },
   );
 
+  // Pushes de gamificação após o commit (conquistas + level up).
+  await sendGamificationNotifications(user.id, {
+    newlyUnlockedAchievements: newlyUnlocked,
+  });
+
   return NextResponse.json({
     completion,
     isComplete: !isBad && completion.count >= habit.targetCount,
@@ -188,7 +191,6 @@ export async function POST(request: Request, { params }: RouteParams) {
       newlyUnlocked.length > 0 ? { unlocked: newlyUnlocked } : undefined,
   });
 }
-
 /** Remove o registro de hoje (desfazer confirmação/recaída). */
 export async function DELETE(request: Request, { params }: RouteParams) {
   const { user, response } = await requireUser();
@@ -217,11 +219,11 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   const weekStartMs = dayStartMs - userNow.getUTCDay() * 86_400_000;
   const isBad = habit.type === "bad";
 
-  const removed = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const existing = await tx.habitCompletion.findUnique({
       where: { habitId_date: { habitId: habit.id, date } },
     });
-    if (!existing) return false;
+    if (!existing) return { removed: false, newlyUnlocked: [] as string[] };
 
     await tx.habitCompletion.delete({ where: { id: existing.id } });
 
@@ -272,9 +274,14 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     const stats = await loadGamificationStats(tx, user.id, tzOffset);
-    await evaluateAchievements(tx, user.id, stats);
+    const newlyUnlocked = await evaluateAchievements(tx, user.id, stats);
 
-    return true;
+    return { removed: true, newlyUnlocked };
+  });
+
+  // Pushes de gamificação após o commit.
+  await sendGamificationNotifications(user.id, {
+    newlyUnlockedAchievements: result.newlyUnlocked,
   });
 
   // Recalcula o total do período após remover o dia de hoje.
@@ -290,7 +297,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
   return NextResponse.json({
     ok: true,
-    removed,
+    removed: result.removed,
     periodCount: aggregated._sum.count ?? 0,
     type: habit.type,
   });

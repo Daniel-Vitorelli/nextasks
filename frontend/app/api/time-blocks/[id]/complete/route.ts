@@ -14,10 +14,9 @@ import {
   syncRoutineDayFullXp,
   xpRefKeys,
 } from "@/lib/server/gamification/xp";
-import {
-  evaluateAchievements,
-} from "@/lib/server/gamification/service";
+import { evaluateAchievements } from "@/lib/server/gamification/service";
 import { loadGamificationStats } from "@/lib/server/gamification/stats";
+import { sendGamificationNotifications } from "@/lib/server/notifications/gamification-hooks";
 import {
   asFrequency,
   badRequest,
@@ -141,6 +140,11 @@ export async function POST(
     );
 
     return { saved, newlyUnlocked };
+  });
+
+  // Pushes de gamificação após o commit (conquistas + level up).
+  await sendGamificationNotifications(user.id, {
+    newlyUnlockedAchievements: completion.newlyUnlocked,
   });
 
   return NextResponse.json({
