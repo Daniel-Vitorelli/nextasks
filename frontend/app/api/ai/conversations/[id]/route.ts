@@ -18,16 +18,24 @@ export async function GET(_request: Request, context: RouteContext<{ id: string 
   const conversation = await getOwnedConversation(id, user.id);
   if (!conversation) return notFound("Conversation not found");
 
-  const messages = await prisma.chatMessage.findMany({
-    where: { conversationId: conversation.id },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    select: { id: true, role: true, content: true, createdAt: true },
-  });
+  const [messages, proposals] = await Promise.all([
+    prisma.chatMessage.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { id: true, role: true, content: true, createdAt: true, proposalId: true },
+    }),
+    prisma.aiProposal.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, status: true, locale: true, actions: true, createdAt: true, updatedAt: true, expiresAt: true, messageId: true },
+    }),
+  ]);
 
   return NextResponse.json({
     id: conversation.id,
     title: conversation.title,
     messages,
+    proposals,
   });
 }
 

@@ -259,7 +259,48 @@
         "friends": "Friends",
         "requests": "Requests",
         "ranking": "Ranking",
+        "challenges": "Challenges",
         "activity": "Activity"
+      },
+      "challenges": {
+        "title": "Friend challenges",
+        "propose": "Propose challenge",
+        "proposeTitle": "New challenge",
+        "proposeDescription": "Pick the metric, target and duration. The challenge starts when your friend accepts; winner gets +75 XP.",
+        "friendLabel": "Friend",
+        "metricLabel": "Metric",
+        "metrics": {
+          "xp": "XP earned",
+          "blocks": "Confirmed blocks",
+          "tasks": "Completed tasks",
+          "habits": "Habit check-ins"
+        },
+        "targetLabel": "Target",
+        "durationLabel": "Duration",
+        "days": "{count} days",
+        "submit": "Send challenge",
+        "empty": "No challenges yet. Propose one to a friend!",
+        "sections": {
+          "incoming": "Received",
+          "active": "In progress",
+          "outgoing": "Sent",
+          "history": "History"
+        },
+        "accept": "Accept",
+        "decline": "Decline",
+        "cancel": "Cancel",
+        "waitingReply": "Awaiting reply",
+        "daysLeft": "{count, plural, one {# day left} other {# days left}}",
+        "you": "you",
+        "draw": "Draw",
+        "winnerWas": "{name} won",
+        "badges": {
+          "won": "Win",
+          "lost": "Loss",
+          "draw": "Draw"
+        },
+        "errorOpen": "There is already an open challenge between you.",
+        "errorGeneric": "Could not complete the action."
       },
       "invite": {
         "title": "Find people",
@@ -300,7 +341,9 @@
         "kinds": {
           "achievement": "{name} unlocked \"{achievement}\"",
           "levelUp": "{name} reached level {level}",
-          "friendAccepted": "{name} and {other} are now friends"
+          "friendAccepted": "{name} and {other} are now friends",
+          "challengeWon": "{winner} won the challenge: {a} × {b}",
+          "challengeDraw": "Draw in the challenge: {a} × {b}"
         }
       },
       "detail": {
@@ -337,6 +380,53 @@
         "not_configured": "AI is not configured on this server (missing NVIDIA NIM key).",
         "load_failed": "Could not load this conversation.",
         "generic": "Something went wrong while generating the reply. Please try again."
+      },
+      "proposal": {
+        "previewTitle": "Action preview",
+        "pendingHint": "AI proposed changes below. Review and choose to accept or reject.",
+        "acceptedHint": "You accepted this proposal.",
+        "rejectedHint": "You rejected this proposal.",
+        "accept": "Accept",
+        "reject": "Reject",
+        "applied": "Changes applied.",
+        "dismissed": "Proposal dismissed.",
+        "status": {
+          "pending": "Pending",
+          "accepted": "Accepted",
+          "rejected": "Rejected",
+          "expired": "Expired"
+        },
+        "kinds": {
+          "create_task": "Create task",
+          "update_task": "Update task",
+          "complete_task": "Complete task",
+          "delete_task": "Delete task",
+          "create_subtask": "Create subtask",
+          "update_subtask": "Update subtask",
+          "delete_subtask": "Delete subtask",
+          "complete_subtask": "Complete subtask",
+          "create_habit": "Create habit",
+          "update_habit": "Update habit",
+          "delete_habit": "Delete habit",
+          "complete_habit": "Confirm habit",
+          "undo_habit": "Undo habit",
+          "create_routine": "Create routine",
+          "update_routine": "Update routine",
+          "delete_routine": "Delete routine",
+          "activate_routine": "Activate routine",
+          "create_time_block": "Create block",
+          "update_time_block": "Update block",
+          "delete_time_block": "Delete block",
+          "complete_time_block": "Confirm block",
+          "create_connection": "Create connection",
+          "update_connection": "Update connection",
+          "delete_connection": "Remove connection"
+        },
+        "toast": {
+          "accepted": "Proposal accepted! Changes applied.",
+          "rejected": "Proposal rejected.",
+          "error": "Error processing proposal."
+        }
       }
     },
     "calendar": {
@@ -356,6 +446,43 @@
       "eyebrow": "Home",
       "greeting": "Hello, {name}",
       "fallbackName": "welcome",
+      "guide": {
+        "eyebrow": "Tour",
+        "title": "How to use NexTasks",
+        "subtitle": "Swipe through the app's corners — drag or use the arrows.",
+        "prev": "Previous slide",
+        "next": "Next slide",
+        "slides": {
+          "home": {
+            "title": "Home: your day at a glance",
+            "description": "Routine progress, streak, the block happening now, habit check-in and your most urgent task."
+          },
+          "dashboard": {
+            "title": "Dashboard: build your foundation",
+            "description": "Create routines with time blocks, manage tasks with priorities and due dates, and track good and bad habits."
+          },
+          "calendar": {
+            "title": "Calendar: see your week",
+            "description": "Week/day/month views of routine blocks. Drag to move, resize and confirm straight from the calendar."
+          },
+          "gamification": {
+            "title": "Gamification: your progress",
+            "description": "Earn XP by confirming blocks, completing tasks and keeping habits. Level up, unlock achievements and reach ranks."
+          },
+          "social": {
+            "title": "Social: friends & challenges",
+            "description": "Find friends by name or e-mail, compare the weekly XP leaderboard, propose challenges and follow the activity feed."
+          },
+          "ai": {
+            "title": "AI: your personal advisor",
+            "description": "Talk about your routine with real context from your data. The AI learns facts about you and answers in your language."
+          },
+          "config": {
+            "title": "Settings: make it yours",
+            "description": "Enable push notifications (reminders even with the site closed), adjust timezone, language and back up your data."
+          }
+        }
+      },
       "progressChart": {
         "title": "Routine progress",
         "subtitle": "Percentage of confirmed time blocks per day",
@@ -492,6 +619,7 @@
         "categories": {
           "friendEvents": "Friends (requests and acceptances)",
           "achievements": "Achievements and level ups",
+          "challenges": "Friend challenges",
           "taskReminders": "Task reminders (due today / overdue)",
           "blockReminders": "Time blocks and daily routine",
           "habitReminders": "Habits (open daily target)"

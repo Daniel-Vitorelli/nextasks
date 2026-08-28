@@ -8,6 +8,7 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "sonner";
 
 export async function generateMetadata({
   params,
@@ -77,6 +78,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           >
             <TooltipProvider>
               {children}
+              <Toaster richColors position="top-right" />
             </TooltipProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

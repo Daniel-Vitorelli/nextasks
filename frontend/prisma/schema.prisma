@@ -39,6 +39,9 @@ model User {
   chatConversations    ChatConversation[]
   memoryFacts          MemoryFact[]
   activityEvents       ActivityEvent[]
+  challengesSent       Challenge[] @relation("ChallengesSent")
+  challengesReceived   Challenge[] @relation("ChallengesReceived")
+  aiProposals          AiProposal[]
 }
 
 model Routine {
@@ -251,6 +254,7 @@ model NotificationPreference {
   userId         String  @id
   friendEvents   Boolean @default(true)
   achievements   Boolean @default(true)
+  challenges     Boolean @default(true)
   taskReminders  Boolean @default(true)
   blockReminders Boolean @default(true)
   habitReminders Boolean @default(true)
@@ -312,6 +316,7 @@ model ChatConversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   messages  ChatMessage[]
+  proposals AiProposal[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -324,11 +329,37 @@ model ChatMessage {
   conversationId String
   role           String // user | assistant | system (system nunca persistido aqui)
   content        String   @db.Text
+  /// Id da proposta associada (quando a mensagem gerou um preview).
+  proposalId     String?
   createdAt      DateTime @default(now())
 
   conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  proposal     AiProposal?      @relation(fields: [proposalId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt])
+}
+
+/// Proposta de ação da IA: preview de mutações que o usuário pode aceitar/recusar.
+/// Nenhuma mutação é aplicada até o usuário aceitar explicitamente.
+model AiProposal {
+  id             String   @id @default(cuid())
+  userId         String
+  conversationId String
+  messageId      String?
+  status         String   @default("pending") // pending | accepted | rejected | expired
+  locale         String   @default("pt")
+  actions        Json // ProposalAction[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  expiresAt      DateTime?
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
+
+  @@index([userId, status])
+  @@index([conversationId, createdAt])
+  @@index([status, expiresAt])
 }
 
 /// Fato durável sobre o usuário ("prefere treinar de manhã"), extraído pela
@@ -358,6 +389,33 @@ model ActivityEvent {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+/// Desafio entre amigos: métrica contada pelo ledger XpEvent na janela
+/// [startedAt, endsAt). Vencedor = maior valor ao fim (empate possível);
+/// vitória credita XP bônus idempotente (refKey challenge:<id>:win).
+model Challenge {
+  id           String    @id @default(cuid())
+  challengerId String
+  challengedId String
+  /// xp | blocks | tasks | habits
+  metric       String
+  target       Int
+  durationDays Int // 3 | 7 | 14
+  /// pending | active | finished (declined/cancelled removem a linha)
+  status       String    @default("pending")
+  winnerId     String?
+  startedAt    DateTime?
+  endsAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  challenger User @relation("ChallengesSent", fields: [challengerId], references: [id], onDelete: Cascade)
+  challenged User @relation("ChallengesReceived", fields: [challengedId], references: [id], onDelete: Cascade)
+
+  @@index([challengedId, status])
+  @@index([challengerId, status])
+  @@index([status, endsAt])
 }
 
 model Session {

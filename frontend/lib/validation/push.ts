@@ -38,6 +38,7 @@ export function parsePushSubscribeInput(value: unknown): ParseResult<PushSubscri
 const PREFERENCE_FLAGS = [
   "friendEvents",
   "achievements",
+  "challenges",
   "taskReminders",
   "blockReminders",
   "habitReminders",

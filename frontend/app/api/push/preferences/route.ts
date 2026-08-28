@@ -7,6 +7,7 @@ import { parsePushPreferencePatch } from "@/lib/validation/push";
 const DEFAULT_PREFERENCES = {
   friendEvents: true,
   achievements: true,
+  challenges: true,
   taskReminders: true,
   blockReminders: true,
   habitReminders: true,

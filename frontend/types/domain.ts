@@ -717,7 +717,40 @@ export interface ActivityFeedItem {
   actorId: string;
   actorName: string;
   actorImage: string | null;
-  kind: "achievement.unlock" | "level.up" | "friend.accepted";
+  kind: "achievement.unlock" | "level.up" | "friend.accepted" | "challenge.finished";
   data: Record<string, string | number>;
   createdAt: string;
+}
+
+/* ------------------------------ Desafios -------------------------------- */
+
+export interface ChallengeParticipant {
+  userId: string;
+  name: string;
+  image: string | null;
+}
+
+export interface ChallengeView {
+  id: string;
+  metric: "xp" | "blocks" | "tasks" | "habits";
+  target: number;
+  durationDays: number;
+  status: "pending" | "active" | "finished";
+  challenger: ChallengeParticipant;
+  challenged: ChallengeParticipant;
+  createdAt: string;
+  startedAt: string | null;
+  endsAt: string | null;
+  /** null = empate; presente apenas quando finished. */
+  winnerId: string | null;
+  /** Progresso ao vivo (apenas status active). */
+  progress?: { challengerValue: number; challengedValue: number };
+  daysLeft?: number;
+}
+
+export interface ChallengesResponse {
+  incoming: ChallengeView[];
+  outgoing: ChallengeView[];
+  active: ChallengeView[];
+  history: ChallengeView[];
 }

@@ -3,10 +3,13 @@ import webpush from "web-push";
 import { prisma } from "@/lib/server/prisma";
 import {
   achievementName,
+  challengeMeta,
+  challengeResultText,
   interpolate,
   KIND_GROUP,
   localizedUrl,
   TEMPLATES,
+  type ChallengeMetricLabel,
   type NotificationKind,
   type NotifyLocale,
 } from "@/lib/notifications/templates";
@@ -191,6 +194,143 @@ export async function notifyAchievement(
 
 export async function notifyLevelUp(userId: string, level: number): Promise<boolean> {
   return notifyUser(userId, "level.up", `level:${level}`, { level }, "/app/gamification");
+}
+
+/* ------------------------------- Desafios -------------------------------- */
+
+interface ChallengeMetaParams {
+  metric: ChallengeMetricLabel;
+  target: number;
+  days: number;
+}
+
+/**
+ * Base comum dos desafios: preferência + dedup + realtime + push com meta
+ * traduzida POR subscription (challengeMeta depende do locale).
+ */
+async function notifyChallengeBase(
+  userId: string,
+  kind: Extract<NotificationKind, "challenge.received" | "challenge.accepted">,
+  refKey: string,
+  opponentName: string,
+  meta: ChallengeMetaParams,
+): Promise<boolean> {
+  const group = KIND_GROUP[kind];
+  const preference = await prisma.notificationPreference.findUnique({
+    where: { userId },
+  });
+  if (preference && group && !preference[group]) return false;
+
+  try {
+    await prisma.notificationLog.create({ data: { userId, kind, refKey } });
+  } catch {
+    return false;
+  }
+
+  publishRealtimeEvent(userId, {
+    id: crypto.randomUUID(),
+    kind,
+    params: { name: opponentName, ...meta },
+    path: "/app/social",
+    createdAt: new Date().toISOString(),
+  });
+
+  await sendToUserSubscriptions(userId, (locale) => ({
+    title: TEMPLATES[kind][locale].title,
+    body: interpolate(TEMPLATES[kind][locale].body, {
+      name: opponentName,
+      meta: challengeMeta(locale, meta.metric, meta.target, meta.days),
+    }),
+    url: localizedUrl("/app/social", locale),
+    tag: `${kind}:${refKey}`,
+  }));
+  return true;
+}
+
+export function notifyChallengeReceived(
+  challengedId: string,
+  challengerName: string,
+  challengeId: string,
+  meta: ChallengeMetaParams,
+): Promise<boolean> {
+  return notifyChallengeBase(
+    challengedId,
+    "challenge.received",
+    challengeId,
+    challengerName,
+    meta,
+  );
+}
+
+export function notifyChallengeAccepted(
+  challengerId: string,
+  challengedName: string,
+  challengeId: string,
+  meta: ChallengeMetaParams,
+): Promise<boolean> {
+  return notifyChallengeBase(
+    challengerId,
+    "challenge.accepted",
+    `${challengeId}:accepted`,
+    challengedName,
+    meta,
+  );
+}
+
+/**
+ * Resultado para AMBOS os participantes (perspectiva individual no texto).
+ * `winnerName` null = empate.
+ */
+export async function notifyChallengeFinished(options: {
+  participantIds: [string, string]; // [challengerId, challengedId]
+  names: { challenger: string; challenged: string };
+  winnerId: string | null;
+  challengeId: string;
+}): Promise<void> {
+  const { participantIds, names, winnerId, challengeId } = options;
+
+  await Promise.all(
+    participantIds.map(async (userId) => {
+      const preference = await prisma.notificationPreference.findUnique({
+        where: { userId },
+      });
+      if (preference && !preference.challenges) return;
+
+      try {
+        await prisma.notificationLog.create({
+          data: {
+            userId,
+            kind: "challenge.finished",
+            refKey: `${challengeId}:${userId}`,
+          },
+        });
+      } catch {
+        return; // já notificado
+      }
+
+      const outcome: "won" | "lost" | "draw" =
+        winnerId === null ? "draw" : winnerId === userId ? "won" : "lost";
+      const opponentName =
+        userId === participantIds[0] ? names.challenged : names.challenger;
+
+      publishRealtimeEvent(userId, {
+        id: crypto.randomUUID(),
+        kind: "challenge.finished",
+        params: { outcome, opponentName },
+        path: "/app/social",
+        createdAt: new Date().toISOString(),
+      });
+
+      await sendToUserSubscriptions(userId, (locale) => ({
+        title: TEMPLATES["challenge.finished"][locale].title,
+        body: interpolate(TEMPLATES["challenge.finished"][locale].body, {
+          result: challengeResultText(locale, outcome),
+        }),
+        url: localizedUrl("/app/social", locale),
+        tag: `challenge.finished:${challengeId}`,
+      }));
+    }),
+  );
 }
 
 /** Push imediata de teste (ignora preferências; refKey único por chamada). */

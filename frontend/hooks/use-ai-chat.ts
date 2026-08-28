@@ -6,6 +6,27 @@ export interface AiMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  proposalId?: string | null;
+}
+
+export interface ProposalActionView {
+  id: string;
+  kind: string;
+  params: Record<string, unknown>;
+  previewTitle: string;
+  previewDescription: string;
+  warnings?: string[];
+}
+
+export interface AiProposalView {
+  id: string;
+  conversationId: string;
+  status: "pending" | "accepted" | "rejected" | "expired";
+  locale: string;
+  actions: ProposalActionView[];
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string | null;
 }
 
 export interface AiConversationSummary {
@@ -35,6 +56,7 @@ export function useAiChat(locale: string) {
   const [conversations, setConversations] = useState<AiConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiMessage[]>([]);
+  const [proposals, setProposals] = useState<AiProposalView[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isOpenLoadingMessages, setIsOpenLoadingMessages] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -66,15 +88,18 @@ export function useAiChat(locale: string) {
       const response = await fetch(`/api/ai/conversations/${conversationId}`);
       if (!response.ok) throw new Error("Failed");
       const data = (await response.json()) as {
-        messages: { id: string; role: string; content: string }[];
+        messages: { id: string; role: string; content: string; proposalId?: string | null }[];
+        proposals: AiProposalView[];
       };
       setMessages(
         data.messages.map((message) => ({
           id: message.id,
           role: message.role === "assistant" ? "assistant" : "user",
           content: message.content,
+          proposalId: message.proposalId ?? null,
         })),
       );
+      setProposals(data.proposals ?? []);
       setStreamError(null);
     } catch {
       setStreamError("load_failed");
@@ -87,6 +112,7 @@ export function useAiChat(locale: string) {
     if (abortRef.current) abortRef.current.abort();
     setActiveId(null);
     setMessages([]);
+    setProposals([]);
     setStreamError(null);
   }, []);
 
@@ -104,6 +130,42 @@ export function useAiChat(locale: string) {
   const stop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+  }, []);
+
+  const reloadProposals = useCallback(async (conversationId: string | null) => {
+    if (!conversationId) return;
+    try {
+      const res = await fetch(`/api/ai/proposals?conversationId=${conversationId}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as AiProposalView[];
+      setProposals(data);
+    } catch {
+      // silencioso
+    }
+  }, []);
+
+  const acceptProposal = useCallback(
+    async (proposalId: string, tzOffset?: number) => {
+      const offset = tzOffset ?? (typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0);
+      const res = await fetch(`/api/ai/proposals/${proposalId}/accept?tzOffset=${offset}`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "accept_failed");
+      }
+      setProposals((cur) => cur.map((p) => (p.id === proposalId ? { ...p, status: "accepted" } : p)));
+      // Notifica canais afetados (broad refresh)
+      const { notifyDataChanged } = await import("@/lib/client/data-events");
+      notifyDataChanged(["tasks", "habits", "routines", "time-blocks", "connections", "progress", "current-block", "gamification"]);
+      return true;
+    },
+    [],
+  );
+
+  const rejectProposal = useCallback(async (proposalId: string) => {
+    const res = await fetch(`/api/ai/proposals/${proposalId}/reject`, { method: "POST" });
+    if (!res.ok) throw new Error("reject_failed");
+    setProposals((cur) => cur.map((p) => (p.id === proposalId ? { ...p, status: "rejected" } : p)));
+    return true;
   }, []);
 
   const sendMessage = useCallback(
@@ -125,6 +187,7 @@ export function useAiChat(locale: string) {
       abortRef.current = controller;
 
       try {
+        const tzOffset = typeof window !== "undefined" ? new Date().getTimezoneOffset() : 0;
         const response = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -133,6 +196,7 @@ export function useAiChat(locale: string) {
             conversationId: activeId ?? undefined,
             message: trimmed,
             locale,
+            tzOffset,
           }),
         });
 
@@ -141,7 +205,9 @@ export function useAiChat(locale: string) {
         }
 
         const conversationId = response.headers.get("X-Conversation-Id");
+        const proposalId = response.headers.get("X-Proposal-Id");
         if (conversationId && !activeId) setActiveId(conversationId);
+        const effectiveConversationId = conversationId ?? activeId;
 
         // Substitui a mensagem temporária do usuário por nada — mantemos só
         // o texto; o assistente recebe os chunks incrementais.
@@ -156,11 +222,20 @@ export function useAiChat(locale: string) {
           setMessages((current) =>
             current.map((message) =>
               message.id === assistantTempId
-                ? { ...message, content: accumulated }
+                ? { ...message, content: accumulated, proposalId: proposalId ?? undefined }
                 : message,
             ),
           );
         }
+        // Atualiza propostaId na mensagem final
+        if (proposalId) {
+          setMessages((current) =>
+            current.map((m) => (m.id === assistantTempId ? { ...m, proposalId } : m)),
+          );
+        }
+        // Recarrega propostas da conversa
+        if (effectiveConversationId) void reloadProposals(effectiveConversationId);
+        else if (proposalId && effectiveConversationId) void reloadProposals(effectiveConversationId);
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           setStreamError(error instanceof Error ? error.message : "generic");
@@ -176,13 +251,14 @@ export function useAiChat(locale: string) {
         void loadConversations();
       }
     },
-    [activeId, isStreaming, loadConversations, locale],
+    [activeId, isStreaming, loadConversations, locale, reloadProposals],
   );
 
   return {
     conversations,
     activeId,
     messages,
+    proposals,
     isLoadingConversations,
     isOpenLoadingMessages,
     isStreaming,
@@ -192,6 +268,9 @@ export function useAiChat(locale: string) {
     openConversation,
     newConversation,
     deleteConversation,
+    acceptProposal,
+    rejectProposal,
+    reloadProposals,
     reloadConversations: loadConversations,
   };
 }

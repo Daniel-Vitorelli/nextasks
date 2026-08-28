@@ -11,8 +11,8 @@
 - **Forms**: react-hook-form + zod validation (shared schemas in `schemas/`, parsers in `lib/validation/`)
 - **Charts**: recharts + shadcn `chart.tsx`
 - **Notificações**: Web Push (`web-push` + VAPID, service worker em `public/sw.js`) + tempo real in-app via SSE (`/api/notifications/stream` + toasts)
-- **Social**: amizades, busca por nome/e-mail, ranking semanal de XP e feed de atividade
-- **IA**: chatbot consultor com NVIDIA NIM (API compatível OpenAI), contexto dos dados do usuário, memória por conversa (resumo rolante) e global de fatos; rate limit global com fila (`GLOBAL_AI_RPM`)
+- **Social**: amizades, busca por nome/e-mail, ranking semanal de XP, feed de atividade e desafios entre amigos
+- **IA**: chatbot consultor e **agente** com NVIDIA NIM (API compatível OpenAI), contexto dos dados do usuário, memória por conversa (resumo rolante) e global de fatos; **propõe alterações no site (tarefas, subtarefas, hábitos, rotinas, blocos, conexões) com preview Aceitar/Recusar**; rate limit global com fila (`GLOBAL_AI_RPM`)
 - **Tests**: Vitest (`npm run test`)
 
 Docker Compose orchestrates three services: `mysql`, `next_app` (frontend+API), `phpmyadmin`.
@@ -45,7 +45,7 @@ frontend/
 │       ├── users/search/            # busca por nome/email (exclui relações existentes)
 │       ├── social/feed/             # feed de atividade (eu + amigos)
 │       ├── notifications/stream/    # SSE de eventos em tempo real
-│       └── ai/                      # chat streaming, conversations, memory (fatos)
+│       └── ai/                      # chat streaming, conversations, memory (fatos), **proposals (Aceitar/Recusar)**
 ├── components/
 │   ├── dashboard/routines/          # routine cards, dialogs, calendar dialog
 │   ├── dashboard/tasks/             # task cards, dialogs, subtask tree
@@ -53,19 +53,20 @@ frontend/
 │   ├── app/                         # authenticated layout (dock, session, home sections)
 │   │   ├── home/habits-check-in.tsx # confirmação diária + streak/heatmap por hábito
 │   │   ├── config/notifications-section.tsx # ativar push + preferências + teste
-│   │   └── notification-toast.tsx   # toasts in-app do canal SSE (clicáveis)
+│   │   ├── notification-toast.tsx   # toasts in-app do canal SSE (clicáveis)
+│   │   └── ai/proposal-card.tsx     # preview de propostas da IA (Aceitar/Recusar)
 │   ├── calendar/                    # WeekView/MonthView + drag/resize overlays
 │   ├── connections/                 # connection popover, provider, badges
 │   └── ui/                          # shadcn primitives
 ├── hooks/                           # data hooks (tasks, routines, subtasks, blocks, progress, habits,
-│                                    #   friends, ai-chat, notification-stream)
+│                                    #   friends, ai-chat (com proposals), notification-stream, challenges)
 ├── lib/
 │   ├── server/                      # server-only: prisma, auth, session, api helpers, connections,
 │   │                                #   subtask-cascade, completions, data-transfer, push, reminders,
-│   │                                #   social, public-profile, activity, schedule, ai/
+│   │                                #   social, public-profile, activity, schedule, ai/ (context, nim, memory, rate-limit, **tools** + proposals)
 │   ├── notifications/templates.ts   # templates pt/en de TODAS as notificações (server+client)
 │   ├── validation/                  # parsers manuais para payloads (shared client/server;
-│   │                                #   inclui friends.ts e push.ts — NÃO são zod apesar do AGENTS antigo)
+│   │                                #   inclui friends.ts, push.ts, challenges.ts — NÃO são zod apesar do AGENTS antigo)
 │   ├── calendar/                    # pure calendar math (positioning, drag, timezone) + event constants/colors
 │   ├── task-ordering.ts             # urgency scoring for home task selection
 │   ├── subtask-tree.ts              # pure tree mutations (insert/update/remove/cascade)
@@ -125,8 +126,10 @@ Key models (see `frontend/prisma/schema.prisma`):
 - `NotificationPreference` — flags por categoria (friendEvents, achievements, taskReminders, blockReminders, habitReminders); linha ausente = tudo ligado
 - `NotificationLog` — `@@unique(userId, kind, refKey)`: dedup central das pushes E do canal realtime
 - `Friendship` — requesterId/addresseeId, status ("pending"|"accepted"); declínio/remove = delete da linha
+- `Challenge` — challenger/challenged, metric (xp|blocks|tasks|habits), target, durationDays (3|7|14), status (pending|active|finished), winnerId (null = empate), startedAt/endsAt; métrica contada pelo ledger XpEvent na janela
 - `ActivityEvent` — feed social (kind: achievement.unlock | level.up | friend.accepted), data JSON, poda >90 dias
-- `ChatConversation` / `ChatMessage` — conversas do chatbot; `summary` = resumo rolante
+- `ChatConversation` / `ChatMessage` — conversas do chatbot; `summary` = resumo rolante; `ChatMessage.proposalId` linka proposta gerada
+- `AiProposal` — preview de mutações da IA: `status` (pending/accepted/rejected/expired), `actions` (JSON array com `kind`, `params`, `previewTitle/Description`), `expiresAt` (+24h), relação com `User`/`ChatConversation`; nenhuma mutação é aplicada sem `accept`
 - `MemoryFact` — fatos duráveis sobre o usuário (source "ai" | "manual"), entram no system prompt
 
 ---
@@ -194,7 +197,7 @@ Key models (see `frontend/prisma/schema.prisma`):
 - Templates pt/en em `lib/notifications/templates.ts` (compartilhado server+client); push formatada no servidor usando o `locale` salvo na PushSubscription
 - **Tempo real (site aberto)**: SSE `/api/notifications/stream` + bus in-memory (`lib/server/notifications/bus.ts`) → toasts clicáveis (`components/app/notification-toast.tsx`, montado no layout `[app]`) + `notifyDataChanged` dos canais afetados (UI reage sem refresh)
 - **Site fechado**: Web Push nativo (service worker + VAPID). Requer HTTPS (localhost é isento); iOS exige PWA instalada
-- Kinds: friend.request/accept, achievement.unlock, level.up, task.due.today, task.overdue, block.starting, routine.day.incomplete, habit.streak.atRisk, test — mapeados em `KIND_GROUP` para as preferências
+- Kinds: friend.request/accept, achievement.unlock, level.up, challenge.received/accepted/finished, task.due.today, task.overdue, block.starting, routine.day.incomplete, habit.streak.atRisk, test — mapeados em `KIND_GROUP` para as preferências
 - Conquistas/level up: `sendGamificationNotifications` roda APÓS o commit nas rotas de mutação (time-blocks/habits/tasks/subtasks/gamification); level up detectado comparando nível atual vs maior já notificado (baseline silencioso na 1ª execução)
 - Teste manual: botão "Enviar teste" em Configurações → POST `/api/push/test`
 
@@ -210,12 +213,23 @@ Key models (see `frontend/prisma/schema.prisma`):
 - Leaderboard semanal: XP de `createdAt >= startOfWeekUtc(meu fuso)` entre eu+amigos, ordenação pura `sortLeaderboardEntries` (XP desc → nível desc → nome)
 - Feed: `ActivityEvent` gravado nos hooks de gamificação e nos dois lados do aceite; `parseActivityData` tolerante; UI em abas (Amigos/Pedidos/Ranking/Atividade) com badge de pendentes
 
-### IA — Chatbot NVIDIA NIM (`lib/server/ai/**`, `app/api/ai/**`, `hooks/use-ai-chat.ts`)
+### Desafios entre amigos (`lib/server/challenges.ts`, `app/api/friends/challenges/**`, sweep em `reminders.ts`)
+- Proposta → destinatário aceita/recusa; aceitar inicia janela `[startedAt, startedAt+durationDays)`; 1 desafio aberto por par (qualquer direção); só entre amigos aceitos
+- Métricas contadas do ledger `XpEvent` na janela (`computeMetricValue`): xp = SUM(amount>0); blocks/tasks/habits = COUNT(kind block.confirm / task.done / habit.confirm) — undos espelham no progresso ao vivo
+- Expiração: `finalizeExpiredChallenges` roda no sweep de 30s — transação revalida status, resolve vencedor (`resolveWinner`, empate possível) e credita +75 XP idempotente (`refKey challenge:<id>:win`); notifica ambos + evento no feed
+- Notificações: challenge.received / accepted / finished (categoria "challenges" nas preferências); realtime vai com params crus — texto composto no cliente via `challengeMeta`/`challengeResultText` (compartilhados server+client)
+- UI: aba Desafios na página social (badge de pendentes), diálogo de proposta com presets de meta, progresso ao vivo com barras, histórico com vitória/derrota/empate na perspectiva do usuário
+
+### IA — Chatbot e Agente NVIDIA NIM (`lib/server/ai/**`, `app/api/ai/**`, `hooks/use-ai-chat.ts`, `components/app/ai/proposal-card.tsx`)
 - Cliente `openai` apontando `https://integrate.api.nvidia.com/v1` (`NVIDIA_NIM_API_KEY`; modelo `NIM_MODEL`, default meta/llama-3.3-70b-instruct); sem chave → 503 amigável
-- Contexto (`context.ts`): leitura direta do Prisma — hoje no fuso, rotina ativa + blocos confirmados, tarefas pendentes via `sortPendingTasks`, vencimentos 7 dias, hábitos aplicáveis, snapshot de gamificação, fatos de memória; locale da request define idioma da resposta
-- Streaming: POST `/api/ai/chat` devolve texto puro via ReadableStream; persiste resposta parcial em aborts; header `X-Conversation-Id` cria/retoma conversa
+- Contexto (`context.ts`): leitura direta do Prisma — hoje no fuso, rotina ativa + blocos confirmados, tarefas pendentes via `sortPendingTasks`, vencimentos 7 dias, hábitos aplicáveis, snapshot de gamificação, fatos de memória; locale da request define idioma da resposta; instrui LLM a **sempre propor via tools** para mutações
+- **Ferramentas agênticas** (`tools.ts` `AI_TOOLS` 22 tools): `list_tasks/habits/routines/time_blocks` (leitura auto-exec, sem preview) + `propose_create/update/delete/complete` para `task/subtask/habit/routine/time_block/connection` e `activate_routine/undo_habit`; `propose_create_routine` **exige** `timeBlocks≥2` com títulos significativos e horários ISO (rejeita `Bloco 1` genérico, distribui semanal em weekdays, auto-cor por título, `confirmation:checklist` default); validação reusa `lib/validation/*` + checks de dono (`isDayFilterSatisfiable`, `confirmation!="none"`, `bad` não conecta) e retorna `previewTitle/Description` com `old→new` para updates
+- **Loop agêntico** (`app/api/ai/chat/route.ts`): até 5 iterações `tools` + `tool_choice:auto`; `propose_*` valida e acumula `pendingRaw` → `buildProposalActions` → `AiProposal` `pending` com `actions:Json` e `expiresAt +24h`; `list_*` executa via `executeReadTool` e alimenta LLM; texto final é streamado (chunk 40 chars) com header `X-Proposal-Id`; `X-Conversation-Id` cria/retoma conversa
+- **Preview e aceite** (`app/api/ai/proposals/[id]/accept|reject`): `POST /accept?tzOffset=` valida `pending`+`!expired`, executa cada `executeProposalAction` em `prisma.$transaction` (cascatas `subtask-cascade`, `connections` com `confirmBlocksForDoneEntities/reversePropagateForEntities`, `gamification` com `awardXpOnce`/`xpRefKeys`, `syncRoutineDayFullXp`); `POST /reject` marca `rejected`; `GET /api/ai/proposals?conversationId=` lista + lazy `expired`
+- Streaming: POST `/api/ai/chat` devolve texto puro via ReadableStream; persiste resposta parcial em aborts; header `X-Conversation-Id` cria/retoma conversa; `X-Proposal-Id` entrega proposta criada
 - Memória: últimas 24 msgs verbatim + `summary` rolante (gerada após SUMMARY_TRIGGER_COUNT msgs); fatos globais extraídos periodicamente (JSON parse tolerante) e editáveis na UI ("Minha memória"; source manual nunca sobrescrito)
-- **Rate limit GLOBAL** (`rate-limit.ts`): janela deslizante `GLOBAL_AI_RPM` (default 20/min) compartilhada por chat + resumo + extração; excedeu → **fila FIFO** (espera até abrir slot, sem 429); abort enquanto espera → status 499; in-memory/single-container (trocar por Redis se multi-instância)
+- **Rate limit GLOBAL** (`rate-limit.ts`): janela deslizante `GLOBAL_AI_RPM` (default 20/min) compartilhada por chat + resumo + extração + loop de tools (até 5 calls por mensagem); excedeu → **fila FIFO** (espera até abrir slot, sem 429); abort enquanto espera → status 499; in-memory/single-container (trocar por Redis se multi-instância)
+- UI: `ProposalCard` mostra ícone/cor por `kind` (`ListTodo/Pencil/Trash2/Target/Power/Link2`), `previewTitle/Description` com `old→new` para updates, sub-lista de `timeBlocks` com `HH:mm` e cor, badges status `pending/accepted/rejected/expired`, botões `Aceitar/Recusar` com `toast` (`sonner`) e `actingId` lock; chat tem `flex-1 min-h-0 overflow-y-auto` para scroll fixo
 
 ---
 
@@ -264,13 +278,19 @@ Key models (see `frontend/prisma/schema.prisma`):
 | GET | `/api/friends/:friendId` | Detalhe público do amigo |
 | DELETE | `/api/friends/:friendId` | Desfazer amizade |
 | GET | `/api/friends/leaderboard?tzOffset=` | Ranking semanal de XP (eu + amigos) |
+| GET | `/api/friends/challenges` | Desafios (incoming/outgoing/active/history) |
+| POST | `/api/friends/challenges` | Propor desafio (body: friendId, metric, target, durationDays) |
+| PATCH/DELETE | `/api/friends/challenges/:id` | Aceitar/recusar (desafiado) / cancelar proposta (autor) |
 | GET | `/api/users/search?q=` | Busca por nome/email (relationStatus: none/outgoing/incoming) |
 | GET | `/api/social/feed?limit=` | Feed de atividade (eu + amigos) |
 | GET | `/api/notifications/stream` | SSE de eventos em tempo real (app aberto) |
-| POST | `/api/ai/chat` | Chat streaming (body: conversationId?, message, locale) |
-| GET/DELETE | `/api/ai/conversations[/:id]` | Lista/mensagens/excluir conversas |
+| POST | `/api/ai/chat` | Chat streaming (body: conversationId?, message, locale, tzOffset) |
+| GET/DELETE | `/api/ai/conversations[/:id]` | Lista/mensagens/excluir conversas (inclui proposals) |
 | GET/POST | `/api/ai/memory` | Fatos de memória (listar/adicionar manual) |
 | DELETE | `/api/ai/memory/:factId` | Esquecer fato |
+| GET | `/api/ai/proposals?conversationId=` | Lista proposals (pending/accepted/rejected/expired) da conversa |
+| POST | `/api/ai/proposals/:id/accept?tzOffset=` | Aceita proposta (valida pending/!expired, executa em transação, propaga XP/conexões) |
+| POST | `/api/ai/proposals/:id/reject` | Recusa proposta (marca rejected) |
 
 All routes require authentication (session cookie from better-auth).
 
@@ -278,14 +298,15 @@ All routes require authentication (session cookie from better-auth).
 
 ## Validation Patterns
 
-- **Shared parsers** in `lib/validation/` used by both frontend forms and API handlers
-- `parseRoutineInput` / `parseRoutinePatch` → routines
-- `parseTaskInput` / `parseTaskPatch` → tasks
-- `parseSubtaskInput` / `parseSubtaskPatch` → subtasks
-- `parseTimeBlockInput` / `parseTimeBlockPatch` → time blocks
-- `parseConnectionInput` / `parseConnectionPatch` / `parseDayFilter` → connections
-- `parseHabitInput` / `parseHabitPatch` → habits (bons: diário exige ≥1 dia, semanal descarta os dias; ruins: sempre diários, sem agenda/meta, voltar a bom exige os dias)
+- **Shared parsers** in `lib/validation/` used by both frontend forms and API handlers **e pela IA** (`lib/server/ai/tools.ts` reusa para validar `AiProposal`)
+- `parseRoutineInput` / `parseRoutinePatch` → routines (IA `propose_create_routine` exige `timeBlocks≥2` com títulos significativos, rejeita `Bloco 1`, valida `start/end` ISO, distribui `weekly` em weekdays, auto-cor)
+- `parseTaskInput` / `parseTaskPatch` → tasks (`propose_create/update/complete/delete_task` com preview `old→new`)
+- `parseSubtaskInput` / `parseSubtaskPatch` → subtasks (`propose_create/update/delete/complete_subtask` com cascata)
+- `parseTimeBlockInput` / `parseTimeBlockPatch` → time blocks (`propose_create/update/delete/complete_time_block`; `confirmation` `none`/`checklist`/`score`)
+- `parseConnectionInput` / `parseConnectionPatch` / `parseDayFilter` → connections (`propose_create/update/delete_connection` com `isDayFilterSatisfiable`, `bad` não conecta)
+- `parseHabitInput` / `parseHabitPatch` → habits (bons: diário exige ≥1 dia, semanal descarta os dias; ruins: sempre diários, sem agenda/meta, voltar a bom exige os dias) (`propose_create/update/delete/complete/undo_habit`)
 - `parseFriendInviteInput` (email OU userId) / `parseFriendRequestAction` → amizades
+- `parseChallengeInput` / `parseChallengeAction` → desafios (metas com limites por métrica; duração 3|7|14)
 - `parsePushSubscribeInput` / `parsePushPreferencePatch` → web push
 - Zod schemas in `schemas/` for react-hook-form (login, signup, routine, task, time-block, habit)
 
@@ -346,6 +367,7 @@ Test files in `tests/`:
 - `ai-context.test.ts` — system prompt do chatbot + parser de fatos
 - `ai-rate-limit.test.ts` — fila global de RPM (relógio injetado)
 - `social.test.ts` — leaderboard, convite por email/userId, parse do feed
+- `challenges.test.ts` — resolução de vencedor, validação de desafios, meta legível, janela das métricas
 - `realtime-bus.test.ts` — pub/sub SSE (isolamento por usuário)
 
 ---

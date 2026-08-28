@@ -19,6 +19,7 @@ import { disablePush, enablePush, getPushState } from "@/lib/client/push";
 interface Preferences {
   friendEvents: boolean;
   achievements: boolean;
+  challenges: boolean;
   taskReminders: boolean;
   blockReminders: boolean;
   habitReminders: boolean;
@@ -27,6 +28,7 @@ interface Preferences {
 const DEFAULT_PREFERENCES: Preferences = {
   friendEvents: true,
   achievements: true,
+  challenges: true,
   taskReminders: true,
   blockReminders: true,
   habitReminders: true,
@@ -35,6 +37,7 @@ const DEFAULT_PREFERENCES: Preferences = {
 const PREFERENCE_KEYS = [
   "friendEvents",
   "achievements",
+  "challenges",
   "taskReminders",
   "blockReminders",
   "habitReminders",

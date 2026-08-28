@@ -11,8 +11,12 @@ import { Bell } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
+  challengeMeta,
+  challengeResultText,
   interpolate,
   TEMPLATES,
+  type ChallengeMetricLabel,
+  type NotifyLocale,
 } from "@/lib/notifications/templates";
 import {
   useNotificationStream,
@@ -25,6 +29,36 @@ const MAX_TOASTS = 3;
 interface ToastItem extends RealtimeNotification {
   title: string;
   body: string;
+}
+
+/**
+ * Desafios chegam com params crus (metric/target/days ou outcome) — o texto
+ * final é composto aqui no idioma do cliente.
+ */
+function toastParams(
+  notification: RealtimeNotification,
+  locale: NotifyLocale,
+): Record<string, string | number> {
+  if (
+    notification.kind === "challenge.received" ||
+    notification.kind === "challenge.accepted"
+  ) {
+    return {
+      name: String(notification.params?.name ?? ""),
+      meta: challengeMeta(
+        locale,
+        String(notification.params?.metric ?? "xp") as ChallengeMetricLabel,
+        Number(notification.params?.target ?? 0),
+        Number(notification.params?.days ?? 0),
+      ),
+    };
+  }
+  if (notification.kind === "challenge.finished") {
+    const raw = String(notification.params?.outcome ?? "draw");
+    const outcome = raw === "won" || raw === "lost" ? raw : "draw";
+    return { result: challengeResultText(locale, outcome) };
+  }
+  return notification.params ?? {};
 }
 
 /**
@@ -51,7 +85,10 @@ export function NotificationStream() {
           {
             ...notification,
             title: template.title,
-            body: interpolate(template.body, notification.params),
+            body: interpolate(
+              template.body,
+              toastParams(notification, locale === "pt" ? "pt" : "en"),
+            ),
           },
         ]);
       },

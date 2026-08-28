@@ -3,6 +3,14 @@ import { periodForFrequency } from "@/lib/server/completions";
 import { materializeSchedule } from "@/lib/server/schedule";
 import { notifyUser } from "@/lib/server/push";
 import type { NotificationKind } from "@/lib/notifications/templates";
+import {
+  CHALLENGE_WIN_XP,
+  computeMetricValue,
+  resolveWinner,
+} from "@/lib/server/challenges";
+import { notifyChallengeFinished } from "@/lib/server/push";
+import { awardXpOnce } from "@/lib/server/gamification/xp";
+import { recordActivity } from "@/lib/server/activity";
 
 const DAY_MS = 86_400_000;
 
@@ -103,6 +111,125 @@ export async function runReminderSweep(db: typeof prisma = prisma, now = new Dat
   for (const { userId } of subscribed) {
     await remindUser(db, userId, now).catch((error) => {
       console.warn(`[reminders] failed for user ${userId}:`, error);
+    });
+  }
+
+  // Desafios expirados: finaliza mesmo sem subscription (resultado é conteúdo).
+  await finalizeExpiredChallenges(db, now).catch((error) => {
+    console.warn("[reminders] challenge finalization failed:", error);
+  });
+}
+
+/**
+ * Finaliza desafios ativos cujo endsAt passou: calcula métricas dos dois
+ * lados, determina vencedor, credita +CHALLENGE_WIN_XP idempotente e
+ * notifica/participa no feed. Idempotente — só toca em status "active".
+ */
+export async function finalizeExpiredChallenges(
+  db: typeof prisma,
+  now = new Date(),
+): Promise<void> {
+  const expired = await db.challenge.findMany({
+    where: { status: "active", endsAt: { lte: now } },
+    take: 20,
+  });
+
+  for (const challenge of expired) {
+    const [challenger, challenged] = await Promise.all([
+      db.user.findUnique({
+        where: { id: challenge.challengerId },
+        select: { name: true },
+      }),
+      db.user.findUnique({
+        where: { id: challenge.challengedId },
+        select: { name: true },
+      }),
+    ]);
+    if (!challenger || !challenged) continue;
+
+    // Transação: revalida status, resolve vencedor e credita o bônus.
+    // undefined = transação falhou; null = empate; string = vencedor.
+    let winnerId: string | null | undefined;
+    await db
+      .$transaction(async (tx) => {
+        const current = await tx.challenge.findUnique({
+          where: { id: challenge.id },
+          select: { status: true, startedAt: true, endsAt: true },
+        });
+        if (!current || current.status !== "active") {
+          winnerId = null;
+          return;
+        }
+
+        const window = {
+          start: current.startedAt ?? challenge.createdAt,
+          end: current.endsAt ?? now,
+        };
+        const [challengerValue, challengedValue] = await Promise.all([
+          computeMetricValue(tx, challenge.challengerId, challenge.metric, window),
+          computeMetricValue(tx, challenge.challengedId, challenge.metric, window),
+        ]);
+        const resolved = resolveWinner(
+          challenge.challengerId,
+          challenge.challengedId,
+          challengerValue,
+          challengedValue,
+        );
+
+        if (resolved) {
+          await awardXpOnce(
+            tx,
+            resolved,
+            "challenge.win",
+            CHALLENGE_WIN_XP,
+            `challenge:${challenge.id}:win`,
+          );
+        }
+
+        await tx.challenge.update({
+          where: { id: challenge.id },
+          data: { status: "finished", winnerId: resolved },
+        });
+        winnerId = resolved ?? null;
+      })
+      .catch((error) => {
+        console.warn(`[reminders] finalize challenge ${challenge.id} failed:`, error);
+        winnerId = null;
+      });
+
+    if (winnerId === undefined) continue; // transação falhou de verdade
+
+    const resolvedWinnerId = winnerId;
+
+    // Feed de atividade para os dois lados (com os nomes dos participantes).
+    const winnerName =
+      resolvedWinnerId === challenge.challengerId
+        ? challenger.name
+        : resolvedWinnerId === challenge.challengedId
+          ? challenged.name
+          : "";
+    await Promise.all([
+      recordActivity(challenge.challengerId, "challenge.finished", {
+        metric: challenge.metric,
+        target: challenge.target,
+        winnerName,
+        challengerName: challenger.name,
+        challengedName: challenged.name,
+      }),
+      recordActivity(challenge.challengedId, "challenge.finished", {
+        metric: challenge.metric,
+        target: challenge.target,
+        winnerName,
+        challengerName: challenger.name,
+        challengedName: challenged.name,
+      }),
+    ]);
+
+    await notifyChallengeFinished({
+      participantIds: [challenge.challengerId, challenge.challengedId],
+      names: { challenger: challenger.name, challenged: challenged.name },
+      winnerId: resolvedWinnerId,
+      challengeId: challenge.id,
     });
   }
 }

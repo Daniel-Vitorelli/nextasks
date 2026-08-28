@@ -262,7 +262,48 @@
         "friends": "Amigos",
         "requests": "Pedidos",
         "ranking": "Ranking",
+        "challenges": "Desafios",
         "activity": "Atividade"
+      },
+      "challenges": {
+        "title": "Desafios entre amigos",
+        "propose": "Propor desafio",
+        "proposeTitle": "Novo desafio",
+        "proposeDescription": "Escolha a métrica, a meta e a duração. O desafio começa quando seu amigo aceitar e vale +75 XP ao vencedor.",
+        "friendLabel": "Amigo",
+        "metricLabel": "Métrica",
+        "metrics": {
+          "xp": "XP ganho",
+          "blocks": "Blocos confirmados",
+          "tasks": "Tarefas concluídas",
+          "habits": "Check-ins de hábito"
+        },
+        "targetLabel": "Meta",
+        "durationLabel": "Duração",
+        "days": "{count} dias",
+        "submit": "Enviar desafio",
+        "empty": "Nenhum desafio por aqui. Proponha um para um amigo!",
+        "sections": {
+          "incoming": "Recebidos",
+          "active": "Em andamento",
+          "outgoing": "Enviados",
+          "history": "Histórico"
+        },
+        "accept": "Aceitar",
+        "decline": "Recusar",
+        "cancel": "Cancelar",
+        "waitingReply": "Aguardando resposta",
+        "daysLeft": "{count, plural, one {# dia restante} other {# dias restantes}}",
+        "you": "você",
+        "draw": "Empate",
+        "winnerWas": "{name} venceu",
+        "badges": {
+          "won": "Vitória",
+          "lost": "Derrota",
+          "draw": "Empate"
+        },
+        "errorOpen": "Já existe um desafio aberto entre vocês.",
+        "errorGeneric": "Não foi possível concluir a ação."
       },
       "invite": {
         "title": "Buscar pessoas",
@@ -303,7 +344,9 @@
         "kinds": {
           "achievement": "{name} desbloqueou \"{achievement}\"",
           "levelUp": "{name} alcançou o nível {level}",
-          "friendAccepted": "{name} e {other} agora são amigos"
+          "friendAccepted": "{name} e {other} agora são amigos",
+          "challengeWon": "{winner} venceu o desafio: {a} × {b}",
+          "challengeDraw": "Empate no desafio: {a} × {b}"
         }
       },
       "detail": {
@@ -340,6 +383,53 @@
         "not_configured": "A IA não está configurada neste servidor (falta a chave da NVIDIA NIM).",
         "load_failed": "Não foi possível carregar esta conversa.",
         "generic": "Algo deu errado ao gerar a resposta. Tente novamente."
+      },
+      "proposal": {
+        "previewTitle": "Prévia da ação",
+        "pendingHint": "A IA propôs alterações abaixo. Revise e escolha aceitar ou recusar.",
+        "acceptedHint": "Você aceitou esta proposta.",
+        "rejectedHint": "Você recusou esta proposta.",
+        "accept": "Aceitar",
+        "reject": "Recusar",
+        "applied": "Alterações aplicadas.",
+        "dismissed": "Proposta dispensada.",
+        "status": {
+          "pending": "Pendente",
+          "accepted": "Aceita",
+          "rejected": "Recusada",
+          "expired": "Expirada"
+        },
+        "kinds": {
+          "create_task": "Criar tarefa",
+          "update_task": "Atualizar tarefa",
+          "complete_task": "Concluir tarefa",
+          "delete_task": "Excluir tarefa",
+          "create_subtask": "Criar subtarefa",
+          "update_subtask": "Atualizar subtarefa",
+          "delete_subtask": "Excluir subtarefa",
+          "complete_subtask": "Concluir subtarefa",
+          "create_habit": "Criar hábito",
+          "update_habit": "Atualizar hábito",
+          "delete_habit": "Excluir hábito",
+          "complete_habit": "Confirmar hábito",
+          "undo_habit": "Desfazer hábito",
+          "create_routine": "Criar rotina",
+          "update_routine": "Atualizar rotina",
+          "delete_routine": "Excluir rotina",
+          "activate_routine": "Ativar rotina",
+          "create_time_block": "Criar bloco",
+          "update_time_block": "Atualizar bloco",
+          "delete_time_block": "Excluir bloco",
+          "complete_time_block": "Confirmar bloco",
+          "create_connection": "Criar conexão",
+          "update_connection": "Atualizar conexão",
+          "delete_connection": "Remover conexão"
+        },
+        "toast": {
+          "accepted": "Proposta aceita! Alterações aplicadas.",
+          "rejected": "Proposta recusada.",
+          "error": "Erro ao processar proposta."
+        }
       }
     },
     "calendar": {
@@ -359,6 +449,43 @@
       "eyebrow": "Início",
       "greeting": "Olá, {name}",
       "fallbackName": "bem-vindo(a)",
+      "guide": {
+        "eyebrow": "Tour",
+        "title": "Como usar o NexTasks",
+        "subtitle": "Deslize pelos cantos do app — arraste ou use as setas.",
+        "prev": "Slide anterior",
+        "next": "Próximo slide",
+        "slides": {
+          "home": {
+            "title": "Início: seu dia em um olhar",
+            "description": "Progresso da rotina, sequência (streak), bloco acontecendo agora, check-in de hábitos e a tarefa mais urgente."
+          },
+          "dashboard": {
+            "title": "Painel: monte sua base",
+            "description": "Crie rotinas com blocos de tempo, gerencie tarefas com prioridades e prazos, e cadastre hábitos bons e ruins."
+          },
+          "calendar": {
+            "title": "Calendário: visualize sua semana",
+            "description": "Visões de semana/dia/mês com os blocos da rotina. Arraste para mover, redimensione e confirme direto no calendário."
+          },
+          "gamification": {
+            "title": "Gamificação: sua evolução",
+            "description": "Ganhe XP confirmando blocos, concluindo tarefas e mantendo hábitos. Suba de nível, desbloquee conquistas e alcance ranks."
+          },
+          "social": {
+            "title": "Social: amigos e desafios",
+            "description": "Encontre amigos por nome ou e-mail, compare o ranking semanal de XP, proponha desafios e acompanhe o feed de atividade."
+          },
+          "ai": {
+            "title": "IA: seu consultor pessoal",
+            "description": "Converse sobre sua rotina com contexto real dos seus dados. A IA aprende fatos sobre você e responde no seu idioma."
+          },
+          "config": {
+            "title": "Configurações: deixe com a sua cara",
+            "description": "Ative notificações push (lembretes mesmo com o site fechado), ajuste fuso horário, idioma e faça backup dos seus dados."
+          }
+        }
+      },
       "progressChart": {
         "title": "Progresso da rotina",
         "subtitle": "Percentual de blocos confirmados por dia",
@@ -495,6 +622,7 @@
         "categories": {
           "friendEvents": "Amizades (pedidos e aceites)",
           "achievements": "Conquistas e subida de nível",
+          "challenges": "Desafios entre amigos",
           "taskReminders": "Lembretes de tarefas (vence hoje / atrasada)",
           "blockReminders": "Blocos de tempo e rotina do dia",
           "habitReminders": "Hábitos (meta do dia em aberto)"

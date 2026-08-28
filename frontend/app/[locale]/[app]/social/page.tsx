@@ -12,6 +12,7 @@ import {
   Search,
   Send,
   Sparkles,
+  Swords,
   Trash2,
   TrendingUp,
   Trophy,
@@ -44,6 +45,9 @@ import {
 } from "@/components/connections/connection-colors";
 import { LUCIDE_ICON_MAP } from "@/lib/lucide-icons";
 import { useFriends } from "@/hooks/use-friends";
+import { useChallenges } from "@/hooks/use-challenges";
+import { ChallengesTab } from "@/components/app/social/challenges-tab";
+import { useSession } from "@/components/app/session-provider";
 import type {
   ActivityFeedItem,
   FriendDetail,
@@ -53,7 +57,7 @@ import type {
   UserSearchResult,
 } from "@/types/domain";
 
-type SocialTab = "friends" | "requests" | "ranking" | "activity";
+type SocialTab = "friends" | "requests" | "ranking" | "activity" | "challenges";
 
 function initialsOf(name?: string | null): string {
   if (!name) return "";
@@ -120,6 +124,8 @@ export default function SocialPage() {
   const t = useTranslations("app.social");
   const locale = useLocale();
   const tzOffset = -new Date().getTimezoneOffset();
+  const session = useSession();
+  const challengesApi = useChallenges();
   const {
     data,
     isLoading,
@@ -183,6 +189,7 @@ export default function SocialPage() {
   };
 
   const pendingCount = data.incoming.length;
+  const challengeCount = challengesApi.data.incoming.length;
 
   const tabs = useMemo(
     () =>
@@ -194,9 +201,14 @@ export default function SocialPage() {
           badge: pendingCount > 0 ? pendingCount : undefined,
         },
         { id: "ranking" as const, label: t("tabs.ranking") },
+        {
+          id: "challenges" as const,
+          label: t("tabs.challenges"),
+          badge: challengeCount > 0 ? challengeCount : undefined,
+        },
         { id: "activity" as const, label: t("tabs.activity") },
       ],
-    [t, pendingCount],
+    [t, pendingCount, challengeCount],
   );
 
   return (
@@ -274,6 +286,10 @@ export default function SocialPage() {
           isLoading={isLoadingLeaderboard}
           locale={locale}
         />
+      )}
+
+      {tab === "challenges" && session?.user?.id && (
+        <ChallengesTab myUserId={session.user.id} api={challengesApi} />
       )}
 
       {tab === "activity" && <ActivityTab items={feed} isLoading={isLoadingFeed} />}
@@ -636,17 +652,30 @@ function ActivityRow({
             name: item.actorName,
             level: Number(item.data.level ?? 0),
           })
-        : t("activity.kinds.friendAccepted", {
-            name: item.actorName,
-            other: String(item.data.otherName ?? ""),
-          });
+        : item.kind === "challenge.finished"
+          ? String(item.data.winnerName ?? "") !== ""
+            ? t("activity.kinds.challengeWon", {
+                winner: String(item.data.winnerName),
+                a: String(item.data.challengerName ?? item.actorName),
+                b: String(item.data.challengedName ?? ""),
+              })
+            : t("activity.kinds.challengeDraw", {
+                a: String(item.data.challengerName ?? item.actorName),
+                b: String(item.data.challengedName ?? ""),
+              })
+          : t("activity.kinds.friendAccepted", {
+              name: item.actorName,
+              other: String(item.data.otherName ?? ""),
+            });
 
   const KindIcon =
     item.kind === "achievement.unlock"
       ? Trophy
       : item.kind === "level.up"
         ? TrendingUp
-        : Users;
+        : item.kind === "challenge.finished"
+          ? Swords
+          : Users;
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 [&:not(:first-child)]:border-t [&:not(:first-child)]:border-border/60">

@@ -8,6 +8,7 @@ import { useSession } from "@/components/app/session-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { CurrentBlockCard } from "@/components/app/home/current-block-card";
 import { EmptyStateCard } from "@/components/app/home/empty-state-card";
+import { GuideSection } from "@/components/app/home/guide-section";
 import { HabitsCheckIn } from "@/components/app/home/habits-check-in";
 import { Heatmap } from "@/components/app/home/heatmap";
 import { PeriodSelector } from "@/components/app/home/period-selector";
@@ -16,6 +17,8 @@ import { StreakCard } from "@/components/app/home/streak-card";
 import { TasksSection } from "@/components/app/home/tasks-section";
 import { useCurrentBlock } from "@/hooks/use-current-block";
 import { useRoutineProgress } from "@/hooks/use-routine-progress";
+import { useTasks } from "@/hooks/use-tasks";
+import { useHabits } from "@/hooks/use-habits";
 import { useTzOffset } from "@/lib/client/use-tz-offset";
 import { notifyDataChanged } from "@/lib/client/data-events";
 
@@ -53,6 +56,15 @@ export default function HomePage() {
 
   // Heatmap de 12 meses: o endpoint permite 365 dias para o histórico anual.
   const { data: yearlyProgress } = useRoutineProgress(365);
+
+  // Verifica se o usuário tem dados para decidir onde mostrar o guia
+  const { tasks } = useTasks();
+  const { habits } = useHabits(tzOffsetMinutes);
+  const hasData = !!(
+    progress?.routine ||
+    (tasks?.length ?? 0) > 0 ||
+    (habits?.length ?? 0) > 0
+  );
 
   const blocks = current?.blocks ?? [];
   const routine = current?.routine ?? progress?.routine ?? null;
@@ -105,6 +117,8 @@ export default function HomePage() {
         </h1>
         <p className="text-muted-foreground capitalize">{dateLabel}</p>
       </header>
+
+      {!hasData && <GuideSection />}
 
       {isInitialLoading ? (
         <section>
@@ -231,6 +245,10 @@ export default function HomePage() {
       <HabitsCheckIn />
 
       <TasksSection />
+
+      {hasData && (
+        <GuideSection defaultCollapsed={true} />
+      )}
     </main>
   );
 }

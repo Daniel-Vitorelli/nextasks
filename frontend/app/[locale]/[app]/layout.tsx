@@ -23,7 +23,7 @@ export default async function Layout({
     <SessionProvider initialUser={user}>
       <ConnectionsProvider>
         <div className="relative min-h-screen">
-          <main className="pb-8">{children}</main>
+          <main className="pb-16">{children}</main>
           <XpToast />
           <NotificationStream />
           <AppDock />

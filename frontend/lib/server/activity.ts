@@ -1,7 +1,11 @@
 import { prisma } from "@/lib/server/prisma";
 
 /** Kinds de evento do feed de atividade social. */
-export type ActivityKind = "achievement.unlock" | "level.up" | "friend.accepted";
+export type ActivityKind =
+  | "achievement.unlock"
+  | "level.up"
+  | "friend.accepted"
+  | "challenge.finished";
 
 const PRUNE_AFTER_DAYS = 90;
 

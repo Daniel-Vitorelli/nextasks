@@ -13,6 +13,9 @@ export type NotificationKind =
   | "friend.accept"
   | "achievement.unlock"
   | "level.up"
+  | "challenge.received"
+  | "challenge.accepted"
+  | "challenge.finished"
   | "task.due.today"
   | "task.overdue"
   | "block.starting"
@@ -23,6 +26,7 @@ export type NotificationKind =
 type PreferenceGroup =
   | "friendEvents"
   | "achievements"
+  | "challenges"
   | "taskReminders"
   | "blockReminders"
   | "habitReminders";
@@ -32,6 +36,9 @@ export const KIND_GROUP: Record<NotificationKind, PreferenceGroup | null> = {
   "friend.accept": "friendEvents",
   "achievement.unlock": "achievements",
   "level.up": "achievements",
+  "challenge.received": "challenges",
+  "challenge.accepted": "challenges",
+  "challenge.finished": "challenges",
   "task.due.today": "taskReminders",
   "task.overdue": "taskReminders",
   "block.starting": "blockReminders",
@@ -65,6 +72,24 @@ export const TEMPLATES: Record<NotificationKind, Record<NotifyLocale, Template>>
   "level.up": {
     pt: { title: "Você subiu de nível!", body: "Agora você está no nível {level}." },
     en: { title: "Level up!", body: "You are now level {level}." },
+  },
+  "challenge.received": {
+    pt: { title: "Desafio recebido!", body: "{name} te desafiou: {meta}." },
+    en: { title: "Challenge received!", body: "{name} challenged you: {meta}." },
+  },
+  "challenge.accepted": {
+    pt: { title: "Desafio aceito!", body: "{name} aceitou seu desafio: {meta}. Que vença o melhor!" },
+    en: { title: "Challenge accepted!", body: "{name} accepted your challenge: {meta}. May the best win!" },
+  },
+  "challenge.finished": {
+    pt: {
+      title: "Desafio encerrado",
+      body: "{result}",
+    },
+    en: {
+      title: "Challenge finished",
+      body: "{result}",
+    },
   },
   "task.due.today": {
     pt: { title: "Tarefa vence hoje", body: '"{title}" vence hoje.' },
@@ -139,4 +164,59 @@ export function interpolate(template: string, params?: Record<string, string | n
 /** Prefixa o locale em um caminho interno ("/app/social" → "/pt/app/social"). */
 export function localizedUrl(path: string, locale: NotifyLocale): string {
   return `/${locale}${path}`;
+}
+
+/* ------------------------------- Desafios -------------------------------- */
+
+export type ChallengeMetricLabel = "xp" | "blocks" | "tasks" | "habits";
+
+const METRIC_UNIT: Record<ChallengeMetricLabel, Record<NotifyLocale, string>> = {
+  xp: { pt: "XP", en: "XP" },
+  blocks: { pt: "blocos confirmados", en: "confirmed blocks" },
+  tasks: { pt: "tarefas concluídas", en: "completed tasks" },
+  habits: { pt: "confirmações de hábito", en: "habit check-ins" },
+};
+
+/**
+ * Resumo legível da meta do desafio no idioma informado
+ * (ex.: "1200 XP em 7 dias", "30 blocos confirmados em 3 dias").
+ */
+export function challengeMeta(
+  locale: NotifyLocale,
+  metric: ChallengeMetricLabel,
+  target: number,
+  durationDays: number,
+): string {
+  const unit = METRIC_UNIT[metric][locale];
+  const daysWord =
+    locale === "pt"
+      ? durationDays === 1
+        ? "dia"
+        : "dias"
+      : durationDays === 1
+        ? "day"
+        : "days";
+  const connector = locale === "pt" ? "em" : "in";
+  return `${target.toLocaleString(locale === "pt" ? "pt-BR" : "en-US")} ${unit} ${connector} ${durationDays} ${daysWord}`;
+}
+
+/**
+ * Frase de resultado por destinatário ("você venceu/perdeu/empate").
+ * `youWon` indica a perspectiva de quem recebe a mensagem.
+ */
+export function challengeResultText(
+  locale: NotifyLocale,
+  outcome: "won" | "lost" | "draw",
+): string {
+  if (outcome === "won") {
+    return locale === "pt"
+      ? "Você venceu o desafio! +75 XP creditados."
+      : "You won the challenge! +75 XP credited.";
+  }
+  if (outcome === "lost") {
+    return locale === "pt"
+      ? "Você perdeu o desafio. Revanche?"
+      : "You lost the challenge. Rematch?";
+  }
+  return locale === "pt" ? "O desafio terminou empatado." : "The challenge ended in a draw.";
 }
